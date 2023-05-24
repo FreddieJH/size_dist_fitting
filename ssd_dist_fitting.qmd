@@ -1065,7 +1065,7 @@ traceplot(mod_09_fit, pars = "sigma")
 
 mod_10_data <- mod_05_data
 
-mod_10_fit  <- run_stanmod("mod_10")
+mod_10_fit  <- run_stanmod("mod_10", overwrite = T)
 mod_10_pars <- extract_pars(mod_10_fit)
 plot_mod_fit("mod_10")
 
@@ -1086,7 +1086,7 @@ traceplot(mod_10_fit, pars = "sdlog")
 
 mod_11_data <- mod_05_data
 
-mod_11_fit  <- run_stanmod("mod_11")
+mod_11_fit  <- run_stanmod("mod_11", overwrite = T)
 mod_11_pars <- extract_pars(mod_11_fit)
 plot_mod_fit("mod_11")
 
@@ -1106,14 +1106,14 @@ traceplot(mod_11_fit, pars = "sigma")
 
 ```{r mod12-modelfit}
 
-mod_11_data <- mod_05_data
+mod_12_data <- mod_05_data
 
-mod_11_fit  <- run_stanmod("mod_11")
-mod_11_pars <- extract_pars(mod_11_fit)
-plot_mod_fit("mod_11")
+mod_12_fit  <- run_stanmod("mod_12")
+mod_12_pars <- extract_pars(mod_12_fit)
+plot_mod_fit("mod_12")
 
-traceplot(mod_11_fit, pars = "mu")
-traceplot(mod_11_fit, pars = "sigma")
+traceplot(mod_12_fit, pars = "mu")
+traceplot(mod_12_fit, pars = "sigma")
 
 ```
 

@@ -11,7 +11,7 @@ data {
   int<lower=0>         n[I];     // fish in the bin
 }
 parameters {
-  real<lower = -10, upper = 10> meanlog[S]; // mean size for each species
+  real<lower = -4, upper = 8> meanlog[S]; // mean size for each species
   real<lower = 0, upper = 5> sdlog[S]; // standard deviation for each species
 }
 
