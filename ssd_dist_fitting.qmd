@@ -251,12 +251,12 @@ I want to create the following models:
 | model_06   | model_04 | real | 20/774 | bin       | lnorm        | No              | No              | per species     | per species         |
 | model_07   | model_07 | real | 20/774 | bin       | norm         | No              | No              | per species     | predicted from par1 |
 | model_08   | model_08 | real | 20/774 | bin       | lnorm        | No              | No              | per species     | predicted from par1 |
-| model_09   |          | real |        | bin       | norm         | No              | Yes             | per species     | per species         |
-| model_10   |          | real |        | bin       | lnorm        | No              | Yes             | per species     | per species         |
-| model_11   |          | real |        | bin       | norm         | No              | Yes             | per species     | predicted from par1 |
-| model_12   |          | real |        | bin       | lnorm        | No              | Yes             | per species     | predicted from par1 |
-| model_13   |          | real |        | bin       | norm & lnorm | No              | Yes             | per species     | per species         |
-| model_14   |          | real |        | bin       | norm & lnorm | No              | Yes             | per species     | predicted from par1 |
+| model_09   |          | real | 20/774 | bin       | norm         | No              | Yes             | per species     | per species         |
+| model_10   |          | real | 20/774 | bin       | lnorm        | No              | Yes             | per species     | per species         |
+| model_11   |          | real | 20/774 | bin       | norm         | No              | Yes             | per species     | predicted from par1 |
+| model_12   |          | real | 20/774 | bin       | lnorm        | No              | Yes             | per species     | predicted from par1 |
+| model_13   |          | real | 20/774 | bin       | norm & lnorm | No              | Yes             | per species     | per species         |
+| model_14   |          | real | 20/774 | bin       | norm & lnorm | No              | Yes             | per species     | predicted from par1 |
 
 ## Functions
 
@@ -408,6 +408,23 @@ plot_model_binned <- function(stan_model_pars,
                 alpha = 0.3) +
     facet_wrap(as.formula(paste("~", facet_var)), scales = "free") 
   
+}
+
+save_traceplot <- function(model, pars, overwrite = FALSE){
+  
+  filename <- paste0("output/traceplots/", substitute(model), "_", pars, ".png")
+  
+  if(!file.exists(filename) | overwrite) {
+    p <- 
+      model %>% 
+      traceplot(pars = pars)
+    
+    
+    save_plot(filename = filename, 
+              plot = p,
+              base_height = 10)
+  }
+
 }
 
 ```
@@ -850,6 +867,8 @@ if(!file.exists("output/model_fits/model_06.png") | rerun_figures){
 
 ```{r}
 
+if(!file.exists("output/model_fits/model_05_06_plot.png") | rerun_figures){
+
 mod_05_out <- 
     data_obs_count_20spp %>% 
     arrange(species_indx, size_class) %>% 
@@ -908,8 +927,10 @@ mod_05vsmod_06_plot <-
   ggtitle("Normal (blue), lognormal (red)")
 
 save_plot(plot = mod_05vsmod_06_plot, 
-            filename = "output/model_fits/mod_05vsmod_06_plot.png", 
+            filename = "output/model_fits/model_05_06_plot.png", 
             base_height = 10)
+
+}
 
 ```
 
@@ -1224,16 +1245,19 @@ if(!file.exists("output/models/model_07.rds") | rerun_models){
 }
 
 mod_07 <- readRDS("output/models/model_07.rds")
-mod_07_pars <- 
-  extract_pars(stan_model = mod_07)
+mod_07_pars <- extract_pars(stan_model = mod_07)
 
 ```
 
 ### Model checks
 
 ```{r}
-mod_07 %>% traceplot(pars = "mu")
-mod_07 %>% traceplot(pars = "sigma")
+
+save_traceplot(mod_07, "mu")
+save_traceplot(mod_07, "sigma")
+save_traceplot(mod_07, "beta_0")
+save_traceplot(mod_07, "beta_1")
+
 ```
 
 ### Model visualisation
@@ -1283,6 +1307,7 @@ mod_08_stanfile <- "models/model_08.stan"
 
 
 if(!file.exists("output/models/model_08.rds") | rerun_models){
+  
   mod_08 <-
     stan(
       file = mod_08_stanfile,
@@ -1307,8 +1332,10 @@ mod_08_pars <- extract_pars(stan_model = mod_08)
 ### Model checks
 
 ```{r}
-mod_08 %>% traceplot(pars = "meanlog")
-mod_08 %>% traceplot(pars = "sdlog")
+save_traceplot(mod_08, "meanlog")
+save_traceplot(mod_08, "sdlog")
+save_traceplot(mod_08, "beta_0")
+save_traceplot(mod_08, "beta_1")
 ```
 
 
@@ -1386,7 +1413,6 @@ mod_07_allspp_pars <- extract_pars(stan_model = mod_07_allspp)
 
 ```{r mod07-allspp-modelvis}
 
-
 if(!file.exists("output/model_fits/model_07_allspp.png") | rerun_figures){
   
   mod_07_allspp_plot <- 
@@ -1401,8 +1427,6 @@ if(!file.exists("output/model_fits/model_07_allspp.png") | rerun_figures){
             filename = "output/model_fits/model_07_allspp.png", 
             base_height = 10)
 }
-
-
 
 ```
 
@@ -1419,7 +1443,6 @@ The formula for predicting sdlog:
 $$
 \alpha_k = \beta_0 + \beta_1 \cdot \gamma_k
 $$
-
 where $k$ is the species id, and $\alpha$ and $\gamma$ represent meanlog and sdlog. 
 
 ```{r mod08-allspp-modelfit}
@@ -1490,6 +1513,7 @@ mod_09_stanfile <- "models/model_09.stan"
 
 
 if(!file.exists("output/models/model_09.rds") | rerun_models){
+  
   mod_09 <-
     stan(
       file = mod_09_stanfile,
@@ -1510,6 +1534,14 @@ mod_09_pars <- extract_pars(stan_model = mod_09)
 
 ```
 
+### Model checks
+
+```{r}
+save_traceplot(mod_09, "mu")
+save_traceplot(mod_09, "sigma")
+```
+
+
 ### Model visualisation
 
 ```{r mod09-modelvis}
@@ -1519,8 +1551,8 @@ if(!file.exists("output/model_fits/model_09.png") | rerun_figures){
   
   mod_09_plot <- 
     plot_model_binned(
-       stan_model_pars = mod_09_pars %>% filter(species_indx %in% 1:20), 
-      raw_data = data_obs_count_allspp %>% filter(species_indx %in% 1:20),
+       stan_model_pars = mod_09_pars, 
+      raw_data = data_obs_count_20spp,
       dist = "norm", 
       xvar = "size_class", 
       facet_var = "species_name")
@@ -1529,8 +1561,6 @@ if(!file.exists("output/model_fits/model_09.png") | rerun_figures){
             filename = "output/model_fits/model_09.png", 
             base_height = 10)
 }
-
-
 
 ```
 
@@ -1552,6 +1582,7 @@ mod_10_stanfile <- "models/model_10.stan"
 
 
 if(!file.exists("output/models/model_10.rds") | rerun_models){
+  
   mod_10 <-
     stan(
       file = mod_10_stanfile,
@@ -1565,13 +1596,24 @@ if(!file.exists("output/models/model_10.rds") | rerun_models){
     )
   
   saveRDS(mod_10, "output/models/model_10.rds")
+  
+} else {
+  mod_10 <- readRDS("output/models/model_10.rds")
 }
 
-mod_10 <- readRDS("output/models/model_10.rds")
+
 mod_10_pars <- extract_pars(stan_model = mod_10)
 
 ```
 
+### Model checks
+
+```{r}
+
+save_traceplot(mod_10, "meanlog")
+save_traceplot(mod_10, "sdlog")
+
+```
 
 ### Model visualisation
 
@@ -1593,9 +1635,8 @@ if(!file.exists("output/model_fits/model_10.png") | rerun_figures){
             base_height = 10)
 }
 
-
-
 ```
+
 
 
 
@@ -1614,6 +1655,7 @@ mod_11_datalist <- mod_05_datalist
 mod_11_stanfile <- "models/model_11.stan"
 
 if(!file.exists("output/models/model_11.rds") | rerun_models){
+  
   mod_11 <-
     stan(
       file = mod_11_stanfile,
@@ -1627,6 +1669,7 @@ if(!file.exists("output/models/model_11.rds") | rerun_models){
     )
   
   saveRDS(mod_11, "output/models/model_11.rds")
+  
 }
 
 mod_11 <- readRDS("output/models/model_11.rds")
@@ -1634,6 +1677,16 @@ mod_11_pars <- extract_pars(stan_model = mod_11)
 
 ```
 
+### Model checks
+
+```{r}
+
+save_traceplot(mod_11, "mu")
+save_traceplot(mod_11, "sigma")
+save_traceplot(mod_11, "beta_0")
+save_traceplot(mod_11, "beta_1")
+
+```
 
 ### Model visualisation
 
@@ -1644,9 +1697,9 @@ if(!file.exists("output/model_fits/model_11.png") | rerun_figures){
   
   mod_11_plot <- 
     plot_model_binned(
-       stan_model_pars = mod_11_pars %>% filter(species_indx %in% 1:20), 
-      raw_data = data_obs_count_allspp %>% filter(species_indx %in% 1:20),
-      dist = "lnorm", 
+       stan_model_pars = mod_11_pars, 
+      raw_data = data_obs_count_20spp,
+      dist = "norm", 
       xvar = "size_class", 
       facet_var = "species_name")
 
@@ -1675,6 +1728,7 @@ mod_12_datalist <- mod_05_datalist
 mod_12_stanfile <- "models/model_12.stan"
 
 if(!file.exists("output/models/model_12.rds") | rerun_models){
+  
   mod_12 <-
     stan(
       file = mod_12_stanfile,
@@ -1695,6 +1749,19 @@ mod_12_pars <- extract_pars(stan_model = mod_12)
 
 ```
 
+### Model checks
+
+```{r}
+
+traceplot(mod_12, pars = "meanlog")
+traceplot(mod_08, pars = "meanlog")
+traceplot(mod_08, pars = "beta_1")
+
+save_traceplot(mod_12, "sdlog")
+save_traceplot(mod_12, "beta_0")
+save_traceplot(mod_12, "beta_1")
+
+```
 
 ### Model visualisation
 
@@ -1916,8 +1983,6 @@ xx3 <-
 ### Model visualisation
 
 ```{r mod05-vsmod06-modelvis}
-
-
 sum_squares <- 
   xx3 %>% 
   mutate(s_norm = (norm_5-p)^2,

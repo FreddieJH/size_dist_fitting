@@ -53,7 +53,7 @@ model {
 
 generated quantities {
   real sigma[S];
-  for (sp in 1:S) { 
+  for (sp in 1:S) {
     sigma[sp] = exp(ln_sigma[sp]);
   }
 }

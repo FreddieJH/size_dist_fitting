@@ -34,7 +34,7 @@ model {
     for (i in i_min[sp]:i_max[sp]) { // for each species
     
     // probability of NOT being in the first bin (i.e. less than 1.25cm)
-    normalisation_const = 1 - normal_cdf(l[1], meanlog[sp], sdlog[sp]); 
+    normalisation_const = 1 - lognormal_cdf(l[1], meanlog[sp], sdlog[sp]); 
         
       bin_prob = (lognormal_cdf(l[b[i]+1], meanlog[sp], sdlog[sp]) - 
         lognormal_cdf(l[b[i]], meanlog[sp], sdlog[sp]))/normalisation_const; 

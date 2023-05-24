@@ -32,14 +32,13 @@ model {
   for (sp in 1:S) { 
     
     // ln_sigma is easier to predict
-    sigma = exp(beta_0 + (beta_1*mu[sp]));
+    sigma = beta_0 + (beta_1*mu[sp]);
     // within a species, all bins have to come from one or the other dist:
     for (i in i_min[sp]:i_max[sp]) { // for each species
         
       bin_prob = (normal_cdf(l[b[i]+1], mu[sp], sigma) - 
         normal_cdf(l[b[i]], mu[sp], sigma)); 
-        
-        
+
         bin_prob = fmax(1e-8, bin_prob);
 
       // target += n[i]*log(bin_prob); // this is shanes likelihood
@@ -54,7 +53,7 @@ model {
 generated quantities {
   real sigma[S];
   for (sp in 1:S) { 
-    sigma[sp] = exp(beta_0 + (beta_1*mu[sp]));
+    sigma[sp] = beta_0 + (beta_1*mu[sp]);
   }
   
 }

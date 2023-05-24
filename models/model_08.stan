@@ -53,7 +53,7 @@ model {
 
 generated quantities {
   real sdlog[S];
-  for (sp in 1:S) { 
+  for (sp in 1:S) {
     sdlog[sp] = exp(beta_0 + (beta_1*meanlog[sp]));
   }
   
