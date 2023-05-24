@@ -1084,39 +1084,14 @@ traceplot(mod_10_fit, pars = "sdlog")
 
 ```{r mod11-modelfit}
 
-mod_10_data <- mod_05_data
+mod_11_data <- mod_05_data
 
-mod_10_fit  <- run_stanmod("mod_10")
-mod_10_pars <- extract_pars(mod_10_fit)
-plot_mod_fit("mod_10")
+mod_11_fit  <- run_stanmod("mod_11")
+mod_11_pars <- extract_pars(mod_11_fit)
+plot_mod_fit("mod_11")
 
-traceplot(mod_10_fit, pars = "mu")
-traceplot(mod_10_fit, pars = "sigma")
-
-```
-
-
-### Model visualisation
-
-```{r mod11-modelvis}
-
-
-if(!file.exists("output/model_fits/model_11.png") | rerun_figures){
-  
-  mod_11_plot <- 
-    plot_model_binned(
-      stan_model_pars = mod_11_pars %>% filter(species_indx %in% 1:20), 
-      raw_data = data_obs_count_allspp %>% filter(species_indx %in% 1:20),
-      dist = "lnorm", 
-      xvar = "size_class", 
-      facet_var = "species_name")
-  
-  save_plot(plot = mod_11_plot, 
-            filename = "output/model_fits/model_11.png", 
-            base_height = 8)
-}
-
-
+traceplot(mod_11_fit, pars = "mu")
+traceplot(mod_11_fit, pars = "sigma")
 
 ```
 
@@ -1131,56 +1106,16 @@ if(!file.exists("output/model_fits/model_11.png") | rerun_figures){
 
 ```{r mod12-modelfit}
 
-# same input data, and uses model 04
-mod_12_datalist <- mod_05_datalist
-mod_12_stanfile <- "models/model_12.stan"
+mod_11_data <- mod_05_data
 
-if(!file.exists("output/model_fits/model_12.rds") | rerun_models){
-  mod_12 <-
-    stan(
-      file = mod_12_stanfile,
-      data = mod_12_datalist,
-      iter = 2000,
-      warmup = 1000,
-      chains = 3,
-      refresh = 500,
-      seed = 1,
-      cores = 3
-    )
-  
-  saveRDS(mod_12, "output/model_fits/model_12.rds")
-}
+mod_11_fit  <- run_stanmod("mod_11")
+mod_11_pars <- extract_pars(mod_11_fit)
+plot_mod_fit("mod_11")
 
-mod_12 <- readRDS("output/model_fits/model_12.rds")
-mod_12_pars <- extract_pars(stan_model = mod_12)
+traceplot(mod_11_fit, pars = "mu")
+traceplot(mod_11_fit, pars = "sigma")
 
 ```
-
-
-### Model visualisation
-
-```{r mod12-modelvis}
-
-
-if(!file.exists("output/model_fits/model_12.png") | rerun_figures){
-  
-  mod_12_plot <- 
-    plot_model_binned(
-      stan_model_pars = mod_12_pars %>% filter(species_indx %in% 1:20), 
-      raw_data = data_obs_count_allspp %>% filter(species_indx %in% 1:20),
-      dist = "lnorm", 
-      xvar = "size_class", 
-      facet_var = "species_name")
-  
-  save_plot(plot = mod_12_plot, 
-            filename = "output/model_fits/model_12.png", 
-            base_height = 8)
-}
-
-
-
-```
-
 
 
 
