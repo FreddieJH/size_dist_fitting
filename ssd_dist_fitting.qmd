@@ -1113,7 +1113,7 @@ traceplot(mod_11_fit, pars = "sigma")
 
 mod_12_data <- mod_05_data
 
-mod_12_fit  <- run_stanmod("mod_12")
+mod_12_fit  <- run_stanmod("mod_12", overwrite = T)
 mod_12_pars <- extract_pars(mod_12_fit)
 plot_mod_fit("mod_12")
 

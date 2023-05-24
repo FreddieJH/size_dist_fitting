@@ -40,7 +40,7 @@ model {
       
       
     // probability of NOT being in the first bin (i.e. less than 1.25cm)
-    normalisation_const = 1 - normal_cdf(l[1], meanlog[sp], sdlog); 
+    normalisation_const = 1 - lognormal_cdf(l[1], meanlog[sp], sdlog); 
         
       bin_prob = (lognormal_cdf(l[b[i]+1], meanlog[sp], sdlog) - 
         lognormal_cdf(l[b[i]], meanlog[sp], sdlog))/normalisation_const; 
