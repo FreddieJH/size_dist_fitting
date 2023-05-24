@@ -18,6 +18,7 @@ if(!dir.exists("output/model_fits")) dir.create("output/model_fits")
 
 rerun_models  <- FALSE # will take a while
 rerun_figures <- FALSE
+run_largemodels <- FALSE
 ```
 
 # Setup
@@ -775,12 +776,14 @@ We will start by looking only at 20 species
 **Note:** This uses the same stan code as modol_03, which is for the simulated data.
 
 ```{r mod05-modelfit}
+if(run_largemodels){
+  mod_05_allspp_data <- make_datalist(data_obs_count_allspp, data_obs_count_allspp_byspp)
+  
+  mod_05_allspp_fit  <- run_stanmod("mod_05_allspp")
+  mod_05_allspp_pars <- extract_pars(mod_05_allspp_fit)
+  plot_mod_fit("mod_05_allspp")
+}
 
-mod_05_allspp_data <- make_datalist(data_obs_count_allspp, data_obs_count_allspp_byspp)
-
-mod_05_allspp_fit  <- run_stanmod("mod_05_allspp")
-mod_05_allspp_pars <- extract_pars(mod_05_allspp_fit)
-plot_mod_fit("mod_05_allspp")
 
 ```
 
@@ -794,12 +797,14 @@ plot_mod_fit("mod_05_allspp")
 **Parameters:** Per species sdlog, per species meanlog
 
 ```{r mod06-modelfit}
+if(run_largemodels){
+  mod_06_allspp_data <- make_datalist(data_obs_count_allspp, data_obs_count_allspp_byspp)
+  
+  mod_06_allspp_fit  <- run_stanmod("mod_06_allspp")
+  mod_06_allspp_pars <- extract_pars(mod_06_allspp_fit)
+  plot_mod_fit("mod_06_allspp")
+}
 
-mod_06_allspp_data <- make_datalist(data_obs_count_allspp, data_obs_count_allspp_byspp)
-
-mod_06_allspp_fit  <- run_stanmod("mod_06_allspp")
-mod_06_allspp_pars <- extract_pars(mod_06_allspp_fit)
-plot_mod_fit("mod_06_allspp")
 
 
 ```
@@ -807,86 +812,86 @@ plot_mod_fit("mod_06_allspp")
 ## Model 05 vs 06 (700+ species)
 
 ```{r}
-
-mod_05_out <- 
-  data_obs_filtered %>% 
-  arrange(species_indx, size_class) %>% 
-  select(species_name, species_indx, size_class, size_min, size_max, p) %>% 
-  full_join(mod_05_pars,
-            by = join_by(species_indx),
-            multiple = "all", 
-            relationship = "many-to-many") %>% 
-  pivot_wider(names_from = par, 
-              values_from = value)  %>% 
-  mutate(fit = pnorm(size_max, mu, sigma) -  pnorm(size_min, mu, sigma)) %>%  
-  select(species_name, species_indx, size_class, p, quantile, fit) %>% 
-  pivot_wider(names_from = quantile,
-              values_from = fit)
-
-mod_06_out <- 
-  data_obs_filtered %>%  
-  full_join(mod_06_pars,
-            by = join_by(species_indx),
-            multiple = "all", 
-            relationship = "many-to-many") %>% 
-  pivot_wider(names_from = par, 
-              values_from = value)  %>% 
-  mutate(fit = plnorm(size_max, meanlog, sdlog) -  
-           plnorm(size_min, meanlog, sdlog)) %>%  
-  select(species_name, species_indx, size_class, p, quantile, fit) %>% 
-  pivot_wider(names_from = quantile,
-              values_from = fit) 
-
-mod_05vsmod_06_plot <-
-  data_obs_filtered %>% 
-  ggplot() +
-  aes(x = size_class, 
-      y = p) +
-  geom_point() +
-  geom_line() + 
-  geom_point(aes(y = median), 
-             col = "red", 
-             data = mod_06_out) +
-  geom_line(aes(y = median), 
-            col = "red", 
-            data = mod_06_out) +
-  geom_ribbon(aes(ymin = q5,
-                  ymax = q95),
-              fill = "red",
-              alpha = 0.5, 
+if(run_largemodels){
+  mod_05_out <- 
+    data_obs_filtered %>% 
+    arrange(species_indx, size_class) %>% 
+    select(species_name, species_indx, size_class, size_min, size_max, p) %>% 
+    full_join(mod_05_pars,
+              by = join_by(species_indx),
+              multiple = "all", 
+              relationship = "many-to-many") %>% 
+    pivot_wider(names_from = par, 
+                values_from = value)  %>% 
+    mutate(fit = pnorm(size_max, mu, sigma) -  pnorm(size_min, mu, sigma)) %>%  
+    select(species_name, species_indx, size_class, p, quantile, fit) %>% 
+    pivot_wider(names_from = quantile,
+                values_from = fit)
+  
+  mod_06_out <- 
+    data_obs_filtered %>%  
+    full_join(mod_06_pars,
+              by = join_by(species_indx),
+              multiple = "all", 
+              relationship = "many-to-many") %>% 
+    pivot_wider(names_from = par, 
+                values_from = value)  %>% 
+    mutate(fit = plnorm(size_max, meanlog, sdlog) -  
+             plnorm(size_min, meanlog, sdlog)) %>%  
+    select(species_name, species_indx, size_class, p, quantile, fit) %>% 
+    pivot_wider(names_from = quantile,
+                values_from = fit) 
+  
+  mod_05vsmod_06_plot <-
+    data_obs_filtered %>% 
+    ggplot() +
+    aes(x = size_class, 
+        y = p) +
+    geom_point() +
+    geom_line() + 
+    geom_point(aes(y = median), 
+               col = "red", 
+               data = mod_06_out) +
+    geom_line(aes(y = median), 
+              col = "red", 
               data = mod_06_out) +
-  geom_point(aes(y = median), 
-             col = "blue", 
-             data = mod_05_out) +
-  geom_line(aes(y = median), 
-            col = "blue", 
-            data = mod_05_out) +
-  geom_ribbon(aes(ymin = q5,
-                  ymax = q95),
-              fill = "blue",
-              alpha = 0.5, 
+    geom_ribbon(aes(ymin = q5,
+                    ymax = q95),
+                fill = "red",
+                alpha = 0.5, 
+                data = mod_06_out) +
+    geom_point(aes(y = median), 
+               col = "blue", 
+               data = mod_05_out) +
+    geom_line(aes(y = median), 
+              col = "blue", 
               data = mod_05_out) +
-  facet_wrap(~species_name, scales = "free") +
-  ggtitle("Normal (blue), lognormal (red)")
-
-save_plot(plot = mod_05vsmod_06_plot, 
-          filename = "output/model_fits/mod_05vsmod_06_plot.png", 
-          base_height = 8)
-
+    geom_ribbon(aes(ymin = q5,
+                    ymax = q95),
+                fill = "blue",
+                alpha = 0.5, 
+                data = mod_05_out) +
+    facet_wrap(~species_name, scales = "free") +
+    ggtitle("Normal (blue), lognormal (red)")
+  
+  save_plot(plot = mod_05vsmod_06_plot, 
+            filename = "output/model_fits/mod_05vsmod_06_plot.png", 
+            base_height = 8)
+}
 ```
 
 ### Sum of squares
 
 ```{r}
 
-sum_squares <- 
-  xx3 %>% 
-  mutate(s_norm = (norm_5-p)^2,
-         s_lognorm = (lognorm_5-p)^2) %>% 
-  summarise(ss_norm = sum(s_norm), 
-            ss_lognorm = sum(s_lognorm), 
-            .by = "species_name") %>% 
-  mutate(q = ss_norm/(ss_norm + ss_lognorm)) 
+# sum_squares <- 
+#   xx3 %>% 
+#   mutate(s_norm = (norm_5-p)^2,
+#          s_lognorm = (lognorm_5-p)^2) %>% 
+#   summarise(ss_norm = sum(s_norm), 
+#             ss_lognorm = sum(s_lognorm), 
+#             .by = "species_name") %>% 
+#   mutate(q = ss_norm/(ss_norm + ss_lognorm)) 
 
 ```
 
@@ -894,8 +899,8 @@ sum_squares <-
 
 ```{r}
 
-mod_05_pars %>% 
-  ggplot(aes(x = mu, 
+mod_05_pars %>%
+  ggplot(aes(x = mu,
              y = sigma)) +
   geom_point() +
   stat_smooth()
@@ -991,16 +996,16 @@ $$
 where $k$ is the species id. 
 
 ```{r mod07-allspp-modelfit}
-
-mod_07_allspp_data <- mod_05_allspp_data
-
-mod_07_allspp_fit  <- run_stanmod("mod_07_allspp")
-mod_07_allspp_pars <- extract_pars(mod_07_allspp_fit)
-plot_mod_fit("mod_07_allspp")
-
-traceplot(mod_07_allspp_fit, pars = "mu")
-traceplot(mod_07_allspp_fit, pars = "sigma")
-
+if(run_largemodels){
+  mod_07_allspp_data <- mod_05_allspp_data
+  
+  mod_07_allspp_fit  <- run_stanmod("mod_07_allspp")
+  mod_07_allspp_pars <- extract_pars(mod_07_allspp_fit)
+  plot_mod_fit("mod_07_allspp")
+  
+  traceplot(mod_07_allspp_fit, pars = "mu")
+  traceplot(mod_07_allspp_fit, pars = "sigma")
+}
 ```
 
 ## Model 08 (774 species)
@@ -1020,16 +1025,16 @@ $$
 where $k$ is the species id, and $\alpha$ and $\gamma$ represent meanlog and sdlog. 
 
 ```{r mod08-allspp-modelfit}
-
-mod_08_allspp_data <- mod_05_allspp_data
-
-mod_08_allspp_fit  <- run_stanmod("mod_08_allspp")
-mod_08_allspp_pars <- extract_pars(mod_08_allspp_fit)
-plot_mod_fit("mod_08_allspp")
-
-traceplot(mod_08_allspp_fit, pars = "mu")
-traceplot(mod_08_allspp_fit, pars = "sigma")
-
+if(run_largemodels){
+  mod_08_allspp_data <- mod_05_allspp_data
+  
+  mod_08_allspp_fit  <- run_stanmod("mod_08_allspp")
+  mod_08_allspp_pars <- extract_pars(mod_08_allspp_fit)
+  plot_mod_fit("mod_08_allspp")
+  
+  traceplot(mod_08_allspp_fit, pars = "mu")
+  traceplot(mod_08_allspp_fit, pars = "sigma")
+}
 ```
 
 ## Model 09 (20 species)
@@ -1112,8 +1117,8 @@ mod_12_fit  <- run_stanmod("mod_12")
 mod_12_pars <- extract_pars(mod_12_fit)
 plot_mod_fit("mod_12")
 
-traceplot(mod_12_fit, pars = "mu")
-traceplot(mod_12_fit, pars = "sigma")
+traceplot(mod_12_fit, pars = "meanlog")
+traceplot(mod_12_fit, pars = "sdlog")
 
 ```
 

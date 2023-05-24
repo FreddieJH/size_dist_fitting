@@ -11,11 +11,11 @@ data {
   int<lower=0>         n[I];     // fish in the bin
 }
 parameters {
-  real<lower = -10, upper = 10> meanlog[S]; // mean size for each species
+  real<lower = -4, upper = 8> meanlog[S]; // mean size for each species
   // real<lower = 0, upper = 5> sdlog[S]; // standard deviation for each species
   
-  real<lower = -30, upper = 30> beta_0;
-  real<lower = -30, upper = 30> beta_1;
+  real<lower = -3, upper = 3> beta_0;
+  real<lower = -0.05, upper = 0.05> beta_1;
 }
 
 model {
@@ -53,4 +53,13 @@ model {
     
   }
 
+}
+
+
+generated quantities {
+  real sdlog[S];
+  for (sp in 1:S) { 
+    sdlog[sp] = beta_0 + (beta_1*meanlog[sp]);
+  }
+  
 }
