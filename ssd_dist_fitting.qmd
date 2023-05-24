@@ -12,6 +12,10 @@ knitr::opts_chunk$set(
   message = FALSE
 )
 
+
+if(!dir.exists("output")) dir.create("output")
+if(!dir.exists("output/model_fits")) dir.create("output/model_fits")
+
 rerun_models  <- FALSE # will take a while
 rerun_figures <- FALSE
 ```
@@ -53,7 +57,7 @@ rls_bin_table <-
     size_min = (size_class + lag(size_class))/2,
     size_max = lead(size_min)
   ) %>% 
-    filter(size_class %in% c(rls_bin_breaks, 500))
+  filter(size_class %in% c(rls_bin_breaks, 500))
 
 species_list <- data_obs %>% pull(species_name) %>% unique()
 
@@ -81,6 +85,58 @@ data_obs_sample <- read_parquet("data/data_obs_cleaned_sample.parquet")
 
 ```
 
+## Data wrangling
+
+```{r data-wrangling}
+
+data_obs_count_allspp <- 
+  data_obs %>% 
+  count(species_name, size_class) %>% 
+  left_join(species_indx_table, by = join_by(species_name)) %>% 
+  left_join(rls_bin_table, by = join_by(size_class)) %>% 
+  add_count(species_indx, wt = n, name = "totaln_spp") %>% 
+  arrange(species_indx, size_indx) %>%
+  mutate(p = n/totaln_spp) %>% 
+  mutate(row = 1:n()) %>% 
+  mutate(min_row = min(row), 
+         max_row = max(row),
+         .by = species_indx) 
+
+data_obs_count_allspp_byspp <-
+  data_obs_count_allspp %>% 
+  select(species_indx, 
+         totaln_spp, 
+         min_row, 
+         max_row) %>% 
+  distinct() %>% 
+  arrange(species_indx)
+
+
+data_obs_count_20spp <- 
+  data_obs_sample %>% 
+  count(species_name, species_indx, size_class) %>% 
+  left_join(rls_bin_table, by = join_by(size_class)) %>% 
+  add_count(species_indx, wt = n, name = "totaln_spp") %>% 
+  arrange(species_indx, size_indx) %>%
+  mutate(p = n/totaln_spp) %>% 
+  mutate(row = 1:n()) %>% 
+  mutate(min_row = min(row), 
+         max_row = max(row),
+         .by = species_indx) 
+
+data_obs_count_20spp_byspp <-
+  data_obs_count_20spp %>% 
+  select(species_indx, 
+         totaln_spp, 
+         min_row, 
+         max_row) %>% 
+  distinct() %>% 
+  arrange(species_indx)
+
+
+```
+
+
 ## Data simulation
 
 ```{r data-simulation}
@@ -102,7 +158,7 @@ for(i in 1:sim_n_spp){
   
   # is odd number?
   if(is_odd(i)) {
-     xx <- 
+    xx <- 
       tibble(num = 1:sim_n_reps) %>% 
       mutate(mean = rlnorm(1, 2.45, 0.78), 
              sd =  0.09687 + mean*0.33557) %>% 
@@ -113,10 +169,10 @@ for(i in 1:sim_n_spp){
       mutate(species_name = paste0("spp_", species_indx)) %>% 
       filter(size_class_raw > 1.25) %>% 
       mutate(size_class = rls_bin(size_class_raw)) %>% 
-        select(-num)
+      select(-num)
   } else {
-        xx <- 
-       tibble(num = 1:sim_n_reps) %>% 
+    xx <- 
+      tibble(num = 1:sim_n_reps) %>% 
       mutate(mean = rlnorm(1, 1.5, 0.1), 
              sd =  rlnorm(1, 0.5, 0.1)) %>% 
       mutate(size_class_raw = rlnorm(n = sim_n_reps, 
@@ -126,9 +182,9 @@ for(i in 1:sim_n_spp){
       mutate(species_name = paste0("spp_", species_indx)) %>% 
       filter(size_class_raw > 1.25) %>% 
       mutate(size_class = rls_bin(size_class_raw)) %>% 
-        select(-num)
+      select(-num)
   }
-
+  
   data_out <- bind_rows(data_out, xx)
 }
 
@@ -136,6 +192,29 @@ data_sim <-
   data_out %>% 
   left_join(rls_bin_table %>% select(size_class, size_indx),
             by = join_by(size_class)) 
+
+# For binned simulated data
+data_sim_count <-
+  data_sim %>% 
+  count(species_indx, 
+        size_class, 
+        size_indx) %>% 
+  left_join(rls_bin_table, 
+            by = join_by(size_class, size_indx)) %>% 
+  add_count(species_indx, wt = n, name = "totaln_spp") %>% 
+  mutate(p = n/totaln_spp) %>% 
+  mutate(row = 1:n()) %>% 
+  mutate(min_row = min(row), 
+         max_row = max(row),
+         .by = species_indx)
+
+data_sim_byspp <-
+  data_sim_count %>% 
+  select(species_indx, 
+         totaln_spp, 
+         min_row, 
+         max_row) %>% 
+  distinct()
 
 ```
 
@@ -161,7 +240,7 @@ if(!file.exists("output/data_figs/ssd_obs_20spp.png") | rerun_figures){
   
   save_plot(plot = p, 
             filename = "output/data_figs/ssd_obs_20spp.png", 
-            base_height = 10)
+            base_height = 8)
   
 }
 
@@ -182,7 +261,7 @@ if(!file.exists("output/data_figs/ssd_obs_20spp_log.png") | rerun_figures){
   
   save_plot(plot = p, 
             filename = "output/data_figs/ssd_obs_20spp_log.png", 
-            base_height = 10)
+            base_height = 8)
   
 }
 
@@ -196,18 +275,18 @@ if(!file.exists("output/data_figs/ssd_sim_20spp.png") | rerun_figures){
   
   p <-
     data_sim %>% 
-  count(species_indx, size_class) %>% 
-  ggplot() +
-	geom_point(mapping = aes(x = size_class, y = n)) +
-	geom_line(mapping = aes(x = size_class, y = n)) +
-	facet_wrap( ~ species_indx, scales = "free") +
-	labs(x = "Fish length (cm)",  
-	     y = "Fish abundance") +
-	theme_bw() 
+    count(species_indx, size_class) %>% 
+    ggplot() +
+    geom_point(mapping = aes(x = size_class, y = n)) +
+    geom_line(mapping = aes(x = size_class, y = n)) +
+    facet_wrap( ~ species_indx, scales = "free") +
+    labs(x = "Fish length (cm)",  
+         y = "Fish abundance") +
+    theme_bw() 
   
   save_plot(plot = p, 
             filename = "output/data_figs/ssd_sim_20spp.png", 
-            base_height = 10)
+            base_height = 8)
   
 }
 
@@ -215,20 +294,20 @@ if(!file.exists("output/data_figs/ssd_sim_20spp_log.png") | rerun_figures){
   
   p <- 
     data_sim %>% 
-  count(species_indx, size_class) %>% 
-  ggplot() +
-	geom_point(mapping = aes(x = size_class, y = n)) +
-	geom_line(mapping = aes(x = size_class, y = n)) +
-	facet_wrap( ~ species_indx, scales = "free") +
-  scale_y_log10() +
-  scale_x_log10() +
-	labs(x = "Log Fish length (cm)",  
-	     y = "Log Fish abundance") +
-	theme_bw()
+    count(species_indx, size_class) %>% 
+    ggplot() +
+    geom_point(mapping = aes(x = size_class, y = n)) +
+    geom_line(mapping = aes(x = size_class, y = n)) +
+    facet_wrap( ~ species_indx, scales = "free") +
+    scale_y_log10() +
+    scale_x_log10() +
+    labs(x = "Log Fish length (cm)",  
+         y = "Log Fish abundance") +
+    theme_bw()
   
   save_plot(plot = p, 
             filename = "output/data_figs/ssd_sim_20spp_log.png", 
-            base_height = 10)
+            base_height = 8)
   
 }
 
@@ -251,72 +330,48 @@ I want to create the following models:
 | model_06   | model_04 | real | 20/774 | bin       | lnorm        | No              | No              | per species     | per species         |
 | model_07   | model_07 | real | 20/774 | bin       | norm         | No              | No              | per species     | predicted from par1 |
 | model_08   | model_08 | real | 20/774 | bin       | lnorm        | No              | No              | per species     | predicted from par1 |
-| model_09   |          | real | 20/774 | bin       | norm         | No              | Yes             | per species     | per species         |
-| model_10   |          | real | 20/774 | bin       | lnorm        | No              | Yes             | per species     | per species         |
-| model_11   |          | real | 20/774 | bin       | norm         | No              | Yes             | per species     | predicted from par1 |
-| model_12   |          | real | 20/774 | bin       | lnorm        | No              | Yes             | per species     | predicted from par1 |
-| model_13   |          | real | 20/774 | bin       | norm & lnorm | No              | Yes             | per species     | per species         |
-| model_14   |          | real | 20/774 | bin       | norm & lnorm | No              | Yes             | per species     | predicted from par1 |
+| model_09   |          | real |        | bin       | norm         | No              | Yes             | per species     | per species         |
+| model_10   |          | real |        | bin       | lnorm        | No              | Yes             | per species     | per species         |
+| model_11   |          | real |        | bin       | norm         | No              | Yes             | per species     | predicted from par1 |
+| model_12   |          | real |        | bin       | lnorm        | No              | Yes             | per species     | predicted from par1 |
+| model_13   |          | real |        | bin       | norm & lnorm | No              | Yes             | per species     | per species         |
+| model_14   |          | real |        | bin       | norm & lnorm | No              | Yes             | per species     | predicted from par1 |
+
+
+```{r}
+
+mods_summary <-
+  tribble(
+    ~model_name, ~stan_file, ~data, ~data_type, ~data_source, ~varname, ~n_species, ~distribution, ~bin_correction, ~location_par, ~variance_par,
+    "mod_01", "mod_01", "sim", "continuous", "data_sim", "size_class_raw", 20, "norm", "No", "per species", "per species",
+    "mod_02", "mod_02",  "sim", "continuous", "data_sim", "size_class_raw", 20, "lnorm", "No", "per species", "per species",
+    "mod_03", "mod_03", "sim", "binned",  "data_sim_count", "size_class", 20, "norm", "No", "per species", "per species",
+    "mod_04", "mod_04",  "sim", "binned", "data_sim_count", "size_class", 20, "lnorm", "No", "per species", "per species",
+    "mod_05", "mod_03", "real", "binned",  "data_obs_count_20spp", "size_class", 20, "norm", "No", "per species", "per species",
+    "mod_06", "mod_04",  "real", "binned", "data_obs_count_20spp", "size_class", 20, "lnorm", "No", "per species", "per species",
+    "mod_05_allspp", "mod_03", "real", "binned",  "data_obs_count_allspp", "size_class", 774, "norm", "No", "per species", "per species",
+    "mod_06_allspp", "mod_04",  "real", "binned", "data_obs_count_allspp", "size_class", 774, "lnorm", "No", "per species", "per species",
+    "mod_07", "mod_07", "real", "binned",  "data_obs_count_20spp", "size_class", 20, "norm", "No", "per species", "predicted from par1",
+    "mod_08", "mod_08",  "real", "binned", "data_obs_count_20spp", "size_class", 20, "lnorm", "No", "per species", "predicted from par1",
+    "mod_07_allspp", "mod_07", "real", "binned",  "data_obs_count_allspp", "size_class", 774, "norm", "No", "per species", "predicted from par1",
+    "mod_08_allspp", "mod_08",  "real", "binned", "data_obs_count_allspp", "size_class", 774, "lnorm", "No", "per species", "predicted from par1",
+    "mod_09", "mod_09", "real", "binned",  "data_obs_count_20spp", "size_class", 20, "norm", "Yes", "per species", "per species",
+    "mod_10", "mod_10",  "real", "binned", "data_obs_count_20spp", "size_class", 20, "lnorm", "Yes", "per species", "per species",
+    "mod_09_allspp", "mod_09", "real", "binned",  "data_obs_count_allspp", "size_class", 774, "norm", "Yes", "per species", "per species",
+    "mod_10_allspp", "mod_10",  "real", "binned", "data_obs_count_allspp", "size_class", 774, "lnorm", "Yes", "per species", "per species",
+    "mod_11", "mod_11", "real", "binned",  "data_obs_count_20spp", "size_class", 20, "norm", "Yes", "per species", "predicted from par1",
+    "mod_12", "mod_12",  "real", "binned", "data_obs_count_20spp", "size_class", 20, "lnorm", "Yes", "per species", "predicted from par1",
+    "mod_11_allspp", "mod_11", "real", "binned",  "data_obs_count_allspp", "size_class", 774, "norm", "Yes", "per species", "predicted from par1",
+    "mod_12_allspp", "mod_12",  "real", "binned", "data_obs_count_allspp", "size_class", 774, "lnorm", "Yes", "per species", "predicted from par1",
+  )
+
+```
+
 
 ## Functions
 
 ```{r modelling-functions}
 
-# extract parameters from a stan model in a tidy way
-extract_pars <- function(stan_model#, 
-                         # pars, 
-                         # per_spp = TRUE
-                         ){
-  
-  stan_model %>% 
-  summarise_draws() %>% 
-  mutate(species_indx = str_extract(variable, "(?<=\\[)\\d*(?=\\])") %>% as.numeric()) %>% 
-  mutate(parameter = str_remove(variable, "\\[\\d*\\]")) %>% 
-  filter(!str_detect(parameter, "ln_")) %>% # transformed from generated quantities
-  filter(parameter != "lp__") %>% 
-  select(species_indx, 
-         parameter, 
-         median,
-         q5, 
-         q95) %>% 
-    drop_na(species_indx) %>% 
-  pivot_wider(values_from = median:q95,
-              names_from = parameter) %>% 
-    pivot_longer(cols = contains(c("median_", "q5_", "q95_")), 
-                 names_to = c("quantile", "parameter"),
-                 names_pattern = "(.*?)_(.*)") %>% # non-greedy
-    pivot_wider(values_from = value, 
-                names_from = parameter)
-  # 
-  # if(per_spp){
-  #   var_sym <- 
-  #     paste0("c(", paste(pars, collapse = ", "), ")[species_indx]") %>% 
-  #     rlang::parse_expr()
-  # } else {
-  #   var_sym <- 
-  #     paste0("c(", paste(pars, collapse = ", "), ")")%>% 
-  #     rlang::parse_expr()
-  # }
-  # 
-  # stan_model %>% 
-  #   spread_draws(!!var_sym) %>% 
-  #   ungroup() %>% 
-  #   pivot_longer(cols = all_of(pars), 
-  #                names_to = "par") %>% 
-  #   mutate(value = case_when(str_detect(par, "ln_") ~ exp(value),
-  #                            TRUE ~ value), 
-  #          par = case_when(str_detect(par, "ln_") ~ str_remove(par, "ln_"),
-  #                            TRUE ~ par)) %>% 
-  #   summarise(quantile_025 = quantile(value, 0.025), 
-  #             quantile_5 = quantile(value, 0.500), 
-  #             quantile_975 = quantile(value, 0.975), 
-  #             .by = c(species_indx, par)) %>% 
-  #   pivot_longer(cols = contains("quantile"), 
-  #                names_prefix = "quantile_", 
-  #                values_to = "value", 
-  #                names_to = "quantile",
-  #                names_transform = \(x) as.numeric(paste0("0.", x)))
-}
 
 # make the stan datalist for models 03 and 04
 make_datalist <- function(count_data, spplevel_data){
@@ -331,22 +386,121 @@ make_datalist <- function(count_data, spplevel_data){
     s = count_data$species_indx,
     b = count_data$size_indx,
     n = count_data$n
-)
+  )
 }
 
+run_stanmod <- function(mod_name, overwrite = FALSE){
+  
+  stanfile <-
+    mods_summary %>% 
+    filter(model_name == mod_name)  %>% 
+    pull(stan_file) %>% 
+    paste0("models/", ., ".stan")
+  
+  datalist <- eval(parse(text = paste0(mod_name, "_data")))
+  filename <- paste0("output/model_fits/", mod_name, ".rds")
+  
+  if(!file.exists(filename) | overwrite){
+    
+    mod_fit <-
+      stan(
+        file = stanfile,
+        data = datalist,
+        iter = 2000,
+        warmup = 1000,
+        chains = 3,
+        refresh = 500,
+        seed = 1,
+        cores = 3
+      )
+    
+    saveRDS(mod_fit, filename)
+  } else {
+    mod_fit <- readRDS(filename)
+  }
+  return(mod_fit)
+}
+
+
+# extract parameters from a stan model in a tidy way
+extract_pars <- function(stan_model){
+  
+  stan_model %>% 
+    summarise_draws() %>% 
+    mutate(species_indx = str_extract(variable, "(?<=\\[)\\d*(?=\\])") %>% as.numeric()) %>% 
+    mutate(parameter = str_remove(variable, "\\[\\d*\\]")) %>% 
+    filter(!str_detect(parameter, "ln_")) %>% # transformed from generated quantities
+    filter(parameter != "lp__") %>% 
+    select(species_indx, 
+           parameter, 
+           median,
+           q5, 
+           q95) %>% 
+    drop_na(species_indx) %>% 
+    pivot_wider(values_from = median:q95,
+                names_from = parameter) %>% 
+    pivot_longer(cols = contains(c("median_", "q5_", "q95_")), 
+                 names_to = c("quantile", "parameter"),
+                 names_pattern = "(.*?)_(.*)") %>% # non-greedy
+    pivot_wider(values_from = value, 
+                names_from = parameter)
+}
+
+
+plot_mod_fit <- function(mod_name, overwrite = FALSE){
+  
+  filename <- paste0("output/model_plots/", mod_name, ".png")
+  mod_pars <- eval(parse(text = paste0(mod_name, "_pars")))
+  rawdata <- eval(parse(text = mods_summary %>% filter(model_name == mod_name)  %>% pull(data_source)))
+  dist <- mods_summary %>% filter(model_name == mod_name)  %>% pull(distribution)
+  xvar <- mods_summary %>% filter(model_name == mod_name)  %>% pull(varname)
+  data_type <- mods_summary %>% filter(model_name == mod_name)  %>% pull(data_type)
+  facet_name <- 
+    ifelse(
+      mods_summary %>% filter(model_name == mod_name)  %>% pull(data) == "real", 
+      "species_name", 
+      "species_indx"
+    )
+  
+  if(!file.exists(filename) | overwrite){
+    
+    if(data_type == "continuous"){
+      mod_plot <- 
+        plot_model_continuous(stan_model_pars = mod_pars, 
+                              raw_data = rawdata,
+                              dist = dist, 
+                              xvar = xvar, 
+                              facet_var = facet_name)
+    }
+    
+    if(data_type == "binned"){
+      mod_plot <- 
+        plot_model_binned(stan_model_pars = mod_pars, 
+                          raw_data = rawdata,
+                          dist = dist, 
+                          xvar = xvar, 
+                          facet_var = facet_name)
+    }
+    
+    save_plot(plot = mod_plot, 
+              filename = filename, 
+              base_height = 8)
+  }
+  
+}
 
 
 # plot a stan model fit to continuous body size (i.e. simulated data)
 plot_model_continuous <- function(stan_model_pars, 
-                       raw_data,  
-                       dist = "norm", 
-                       xvar = "size_class_raw"){
+                                  raw_data,  
+                                  dist, 
+                                  xvar, 
+                                  facet_var = "species_indx"  ){
   
   raw_data %>% 
     full_join(stan_model_pars,
               by = join_by(species_indx),
-              multiple = "all", 
-              relationship = "many-to-many")  %>% 
+              multiple = "all")  %>% 
     {if(dist == "norm") mutate(., 
                                fit = dnorm(!!sym(xvar), 
                                            mu, sigma)) else .} %>% 
@@ -361,27 +515,26 @@ plot_model_continuous <- function(stan_model_pars,
     geom_density() +
     geom_line(aes(y = median), 
               col = "red",
-                alpha = 0.3) +
+              alpha = 0.3) +
     geom_ribbon(aes(ymin = q5,
                     ymax = q95),
                 fill = "red",
                 alpha = 0.3) +
-    facet_wrap(~species_indx, scales = "free") 
+    facet_wrap(s.formula(paste("~", facet_var)), scales = "free") 
   
 }
 
 # plot a stan model fit to binned body size (e.g. RLS data)
 plot_model_binned <- function(stan_model_pars, 
-                       raw_data,  
-                       dist = "norm", 
-                       xvar = "size_class", 
-                       facet_var = "species_indx"){
+                              raw_data,  
+                              dist, 
+                              xvar, 
+                              facet_var = "species_indx"){
   
   raw_data %>% 
     full_join(stan_model_pars,
               by = join_by(species_indx),
-              multiple = "all", 
-              relationship = "many-to-many")  %>% 
+              multiple = "all")  %>% 
     {if(dist == "norm") mutate(., 
                                fit = pnorm(size_max, mu,sigma) -  
                                  pnorm(size_min, mu, sigma)) else .} %>% 
@@ -391,40 +544,23 @@ plot_model_binned <- function(stan_model_pars,
     select(!!sym(facet_var), !!sym(xvar), quantile, p, fit) %>% 
     pivot_wider(names_from = quantile,
                 values_from = fit) %>%
-   ggplot() +
+    ggplot() +
     aes(x = !!sym(xvar), 
         y = p) +
     geom_point() +
     geom_line() + 
     geom_point(aes(y = median), 
-              col = "red",
-                alpha = 0.3) +
+               col = "red",
+               alpha = 0.3) +
     geom_line(aes(y = median), 
               col = "red",
-                alpha = 0.3) +
+              alpha = 0.3) +
     geom_ribbon(aes(ymin = q5,
                     ymax = q95),
                 fill = "red",
                 alpha = 0.3) +
     facet_wrap(as.formula(paste("~", facet_var)), scales = "free") 
   
-}
-
-save_traceplot <- function(model, pars, overwrite = FALSE){
-  
-  filename <- paste0("output/traceplots/", substitute(model), "_", pars, ".png")
-  
-  if(!file.exists(filename) | overwrite) {
-    p <- 
-      model %>% 
-      traceplot(pars = pars)
-    
-    
-    save_plot(filename = filename, 
-              plot = p,
-              base_height = 10)
-  }
-
 }
 
 ```
@@ -437,58 +573,23 @@ save_traceplot <- function(model, pars, overwrite = FALSE){
 
 **Parameters:** Per species sigma, per species mu
 
-
-### Modelling
-
 ```{r mod01-modelfit}
 
-mod01_datalist <- 
+mod_01_data <- 
   list(
     n = nrow(data_sim),
     n_species = max(data_sim$species_indx),
     species_id = data_sim$species_indx,
     y = data_sim$size_class_raw
-)
+  )
 
-if(!file.exists("output/models/model_01.rds") | rerun_models){
-  mod_01 <-
-    stan(
-      file = 'models/model_01.stan',
-      data = mod01_datalist,
-      iter = 2000,
-      warmup = 1000,
-      chains = 3,
-      refresh = 500,
-      seed = 1,
-      cores = 3
-    )
-  
-  saveRDS(mod_01, "output/models/model_01.rds")
-}
 
-mod_01 <- readRDS("output/models/model_01.rds")
-mod_01_pars <- extract_pars(stan_model = mod_01)
+mod_01_fit  <- run_stanmod("mod_01")
+mod_01_pars <- extract_pars(mod_01_fit)
+plot_mod_fit("mod_01")
 
 ```
 
-### Fit visualisation
-
-```{r mod01-modelvis}
-
-if(!file.exists("output/model_fits/model_01.png") | rerun_figures){
-  
-  mod_01_plot <- 
-    plot_model_continuous(stan_model_pars = mod_01_pars, 
-               raw_data = data_sim,
-               dist = "norm", 
-               xvar = "size_class_raw")
-
-  save_plot(plot = mod_01_plot, 
-            filename = "output/model_fits/model_01.png", 
-            base_height = 10)
-}
-
-```
 
 ## Model 02 (20 species)
 
@@ -499,57 +600,13 @@ if(!file.exists("output/model_fits/model_01.png") | rerun_figures){
 **Parameters:** Per species sdlog, per species meanlog
 
 
-### Modelling
-
 ```{r mod02-modelfit}
 
-mod_02_datalist <- 
-  list(
-    n = nrow(data_sim),
-    n_species = max(data_sim$species_indx),
-    species_id = data_sim$species_indx,
-    y = data_sim$size_class_raw
-)
+mod_02_data <- mod_01_data
 
-if(!file.exists("output/models/model_02.rds") | rerun_models){
-  mod_02 <-
-    stan(
-      file = 'models/model_02.stan',
-      data = mod_02_datalist,
-      iter = 2000,
-      warmup = 1000,
-      chains = 3,
-      refresh = 500,
-      seed = 1,
-      cores = 3
-    )
-  
-  saveRDS(mod_02, "output/models/model_02.rds")
-}
-
-mod_02 <- readRDS("output/models/model_02.rds")
-mod_02_pars <- extract_pars(stan_model = mod_02)
-
-```
-
-### Model visualisation
-
-```{r mod02-modelvis}
-
-
-if(!file.exists("output/model_fits/model_02.png") | rerun_figures){
-  
-  mod_02_plot <- 
-    plot_model_continuous(stan_model_pars = mod_02_pars, 
-               raw_data = data_sim,
-               dist = "lnorm", 
-               xvar = "size_class_raw")
-
-  save_plot(plot = mod_02_plot, 
-            filename = "output/model_fits/model_02.png", 
-            base_height = 10)
-}
-
+mod_02_fit  <- run_stanmod("mod_02")
+mod_02_pars <- extract_pars(mod_02_fit)
+plot_mod_fit("mod_02")
 
 ```
 
@@ -561,84 +618,13 @@ if(!file.exists("output/model_fits/model_02.png") | rerun_figures){
 
 **Parameters:** Per species sigma, per species mu
 
-### Model data wrangling
-
-```{r mod03-datawrangling}
-
-data_sim_count <-
-  data_sim %>% 
-  count(species_indx, 
-         size_class, 
-         size_indx) %>% 
-  left_join(rls_bin_table, 
-            by = join_by(size_class, size_indx)) %>% 
-  add_count(species_indx, wt = n, name = "totaln_spp") %>% 
-  mutate(p = n/totaln_spp) %>% 
-  mutate(row = 1:n()) %>% 
-    mutate(min_row = min(row), 
-           max_row = max(row),
-           .by = species_indx)
-
-data_sim_byspp <-
-  data_sim_count %>% 
-  select(species_indx, 
-         totaln_spp, 
-         min_row, 
-         max_row) %>% 
-  distinct()
-  
-```
-
-
-### Modelling
-
 ```{r mod03-modelfit}
 
-mod_03_datalist <- make_datalist(data_sim_count, data_sim_byspp)
-mod_03_stanfile <- "models/model_03.stan"
+mod_03_data <- make_datalist(data_sim_count, data_sim_byspp)
 
-
-if(!file.exists("output/models/model_03.rds") | rerun_models){
-  mod_03 <-
-    stan(
-      file = mod_03_stanfile,
-      data = mod_03_datalist,
-      iter = 2000,
-      warmup = 1000,
-      chains = 3,
-      refresh = 500,
-      seed = 1,
-      cores = 3
-    )
-  
-  saveRDS(mod_03, "output/models/model_03.rds")
-}
-
-mod_03 <- readRDS("output/models/model_03.rds")
-mod_03_pars <- extract_pars(stan_model = mod_03)
-
-```
-
-
-### Model visualisation
-
-```{r mod03-modelvis}
-
-if(!file.exists("output/model_fits/model_03.png") | rerun_figures){
-  
-  mod_03_plot <- 
-    plot_model_binned(
-      stan_model_pars = mod_03_pars, 
-               raw_data = data_sim_count,
-               dist = "norm", 
-               xvar = "size_class", 
-               facet_var = "species_indx")
-
-  save_plot(plot = mod_03_plot, 
-            filename = "output/model_fits/model_03.png", 
-            base_height = 10)
-}
-
+mod_03_fit  <- run_stanmod("mod_03")
+mod_03_pars <- extract_pars(mod_03_fit)
+plot_mod_fit("mod_03")
 
 ```
 
@@ -650,59 +636,17 @@ if(!file.exists("output/model_fits/model_03.png") | rerun_figures){
 
 **Parameters:** Per species sdlog, per species meanlog
 
-
-### Modelling
-
 ```{r mod04-modelfit}
 
 # same input data
-mod_04_datalist <- mod_03_datalist
-mod_04_stanfile <- "models/model_04.stan"
+mod_04_data <- mod_03_data
 
-if(!file.exists("output/models/model_04.rds") | rerun_models){
-  mod_04 <-
-    stan(
-      file = mod_04_stanfile,
-      data = mod_04_datalist,
-      iter = 2000,
-      warmup = 1000,
-      chains = 3,
-      refresh = 500,
-      seed = 1,
-      cores = 3
-    )
-  
-  saveRDS(mod_04, "output/models/model_04.rds")
-}
-
-mod_04 <- readRDS("output/models/model_04.rds")
-mod_04_pars <- extract_pars(stan_model = mod_04)
+mod_04_fit  <- run_stanmod("mod_04")
+mod_04_pars <- extract_pars(mod_04_fit)
+plot_mod_fit("mod_04")
 
 ```
 
-
-### Model visualisation
-
-```{r mod04-modelvis}
-
-
-if(!file.exists("output/model_fits/model_04.png") | rerun_figures){
-  
-  mod_04_plot <- 
-    plot_model_binned(
-      stan_model_pars = mod_04_pars, 
-               raw_data = data_sim_count,
-               dist = "lnorm", 
-               xvar = "size_class", 
-               facet_var = "species_indx")
-
-  save_plot(plot = mod_04_plot, 
-            filename = "output/model_fits/model_04.png", 
-            base_height = 10)
-}
-
-
-```
 
 ## Model 05 (20 species)
 
@@ -714,87 +658,23 @@ if(!file.exists("output/model_fits/model_04.png") | rerun_figures){
 
 We will start by looking only at 20 species
 
-**Note:** This uses the same stan code as modol_03, which is for the simulated data.
-
-```{r mod5-datawrangling}
-
-data_obs_count_20spp <- 
-  data_obs_sample %>% 
-  count(species_name, species_indx, size_class) %>% 
-  left_join(rls_bin_table, by = join_by(size_class)) %>% 
-  add_count(species_indx, wt = n, name = "totaln_spp") %>% 
-  arrange(species_indx, size_indx) %>%
-   mutate(p = n/totaln_spp) %>% 
-  mutate(row = 1:n()) %>% 
-    mutate(min_row = min(row), 
-           max_row = max(row),
-           .by = species_indx) 
-
-data_obs_count_20spp_byspp <-
-  data_obs_count_20spp %>% 
-  select(species_indx, 
-         totaln_spp, 
-         min_row, 
-         max_row) %>% 
-  distinct() %>% 
-  arrange(species_indx)
-
-
-```
-
-
-### Modelling
+**Note:** This uses the same stan code as model_03, which is for the simulated data.
 
 ```{r mod05-modelfit}
 
-mod_05_datalist <- make_datalist(data_obs_count_20spp, data_obs_count_20spp_byspp)
-# uses the model 03 stan code
-mod_05_stanfile <- "models/model_03.stan"
+# same input data
+mod_05_data <- make_datalist(data_obs_count_20spp, data_obs_count_20spp_byspp)
 
-if(!file.exists("output/models/model_05.rds") | rerun_models){
-  
-  mod_05 <-
-    stan(
-      file = mod_05_stanfile,
-      data = mod_05_datalist,
-      iter = 2000,
-      warmup = 1000,
-      chains = 3,
-      refresh = 500,
-      seed = 1,
-      cores = 3
-    )
-  
-  saveRDS(mod_05, "output/models/model_05.rds")
-}
+mod_05_fit  <- run_stanmod("mod_05")
+mod_05_pars <- extract_pars(mod_05_fit)
+plot_mod_fit("mod_05")
 
-mod_05 <- readRDS("output/models/model_05.rds")
-mod_05_pars <- extract_pars(stan_model = mod_05)
-
-```
-
-### Model visualisation
-
-```{r mod05-modelvis}
-
-
-if(!file.exists("output/model_fits/model_05.png") | rerun_figures){
-  
-  mod_05_plot <- 
-    plot_model_binned(
-      stan_model_pars = mod_05_pars, 
-      raw_data = data_obs_count_20spp,
-      dist = "norm", 
-      xvar = "size_class", 
-      facet_var = "species_name"
-      )
-
-  save_plot(plot = mod_05_plot, 
-            filename = "output/model_fits/model_05.png", 
-            base_height = 10)
-}
-
-
+mod_05_pars %>% 
+  ggplot() +
+  aes(x = mu, 
+      y = sigma %>% sqrt()) +
+  geom_point() +
+  stat_smooth()
 
 ```
 
@@ -807,130 +687,78 @@ if(!file.exists("output/model_fits/model_05.png") | rerun_figures){
 **Parameters:** Per species sdlog, per species meanlog
 
 
-### Modelling
-
 ```{r mod06-modelfit}
+# same input data
+mod_06_data <- mod_05_data
 
-# same input data, and uses model 04
-mod_06_datalist <- mod_05_datalist
-mod_06_stanfile <- "models/model_04.stan"
-
-if(!file.exists("output/models/model_06.rds") | rerun_models){
-  mod_06 <-
-    stan(
-      file = mod_06_stanfile,
-      data = mod_06_datalist,
-      iter = 2000,
-      warmup = 1000,
-      chains = 3,
-      refresh = 500,
-      seed = 1,
-      cores = 3
-    )
-  
-  saveRDS(mod_06, "output/models/model_06.rds")
-}
-
-mod_06 <- readRDS("output/models/model_06.rds")
-mod_06_pars <- extract_pars(stan_model = mod_06)
-
+mod_06_fit  <- run_stanmod("mod_06")
+mod_06_pars <- extract_pars(mod_06_fit)
+plot_mod_fit("mod_06")
 
 ```
 
-### Model visualisation
-
-```{r mod06-modelvis}
-
-
-if(!file.exists("output/model_fits/model_06.png") | rerun_figures){
-  
-  mod_06_plot <- 
-    plot_model_binned(
-      stan_model_pars = mod_06_pars, 
-      raw_data = data_obs_count_20spp,
-      dist = "lnorm", 
-      xvar = "size_class", 
-      facet_var = "species_name")
-
-  save_plot(plot = mod_06_plot, 
-            filename = "output/model_fits/model_06.png", 
-            base_height = 10)
-}
-
-
-
-```
-
-## Model 5 vs 6 (20 species)
-
-### Model visualisation
+## Model 05 vs 06 (20 species)
 
 ```{r}
 
-if(!file.exists("output/model_fits/model_05_06_plot.png") | rerun_figures){
-
 mod_05_out <- 
-    data_obs_count_20spp %>% 
-    arrange(species_indx, size_class) %>% 
-    select(species_name, species_indx, size_class, size_min, size_max, p) %>% 
-    full_join(mod_05_pars,
-              by = join_by(species_indx),
-              multiple = "all", 
-              relationship = "many-to-many") %>% 
-    mutate(fit = pnorm(size_max, mu, sigma) -  pnorm(size_min, mu, sigma)) %>%  
-    select(species_name, species_indx, size_class, p, quantile, fit) %>% 
-    pivot_wider(names_from = quantile,
-                values_from = fit)
+  data_obs_count_20spp %>% 
+  arrange(species_indx, size_class) %>% 
+  select(species_name, species_indx, size_class, size_min, size_max, p) %>% 
+  full_join(mod_05_pars,
+            by = join_by(species_indx),
+            multiple = "all") %>% 
+  mutate(fit = pnorm(size_max, mu, sigma) -  pnorm(size_min, mu, sigma)) %>%  
+  select(species_name, species_indx, size_class, p, quantile, fit) %>% 
+  pivot_wider(names_from = quantile,
+              values_from = fit)
 
 mod_06_out <- 
- data_obs_count_20spp %>%  
-    full_join(mod_06_pars,
-              by = join_by(species_indx),
-              multiple = "all", 
-              relationship = "many-to-many") %>% 
-    mutate(fit = plnorm(size_max, meanlog, sdlog) -  
-             plnorm(size_min, meanlog, sdlog)) %>%  
-    select(species_name, species_indx, size_class, p, quantile, fit) %>% 
-    pivot_wider(names_from = quantile,
-                values_from = fit) 
+  data_obs_count_20spp %>%  
+  full_join(mod_06_pars,
+            by = join_by(species_indx),
+            multiple = "all") %>% 
+  mutate(fit = plnorm(size_max, meanlog, sdlog) -  
+           plnorm(size_min, meanlog, sdlog)) %>%  
+  select(species_name, species_indx, size_class, p, quantile, fit) %>% 
+  pivot_wider(names_from = quantile,
+              values_from = fit) 
 
 mod_05vsmod_06_plot <-
   data_obs_count_20spp %>% 
   ggplot() +
-    aes(x = size_class, 
-        y = p) +
-    geom_point() +
-    geom_line() + 
-    geom_point(aes(y = median), 
-              col = "red", 
-                data = mod_06_out) +
-    geom_line(aes(y = median), 
-              col = "red", 
-                data = mod_06_out) +
-    geom_ribbon(aes(ymin = q5,
-                    ymax = q95),
-                fill = "red",
-                alpha = 0.5, 
-                data = mod_06_out) +
-      geom_point(aes(y = median), 
-              col = "blue", 
-                data = mod_05_out) +
-    geom_line(aes(y = median), 
-              col = "blue", 
-                data = mod_05_out) +
-    geom_ribbon(aes(ymin = q5,
-                    ymax = q95),
-                fill = "blue",
-                alpha = 0.5, 
-                data = mod_05_out) +
-    facet_wrap(~species_name, scales = "free") +
+  aes(x = size_class, 
+      y = p) +
+  geom_point() +
+  geom_line() + 
+  geom_point(aes(y = median), 
+             col = "red", 
+             data = mod_06_out) +
+  geom_line(aes(y = median), 
+            col = "red", 
+            data = mod_06_out) +
+  geom_ribbon(aes(ymin = q5,
+                  ymax = q95),
+              fill = "red",
+              alpha = 0.5, 
+              data = mod_06_out) +
+  geom_point(aes(y = median), 
+             col = "blue", 
+             data = mod_05_out) +
+  geom_line(aes(y = median), 
+            col = "blue", 
+            data = mod_05_out) +
+  geom_ribbon(aes(ymin = q5,
+                  ymax = q95),
+              fill = "blue",
+              alpha = 0.5, 
+              data = mod_05_out) +
+  facet_wrap(~species_name, scales = "free") +
   ggtitle("Normal (blue), lognormal (red)")
 
 save_plot(plot = mod_05vsmod_06_plot, 
-            filename = "output/model_fits/model_05_06_plot.png", 
-            base_height = 10)
-
-}
+          filename = "output/model_plots/mod_05vsmod_06_plot.png", 
+          base_height = 8)
 
 ```
 
@@ -946,89 +774,16 @@ We will start by looking only at 20 species
 
 **Note:** This uses the same stan code as modol_03, which is for the simulated data.
 
-```{r mod5-allspp-datawrangling}
-
-data_obs_count_allspp <- 
-  data_obs %>% 
-  count(species_name, size_class) %>% 
-  left_join(species_indx_table, by = join_by(species_name)) %>% 
-  left_join(rls_bin_table, by = join_by(size_class)) %>% 
-  add_count(species_indx, wt = n, name = "totaln_spp") %>% 
-  arrange(species_indx, size_indx) %>%
-  mutate(p = n/totaln_spp) %>% 
-  mutate(row = 1:n()) %>% 
-  mutate(min_row = min(row), 
-         max_row = max(row),
-         .by = species_indx) 
-
-data_obs_count_allspp_byspp <-
-  data_obs_count_allspp %>% 
-  select(species_indx, 
-         totaln_spp, 
-         min_row, 
-         max_row) %>% 
-  distinct() %>% 
-  arrange(species_indx)
-
-
-
-```
-
-
-### Modelling
-
 ```{r mod05-modelfit}
 
-mod_05_allspp_datalist <- make_datalist(data_obs_count_allspp, data_obs_count_allspp_byspp)
-# uses the model 03 stan code
-mod_05_allspp_stanfile <- "models/model_03.stan"
+mod_05_allspp_data <- make_datalist(data_obs_count_allspp, data_obs_count_allspp_byspp)
 
-if(!file.exists("output/models/model_05_allspp.rds") | rerun_models){
-  
-  mod_05_allspp <-
-    stan(
-      file = mod_05_allspp_stanfile,
-      data = mod_05_allspp_datalist,
-      iter = 2000,
-      warmup = 1000,
-      chains = 3,
-      refresh = 500,
-      seed = 1,
-      cores = 3
-    )
-  
-  saveRDS(mod_05_allspp, "output/models/model_05_allspp.rds")
-}
-
-mod_05_allspp <- readRDS("output/models/model_05_allspp.rds")
-mod_05_allspp_pars <- extract_pars(stan_model = mod_05_allspp)
+mod_05_allspp_fit  <- run_stanmod("mod_05_allspp")
+mod_05_allspp_pars <- extract_pars(mod_05_allspp_fit)
+plot_mod_fit("mod_05_allspp")
 
 ```
 
-### Model visualisation
-
-```{r mod05-modelvis}
-
-
-if(!file.exists("output/model_fits/model_05_allspp.png") | rerun_figures){
-  
-  mod_05_allspp_plot <- 
-    plot_model_binned(
-      stan_model_pars = mod_05_allspp_pars %>% filter(species_indx %in% 1:20), 
-      raw_data = data_obs_count_allspp %>% filter(species_indx %in% 1:20),
-      dist = "norm", 
-      xvar = "size_class", 
-      facet_var = "species_name"
-      )
-
-  save_plot(plot = mod_05_allspp_plot, 
-            filename = "output/model_fits/model_05_allspp.png", 
-            base_height = 10)
-}
-
-
-
-```
 
 ## Model 06 (700+ species)
 
@@ -1040,128 +795,83 @@ if(!file.exists("output/model_fits/model_05_allspp.png") | rerun_figures){
 
 ```{r mod06-modelfit}
 
-# same input data, and uses model 04
-mod_06_allspp_datalist <- mod_05_allspp_datalist
-mod_06_allspp_stanfile <- "models/model_04.stan"
+mod_06_allspp_data <- make_datalist(data_obs_count_allspp, data_obs_count_allspp_byspp)
 
-
-if(!file.exists("output/models/model_06_allspp.rds") | rerun_models){
-  mod_06_allspp <-
-    stan(
-      file = mod_06_allspp_stanfile,
-      data = mod_06_allspp_datalist,
-      iter = 2000,
-      warmup = 1000,
-      chains = 3,
-      refresh = 500,
-      seed = 1,
-      cores = 3
-    )
-  
-  saveRDS(mod_06_allspp, "output/models/model_06_allspp.rds")
-}
-
-mod_06_allspp <- readRDS("output/models/model_06_allspp.rds")
-mod_06_allspp_pars <- extract_pars(stan_model = mod_06_allspp)
-
+mod_06_allspp_fit  <- run_stanmod("mod_06_allspp")
+mod_06_allspp_pars <- extract_pars(mod_06_allspp_fit)
+plot_mod_fit("mod_06_allspp")
 
 
 ```
 
-### Model visualisation
-
-```{r mod06-modelvis}
-
-
-if(!file.exists("output/model_fits/model_06_allspp.png") | rerun_figures){
-  
-  mod_06_allspp_plot <- 
-    plot_model_binned(
-       stan_model_pars = mod_06_allspp_pars2 %>% filter(species_indx %in% 1:20), 
-      raw_data = data_obs_count_allspp %>% filter(species_indx %in% 1:20),
-      dist = "lnorm", 
-      xvar = "size_class", 
-      facet_var = "species_name")
-
-  save_plot(plot = mod_06_allspp_plot, 
-            filename = "output/model_fits/model_06_allspp.png", 
-            base_height = 10)
-}
-
-
-
-```
-
-## Model 5 vs 6 (700+ species)
-
-### Model comparison plots
+## Model 05 vs 06 (700+ species)
 
 ```{r}
 
 mod_05_out <- 
-    data_obs_filtered %>% 
-    arrange(species_indx, size_class) %>% 
-    select(species_name, species_indx, size_class, size_min, size_max, p) %>% 
-    full_join(mod_05_pars,
-              by = join_by(species_indx),
-              multiple = "all", 
-              relationship = "many-to-many") %>% 
-    pivot_wider(names_from = par, 
-                values_from = value)  %>% 
-    mutate(fit = pnorm(size_max, mu, sigma) -  pnorm(size_min, mu, sigma)) %>%  
-    select(species_name, species_indx, size_class, p, quantile, fit) %>% 
-    pivot_wider(names_from = quantile,
-                values_from = fit)
+  data_obs_filtered %>% 
+  arrange(species_indx, size_class) %>% 
+  select(species_name, species_indx, size_class, size_min, size_max, p) %>% 
+  full_join(mod_05_pars,
+            by = join_by(species_indx),
+            multiple = "all", 
+            relationship = "many-to-many") %>% 
+  pivot_wider(names_from = par, 
+              values_from = value)  %>% 
+  mutate(fit = pnorm(size_max, mu, sigma) -  pnorm(size_min, mu, sigma)) %>%  
+  select(species_name, species_indx, size_class, p, quantile, fit) %>% 
+  pivot_wider(names_from = quantile,
+              values_from = fit)
 
 mod_06_out <- 
- data_obs_filtered %>%  
-    full_join(mod_06_pars,
-              by = join_by(species_indx),
-              multiple = "all", 
-              relationship = "many-to-many") %>% 
-    pivot_wider(names_from = par, 
-                values_from = value)  %>% 
-    mutate(fit = plnorm(size_max, meanlog, sdlog) -  
-             plnorm(size_min, meanlog, sdlog)) %>%  
-    select(species_name, species_indx, size_class, p, quantile, fit) %>% 
-    pivot_wider(names_from = quantile,
-                values_from = fit) 
+  data_obs_filtered %>%  
+  full_join(mod_06_pars,
+            by = join_by(species_indx),
+            multiple = "all", 
+            relationship = "many-to-many") %>% 
+  pivot_wider(names_from = par, 
+              values_from = value)  %>% 
+  mutate(fit = plnorm(size_max, meanlog, sdlog) -  
+           plnorm(size_min, meanlog, sdlog)) %>%  
+  select(species_name, species_indx, size_class, p, quantile, fit) %>% 
+  pivot_wider(names_from = quantile,
+              values_from = fit) 
 
 mod_05vsmod_06_plot <-
   data_obs_filtered %>% 
   ggplot() +
-    aes(x = size_class, 
-        y = p) +
-    geom_point() +
-    geom_line() + 
-    geom_point(aes(y = median), 
-              col = "red", 
-                data = mod_06_out) +
-    geom_line(aes(y = median), 
-              col = "red", 
-                data = mod_06_out) +
-    geom_ribbon(aes(ymin = q5,
-                    ymax = q95),
-                fill = "red",
-                alpha = 0.5, 
-                data = mod_06_out) +
-      geom_point(aes(y = median), 
-              col = "blue", 
-                data = mod_05_out) +
-    geom_line(aes(y = median), 
-              col = "blue", 
-                data = mod_05_out) +
-    geom_ribbon(aes(ymin = q5,
-                    ymax = q95),
-                fill = "blue",
-                alpha = 0.5, 
-                data = mod_05_out) +
-    facet_wrap(~species_name, scales = "free") +
+  aes(x = size_class, 
+      y = p) +
+  geom_point() +
+  geom_line() + 
+  geom_point(aes(y = median), 
+             col = "red", 
+             data = mod_06_out) +
+  geom_line(aes(y = median), 
+            col = "red", 
+            data = mod_06_out) +
+  geom_ribbon(aes(ymin = q5,
+                  ymax = q95),
+              fill = "red",
+              alpha = 0.5, 
+              data = mod_06_out) +
+  geom_point(aes(y = median), 
+             col = "blue", 
+             data = mod_05_out) +
+  geom_line(aes(y = median), 
+            col = "blue", 
+            data = mod_05_out) +
+  geom_ribbon(aes(ymin = q5,
+                  ymax = q95),
+              fill = "blue",
+              alpha = 0.5, 
+              data = mod_05_out) +
+  facet_wrap(~species_name, scales = "free") +
   ggtitle("Normal (blue), lognormal (red)")
 
 save_plot(plot = mod_05vsmod_06_plot, 
-            filename = "output/model_fits/mod_05vsmod_06_plot.png", 
-            base_height = 10)
+          filename = "output/model_fits/mod_05vsmod_06_plot.png", 
+          base_height = 8)
 
 ```
 
@@ -1223,63 +933,14 @@ where $k$ is the species id.
 
 ```{r mod07-modelfit}
 
-# same input data, and uses model 04
-mod_07_datalist <- mod_05_datalist
-mod_07_stanfile <- "models/model_07.stan"
+mod_07_data <- mod_05_data
 
+mod_07_fit  <- run_stanmod("mod_07")
+mod_07_pars <- extract_pars(mod_07_fit)
+plot_mod_fit("mod_07")
 
-if(!file.exists("output/models/model_07.rds") | rerun_models){
-  mod_07 <-
-    stan(
-      file = mod_07_stanfile,
-      data = mod_07_datalist,
-      iter = 2000,
-      warmup = 1000,
-      chains = 3,
-      refresh = 500,
-      seed = 1,
-      cores = 3
-    )
-  
-  saveRDS(mod_07, "output/models/model_07.rds")
-}
-
-mod_07 <- readRDS("output/models/model_07.rds")
-mod_07_pars <- extract_pars(stan_model = mod_07)
-
-```
-
-### Model checks
-
-```{r}
-
-save_traceplot(mod_07, "mu")
-save_traceplot(mod_07, "sigma")
-save_traceplot(mod_07, "beta_0")
-save_traceplot(mod_07, "beta_1")
-
-```
-
-### Model visualisation
-
-```{r mod07-modelvis}
-
-if(!file.exists("output/model_fits/model_07.png") | rerun_figures){
-  
-  mod_07_plot <- 
-    plot_model_binned(
-       stan_model_pars = mod_07_pars, 
-      raw_data = data_obs_count_20spp,
-      dist = "norm", 
-      xvar = "size_class", 
-      facet_var = "species_name")
-
-  save_plot(plot = mod_07_plot, 
-            filename = "output/model_fits/model_07.png", 
-            base_height = 10)
-}
-
-
+traceplot(mod_07_fit, pars = "mu")
+traceplot(mod_07_fit, pars = "sigma")
 
 ```
 
@@ -1301,64 +962,14 @@ where $k$ is the species id, and $\alpha$ and $\gamma$ represent meanlog and sdl
 
 ```{r mod08-modelfit}
 
-# same input data, and uses model 04
-mod_08_datalist <- mod_05_datalist
-mod_08_stanfile <- "models/model_08.stan"
+mod_08_data <- mod_05_data
 
+mod_08_fit  <- run_stanmod("mod_08")
+mod_08_pars <- extract_pars(mod_08_fit)
+plot_mod_fit("mod_08")
 
-if(!file.exists("output/models/model_08.rds") | rerun_models){
-  
-  mod_08 <-
-    stan(
-      file = mod_08_stanfile,
-      data = mod_08_datalist,
-      iter = 2000,
-      warmup = 1000,
-      chains = 3,
-      refresh = 500,
-      seed = 1,
-      cores = 3
-    )
-  
-  saveRDS(mod_08, "output/models/model_08.rds")
-}
-
-mod_08 <- readRDS("output/models/model_08.rds")
-mod_08_pars <- extract_pars(stan_model = mod_08)
-
-
-```
-
-### Model checks
-
-```{r}
-save_traceplot(mod_08, "meanlog")
-save_traceplot(mod_08, "sdlog")
-save_traceplot(mod_08, "beta_0")
-save_traceplot(mod_08, "beta_1")
-```
-
-
-### Model visualisation
-
-```{r mod08-modelvis}
-
-
-if(!file.exists("output/model_fits/model_08.png") | rerun_figures){
-  
-  mod_08_plot <- 
-    plot_model_binned(
-       stan_model_pars = mod_08_pars, 
-      raw_data = data_obs_count_20spp,
-      dist = "lnorm", 
-      xvar = "size_class", 
-      facet_var = "species_name")
-
-  save_plot(plot = mod_08_plot, 
-            filename = "output/model_fits/model_08.png", 
-            base_height = 10)
-}
-
+traceplot(mod_08_fit, pars = "meanlog")
+traceplot(mod_08_fit, pars = "sdlog")
 ```
 
 
@@ -1381,52 +992,14 @@ where $k$ is the species id.
 
 ```{r mod07-allspp-modelfit}
 
-# same input data, and uses model 04
-mod_07_allspp_datalist <- mod_05_allspp_datalist
-mod_07_allspp_stanfile <- "models/model_07.stan"
+mod_07_allspp_data <- mod_05_allspp_data
 
+mod_07_allspp_fit  <- run_stanmod("mod_07_allspp")
+mod_07_allspp_pars <- extract_pars(mod_07_allspp_fit)
+plot_mod_fit("mod_07_allspp")
 
-if(!file.exists("output/models/model_07.rds") | rerun_models){
-  mod_07_allspp <-
-    stan(
-      file = mod_07_allspp_stanfile,
-      data = mod_07_allspp_datalist,
-      iter = 2000,
-      warmup = 1000,
-      chains = 3,
-      refresh = 500,
-      seed = 1,
-      cores = 3
-    )
-  
-  saveRDS(mod_07_allspp, "output/models/model_07_allspp.rds")
-}
-
-mod_07_allspp <- readRDS("output/models/model_07_allspp.rds")
-mod_07_allspp_pars <- extract_pars(stan_model = mod_07_allspp)
-
-
-```
-
-
-### Model visualisation
-
-```{r mod07-allspp-modelvis}
-
-if(!file.exists("output/model_fits/model_07_allspp.png") | rerun_figures){
-  
-  mod_07_allspp_plot <- 
-    plot_model_binned(
-       stan_model_pars = mod_07_allspp_pars %>% filter(species_indx %in% 1:20), 
-      raw_data = data_obs_count_allspp %>% filter(species_indx %in% 1:20),
-      dist = "norm", 
-      xvar = "size_class", 
-      facet_var = "species_name")
-
-  save_plot(plot = mod_07_allspp_plot, 
-            filename = "output/model_fits/model_07_allspp.png", 
-            base_height = 10)
-}
+traceplot(mod_07_allspp_fit, pars = "mu")
+traceplot(mod_07_allspp_fit, pars = "sigma")
 
 ```
 
@@ -1443,59 +1016,21 @@ The formula for predicting sdlog:
 $$
 \alpha_k = \beta_0 + \beta_1 \cdot \gamma_k
 $$
+
 where $k$ is the species id, and $\alpha$ and $\gamma$ represent meanlog and sdlog. 
 
 ```{r mod08-allspp-modelfit}
 
-# same input data, and uses model 04
-mod_08_allspp_datalist <- mod_05_allspp_datalist
-mod_08_allspp_stanfile <- "models/model_08.stan"
+mod_08_allspp_data <- mod_05_allspp_data
 
+mod_08_allspp_fit  <- run_stanmod("mod_08_allspp")
+mod_08_allspp_pars <- extract_pars(mod_08_allspp_fit)
+plot_mod_fit("mod_08_allspp")
 
-if(!file.exists("output/models/model_allspp_08.rds") | rerun_models){
-  mod_08_allspp <-
-    stan(
-      file = mod_08_allspp_stanfile,
-      data = mod_08_allspp_datalist,
-      iter = 2000,
-      warmup = 1000,
-      chains = 3,
-      refresh = 500,
-      seed = 1,
-      cores = 3
-    )
-  
-  saveRDS(mod_08_allspp, "output/models/model_08_allspp.rds")
-}
-
-mod_08_allspp <- readRDS("output/models/model_08_allspp.rds")
-mod_08_pars <- extract_pars(stan_model = mod_08)
-
+traceplot(mod_08_allspp_fit, pars = "mu")
+traceplot(mod_08_allspp_fit, pars = "sigma")
 
 ```
-
-### Model visualisation
-
-```{r mod08-allspp-modelvis}
-
-
-if(!file.exists("output/model_fits/model_08_allspp.png") | rerun_figures){
-  
-  mod_08_allspp_plot <- 
-    plot_model_binned(
-       stan_model_pars = mod_08_allspp_pars %>% filter(species_indx %in% 1:20), 
-      raw_data = data_obs_count_allspp %>% filter(species_indx %in% 1:20),
-      dist = "lnorm", 
-      xvar = "size_class", 
-      facet_var = "species_name")
-
-  save_plot(plot = mod_08_allspp_plot, 
-            filename = "output/model_fits/model_08_allspp.png", 
-            base_height = 10)
-}
-
-```
-
 
 ## Model 09 (20 species)
 
@@ -1507,64 +1042,16 @@ if(!file.exists("output/model_fits/model_08_allspp.png") | rerun_figures){
 
 ```{r mod09-modelfit}
 
-# same input data, and uses model 04
-mod_09_datalist <- mod_05_datalist
-mod_09_stanfile <- "models/model_09.stan"
+mod_09_data <- mod_05_data
 
+mod_09_fit  <- run_stanmod("mod_09")
+mod_09_pars <- extract_pars(mod_09_fit)
+plot_mod_fit("mod_09")
 
-if(!file.exists("output/models/model_09.rds") | rerun_models){
-  
-  mod_09 <-
-    stan(
-      file = mod_09_stanfile,
-      data = mod_09_datalist,
-      iter = 2000,
-      warmup = 1000,
-      chains = 3,
-      refresh = 500,
-      seed = 1,
-      cores = 3
-    )
-  
-  saveRDS(mod_09, "output/models/model_09.rds")
-}
-
-mod_09 <- readRDS("output/models/model_09.rds")
-mod_09_pars <- extract_pars(stan_model = mod_09)
+traceplot(mod_09_fit, pars = "mu")
+traceplot(mod_09_fit, pars = "sigma")
 
 ```
-
-### Model checks
-
-```{r}
-save_traceplot(mod_09, "mu")
-save_traceplot(mod_09, "sigma")
-```
-
-
-### Model visualisation
-
-```{r mod09-modelvis}
-
-
-if(!file.exists("output/model_fits/model_09.png") | rerun_figures){
-  
-  mod_09_plot <- 
-    plot_model_binned(
-       stan_model_pars = mod_09_pars, 
-      raw_data = data_obs_count_20spp,
-      dist = "norm", 
-      xvar = "size_class", 
-      facet_var = "species_name")
-
-  save_plot(plot = mod_09_plot, 
-            filename = "output/model_fits/model_09.png", 
-            base_height = 10)
-}
-
-```
-
-
 
 ## Model 10 (20 species)
 
@@ -1576,69 +1063,16 @@ if(!file.exists("output/model_fits/model_09.png") | rerun_figures){
 
 ```{r mod10-modelfit}
 
-# same input data, and uses model 04
-mod_10_datalist <- mod_05_datalist
-mod_10_stanfile <- "models/model_10.stan"
+mod_10_data <- mod_05_data
 
+mod_10_fit  <- run_stanmod("mod_10", overwrite = T)
+mod_10_pars <- extract_pars(mod_10_fit)
+plot_mod_fit("mod_10")
 
-if(!file.exists("output/models/model_10.rds") | rerun_models){
-  
-  mod_10 <-
-    stan(
-      file = mod_10_stanfile,
-      data = mod_10_datalist,
-      iter = 2000,
-      warmup = 1000,
-      chains = 3,
-      refresh = 500,
-      seed = 1,
-      cores = 3
-    )
-  
-  saveRDS(mod_10, "output/models/model_10.rds")
-  
-} else {
-  mod_10 <- readRDS("output/models/model_10.rds")
-}
-
-
-mod_10_pars <- extract_pars(stan_model = mod_10)
+traceplot(mod_10_fit, pars = "meanlog")
+traceplot(mod_10_fit, pars = "sdlog")
 
 ```
-
-### Model checks
-
-```{r}
-
-save_traceplot(mod_10, "meanlog")
-save_traceplot(mod_10, "sdlog")
-
-```
-
-### Model visualisation
-
-```{r mod10-modelvis}
-
-
-if(!file.exists("output/model_fits/model_10.png") | rerun_figures){
-  
-  mod_10_plot <- 
-    plot_model_binned(
-       stan_model_pars = mod_10_pars %>% filter(species_indx %in% 1:20), 
-      raw_data = data_obs_count_allspp %>% filter(species_indx %in% 1:20),
-      dist = "lnorm", 
-      xvar = "size_class", 
-      facet_var = "species_name")
-
-  save_plot(plot = mod_10_plot, 
-            filename = "output/model_fits/model_10.png", 
-            base_height = 10)
-}
-
-```
-
-
-
 
 ## Model 11 (20 species)
 
@@ -1650,65 +1084,14 @@ if(!file.exists("output/model_fits/model_10.png") | rerun_figures){
 
 ```{r mod11-modelfit}
 
-# same input data, and uses model 04
-mod_11_datalist <- mod_05_datalist
-mod_11_stanfile <- "models/model_11.stan"
+mod_11_data <- mod_05_data
 
-if(!file.exists("output/models/model_11.rds") | rerun_models){
-  
-  mod_11 <-
-    stan(
-      file = mod_11_stanfile,
-      data = mod_11_datalist,
-      iter = 2000,
-      warmup = 1000,
-      chains = 3,
-      refresh = 500,
-      seed = 1,
-      cores = 3
-    )
-  
-  saveRDS(mod_11, "output/models/model_11.rds")
-  
-}
+mod_11_fit  <- run_stanmod("mod_11", overwrite = T)
+mod_11_pars <- extract_pars(mod_11_fit)
+plot_mod_fit("mod_11")
 
-mod_11 <- readRDS("output/models/model_11.rds")
-mod_11_pars <- extract_pars(stan_model = mod_11)
-
-```
-
-### Model checks
-
-```{r}
-
-save_traceplot(mod_11, "mu")
-save_traceplot(mod_11, "sigma")
-save_traceplot(mod_11, "beta_0")
-save_traceplot(mod_11, "beta_1")
-
-```
-
-### Model visualisation
-
-```{r mod11-modelvis}
-
-
-if(!file.exists("output/model_fits/model_11.png") | rerun_figures){
-  
-  mod_11_plot <- 
-    plot_model_binned(
-       stan_model_pars = mod_11_pars, 
-      raw_data = data_obs_count_20spp,
-      dist = "norm", 
-      xvar = "size_class", 
-      facet_var = "species_name")
-
-  save_plot(plot = mod_11_plot, 
-            filename = "output/model_fits/model_11.png", 
-            base_height = 10)
-}
-
-
+traceplot(mod_11_fit, pars = "mu")
+traceplot(mod_11_fit, pars = "sigma")
 
 ```
 
@@ -1723,70 +1106,16 @@ if(!file.exists("output/model_fits/model_11.png") | rerun_figures){
 
 ```{r mod12-modelfit}
 
-# same input data, and uses model 04
-mod_12_datalist <- mod_05_datalist
-mod_12_stanfile <- "models/model_12.stan"
+mod_12_data <- mod_05_data
 
-if(!file.exists("output/models/model_12.rds") | rerun_models){
-  
-  mod_12 <-
-    stan(
-      file = mod_12_stanfile,
-      data = mod_12_datalist,
-      iter = 2000,
-      warmup = 1000,
-      chains = 3,
-      refresh = 500,
-      seed = 1,
-      cores = 3
-    )
-  
-  saveRDS(mod_12, "output/models/model_12.rds")
-}
+mod_12_fit  <- run_stanmod("mod_12")
+mod_12_pars <- extract_pars(mod_12_fit)
+plot_mod_fit("mod_12")
 
-mod_12 <- readRDS("output/models/model_12.rds")
-mod_12_pars <- extract_pars(stan_model = mod_12)
+traceplot(mod_12_fit, pars = "mu")
+traceplot(mod_12_fit, pars = "sigma")
 
 ```
-
-### Model checks
-
-```{r}
-
-traceplot(mod_12, pars = "meanlog")
-traceplot(mod_08, pars = "meanlog")
-traceplot(mod_08, pars = "beta_1")
-
-save_traceplot(mod_12, "sdlog")
-save_traceplot(mod_12, "beta_0")
-save_traceplot(mod_12, "beta_1")
-
-```
-
-### Model visualisation
-
-```{r mod12-modelvis}
-
-
-if(!file.exists("output/model_fits/model_12.png") | rerun_figures){
-  
-  mod_12_plot <- 
-    plot_model_binned(
-       stan_model_pars = mod_12_pars %>% filter(species_indx %in% 1:20), 
-      raw_data = data_obs_count_allspp %>% filter(species_indx %in% 1:20),
-      dist = "lnorm", 
-      xvar = "size_class", 
-      facet_var = "species_name")
-
-  save_plot(plot = mod_12_plot, 
-            filename = "output/model_fits/model_12.png", 
-            base_height = 10)
-}
-
-
-
-```
-
 
 
 
@@ -1822,11 +1151,11 @@ data_obs_filtered <-
   left_join(rls_bin_table, by = join_by(size_class)) %>% 
   add_count(species_indx, wt = n, name = "totaln_spp") %>% 
   arrange(species_indx, size_indx) %>%
-   mutate(p = n/totaln_spp) %>% 
+  mutate(p = n/totaln_spp) %>% 
   mutate(row = 1:n()) %>% 
-    mutate(min_row = min(row), 
-           max_row = max(row),
-           .by = species_indx) 
+  mutate(min_row = min(row), 
+         max_row = max(row),
+         .by = species_indx) 
 
 data_obs_filtered_byspp <-
   data_obs_filtered %>% 
@@ -1870,10 +1199,10 @@ data_list <-
     s = data_obs_filtered$species_indx,
     b = data_obs_filtered$size_indx,
     n = data_obs_filtered$n
-)
+  )
 
 
-if(!file.exists("output/models/model_05_allspp.rds")){
+if(!file.exists("output/model_fits/model_05_allspp.rds")){
   
   mod_05_allspp <-
     stan(
@@ -1887,12 +1216,12 @@ if(!file.exists("output/models/model_05_allspp.rds")){
       cores = 3
     )
   
-  saveRDS(mod_05_allspp, "output/models/model_05_allspp.rds")
+  saveRDS(mod_05_allspp, "output/model_fits/model_05_allspp.rds")
 }
 
-mod_05_allspp <- readRDS("output/models/model_05_allspp.rds")
+mod_05_allspp <- readRDS("output/model_fits/model_05_allspp.rds")
 
-if(!file.exists("output/models/model_06_allspp.rds")){
+if(!file.exists("output/model_fits/model_06_allspp.rds")){
   
   mod_06_allspp <-
     stan(
@@ -1906,44 +1235,44 @@ if(!file.exists("output/models/model_06_allspp.rds")){
       cores = 3
     )
   
-  saveRDS(mod_06_allspp, "output/models/model_06_allspp.rds")
+  saveRDS(mod_06_allspp, "output/model_fits/model_06_allspp.rds")
 }
 
-mod_06_allspp <- readRDS("output/models/model_06_allspp.rds")
+mod_06_allspp <- readRDS("output/model_fits/model_06_allspp.rds")
 
 mod_05_allspp_pars <-
   mod_05_allspp %>% 
   spread_draws(c(ln_sigma, mu)[species_indx]) %>% 
-    ungroup() %>% 
-    pivot_longer(cols = c(mu, ln_sigma), 
-                 names_to = "par") %>% 
+  ungroup() %>% 
+  pivot_longer(cols = c(mu, ln_sigma), 
+               names_to = "par") %>% 
   summarise(quantile_025 = quantile(value, 0.025), 
             quantile_5 = quantile(value, 0.500), 
             quantile_975 = quantile(value, 0.975), 
             .by = c(species_indx, par)) %>% 
   pivot_wider(names_from = par, values_from = contains("quantile_"))
-  # pivot_longer(cols = contains("quantile"), 
-  #              names_prefix = "quantile_", 
-  #              values_to = "value", 
-  #              names_to = "quantile",
-  #             names_transform = \(x) as.numeric(paste0("0.", x)))
+# pivot_longer(cols = contains("quantile"), 
+#              names_prefix = "quantile_", 
+#              values_to = "value", 
+#              names_to = "quantile",
+#             names_transform = \(x) as.numeric(paste0("0.", x)))
 
 mod_06_allspp_pars <-
   mod_06_allspp %>% 
   spread_draws(c(sdlog, meanlog)[species_indx]) %>% 
-    ungroup() %>% 
-    pivot_longer(cols = c(meanlog, sdlog), 
-                 names_to = "par") %>% 
+  ungroup() %>% 
+  pivot_longer(cols = c(meanlog, sdlog), 
+               names_to = "par") %>% 
   summarise(quantile_025 = quantile(value, 0.025), 
             quantile_5 = quantile(value, 0.500), 
             quantile_975 = quantile(value, 0.975), 
             .by = c(species_indx, par)) %>% 
   pivot_wider(names_from = par, values_from = contains("quantile_"))
-  # pivot_longer(cols = contains("quantile"), 
-  #              names_prefix = "quantile_", 
-  #              values_to = "value", 
-  #              names_to = "quantile",
-  #             names_transform = \(x) as.numeric(paste0("0.", x)))
+# pivot_longer(cols = contains("quantile"), 
+#              names_prefix = "quantile_", 
+#              values_to = "value", 
+#              names_to = "quantile",
+#             names_transform = \(x) as.numeric(paste0("0.", x)))
 
 xx <- 
   mod_05_allspp %>% 
@@ -1953,7 +1282,7 @@ xx <-
   expand_grid(size_class = rls_bin_breaks) %>% 
   left_join(rls_bin_table) %>% 
   mutate(fit = pnorm(size_max, mu, sigma) -  
-             pnorm(size_min, mu, sigma)) %>% 
+           pnorm(size_min, mu, sigma)) %>% 
   summarise(norm_025 = quantile(fit, 0.025), 
             norm_5 = quantile(fit, 0.500), 
             norm_975 = quantile(fit, 0.975), 
@@ -1966,7 +1295,7 @@ xx2 <-
   expand_grid(size_class = rls_bin_breaks) %>% 
   left_join(rls_bin_table) %>% 
   mutate(fit = plnorm(size_max, meanlog, sdlog) -  
-             plnorm(size_min, meanlog, sdlog)) %>% 
+           plnorm(size_min, meanlog, sdlog)) %>% 
   summarise(lognorm_025 = quantile(fit, 0.025), 
             lognorm_5 = quantile(fit, 0.500), 
             lognorm_975 = quantile(fit, 0.975), 
@@ -1983,6 +1312,8 @@ xx3 <-
 ### Model visualisation
 
 ```{r mod05-vsmod06-modelvis}
+
+
 sum_squares <- 
   xx3 %>% 
   mutate(s_norm = (norm_5-p)^2,
@@ -1997,56 +1328,56 @@ if(!file.exists("output/model_fits/model_05.png") | rerun_figures){
   nspp <- xx3$species_indx %>% max()
   rep_tab <-
     tibble(
-    start = seq(1, nspp, 20),
-    end = lead(start-1)) %>% 
+      start = seq(1, nspp, 20),
+      end = lead(start-1)) %>% 
     mutate(end = case_when(is.na(end) ~ nspp, 
                            TRUE ~ end)) 
-for(i in 1:nrow(rep_tab)){
+  for(i in 1:nrow(rep_tab)){
     
-  
-  data_plot <- 
-    xx3 %>%
-    filter(species_indx >= as.numeric(rep_tab[i, "start"]),
-         species_indx <= as.numeric(rep_tab[i, "end"])) %>% 
-    left_join(sum_squares) %>% 
-    mutate(q = as.character(round(q, 2))) %>% 
-    mutate(spp_q = paste0(species_name, ", q=", q))
-  
-  
-mod_05_vsmod6_allspp_plot <- 
-    data_plot %>% 
-    ggplot() +
-    aes(x = size_class, 
-        y = p) +
-    geom_point() +
-    geom_line() +
-    geom_line(aes(y = norm_5), 
-              col = "blue") +
-    geom_line(aes(y = lognorm_5), 
-              col = "red") +
-    geom_ribbon(aes(ymin = norm_025, 
-                    ymax = norm_975), 
-                fill = "blue", 
-                alpha = 0.5) +
-    geom_ribbon(aes(ymin = lognorm_025, 
-                    ymax = lognorm_975), 
-                fill = "red", 
-                alpha = 0.5)  +
-    facet_wrap(~spp_q, scales = "free")  +
-  ggtitle("Normal (blue), Lognormal (red)")
-
- i_chr = ifelse(i > 10, paste0("0", i), paste0(i))
     
-  save_plot(plot = mod_05_vsmod6_allspp_plot, 
-         filename = paste0('output/model_fits/mod05_vs_mod06_allspp/page_', 
-                           i_chr, 
-                           '.png'), 
-            base_height = 10) 
-
-  
+    data_plot <- 
+      xx3 %>%
+      filter(species_indx >= as.numeric(rep_tab[i, "start"]),
+             species_indx <= as.numeric(rep_tab[i, "end"])) %>% 
+      left_join(sum_squares) %>% 
+      mutate(q = as.character(round(q, 2))) %>% 
+      mutate(spp_q = paste0(species_name, ", q=", q))
+    
+    
+    mod_05_vsmod6_allspp_plot <- 
+      data_plot %>% 
+      ggplot() +
+      aes(x = size_class, 
+          y = p) +
+      geom_point() +
+      geom_line() +
+      geom_line(aes(y = norm_5), 
+                col = "blue") +
+      geom_line(aes(y = lognorm_5), 
+                col = "red") +
+      geom_ribbon(aes(ymin = norm_025, 
+                      ymax = norm_975), 
+                  fill = "blue", 
+                  alpha = 0.5) +
+      geom_ribbon(aes(ymin = lognorm_025, 
+                      ymax = lognorm_975), 
+                  fill = "red", 
+                  alpha = 0.5)  +
+      facet_wrap(~spp_q, scales = "free")  +
+      ggtitle("Normal (blue), Lognormal (red)")
+    
+    i_chr = ifelse(i > 10, paste0("0", i), paste0(i))
+    
+    save_plot(plot = mod_05_vsmod6_allspp_plot, 
+              filename = paste0('output/model_fits/mod05_vs_mod06_allspp/page_', 
+                                i_chr, 
+                                '.png'), 
+              base_height = 8) 
+    
+    
   }
   
-
+  
 }
 
 ```
@@ -2098,29 +1429,29 @@ mean_pars_norm %>%
   mutate(cov = sigma/mu) %>% 
   mutate(below = cov < 3) %>% 
   count(below)
-  ggplot(aes(x = mu, 
-             y = cov)) +
+ggplot(aes(x = mu, 
+           y = cov)) +
   geom_point() +
   ylim(c(NA, 3))
-  
+
 weird <- 
   mean_pars_norm %>% 
-    mutate(cov = sigma/mu) %>% 
-    filter(cov > 50) %>% pull(species_indx)
+  mutate(cov = sigma/mu) %>% 
+  filter(cov > 50) %>% pull(species_indx)
 
 weird2 <- 
-species_selection %>% 
+  species_selection %>% 
   filter(species_indx %in% weird) %>% 
   pull(species_name) %>% 
   head(20)
 
-  data_plot <- 
-    xx3 %>%
-    filter(species_name %in% weird2) %>% 
-    left_join(sum_squares) %>% 
-    mutate(q = as.character(round(q, 2))) %>% 
-    mutate(spp_q = paste0(species_name, ", q=", q))
-  
+data_plot <- 
+  xx3 %>%
+  filter(species_name %in% weird2) %>% 
+  left_join(sum_squares) %>% 
+  mutate(q = as.character(round(q, 2))) %>% 
+  mutate(spp_q = paste0(species_name, ", q=", q))
+
 data_obs_filtered_byspp %>% 
   filter(totaln_spp < 800)
 mean_pars_norm %>% 
@@ -2131,25 +1462,25 @@ mean_pars_norm %>%
   xlim(c(NA, 1500))
 
 mod_05_vsmod6_allspp_plot <- 
-    data_plot %>% 
-    ggplot() +
-    aes(x = size_class, 
-        y = p) +
-    geom_point() +
-    geom_line() +
-    geom_line(aes(y = norm_5), 
-              col = "blue") +
-    geom_line(aes(y = lognorm_5), 
-              col = "red") +
-    geom_ribbon(aes(ymin = norm_025, 
-                    ymax = norm_975), 
-                fill = "blue", 
-                alpha = 0.5) +
-    geom_ribbon(aes(ymin = lognorm_025, 
-                    ymax = lognorm_975), 
-                fill = "red", 
-                alpha = 0.5)  +
-    facet_wrap(~spp_q, scales = "free")  +
+  data_plot %>% 
+  ggplot() +
+  aes(x = size_class, 
+      y = p) +
+  geom_point() +
+  geom_line() +
+  geom_line(aes(y = norm_5), 
+            col = "blue") +
+  geom_line(aes(y = lognorm_5), 
+            col = "red") +
+  geom_ribbon(aes(ymin = norm_025, 
+                  ymax = norm_975), 
+              fill = "blue", 
+              alpha = 0.5) +
+  geom_ribbon(aes(ymin = lognorm_025, 
+                  ymax = lognorm_975), 
+              fill = "red", 
+              alpha = 0.5)  +
+  facet_wrap(~spp_q, scales = "free")  +
   ggtitle("Normal (blue), Lognormal (red)")
 
 ```

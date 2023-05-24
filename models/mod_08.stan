@@ -33,7 +33,7 @@ model {
   
   for (sp in 1:S) { 
 
-    sdlog = exp(beta_0 + (beta_1*meanlog[sp]));
+    sdlog = beta_0 + (beta_1*meanlog[sp]);
     // within a species, all bins have to come from one or the other dist:
     for (i in i_min[sp]:i_max[sp]) { // for each species
         
@@ -53,8 +53,8 @@ model {
 
 generated quantities {
   real sdlog[S];
-  for (sp in 1:S) {
-    sdlog[sp] = exp(beta_0 + (beta_1*meanlog[sp]));
+  for (sp in 1:S) { 
+    sdlog[sp] = beta_0 + (beta_1*meanlog[sp]);
   }
   
 }
