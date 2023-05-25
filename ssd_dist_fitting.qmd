@@ -521,7 +521,7 @@ plot_model_continuous <- function(stan_model_pars,
                     ymax = q95),
                 fill = "red",
                 alpha = 0.3) +
-    facet_wrap(s.formula(paste("~", facet_var)), scales = "free") 
+    facet_wrap(as.formula(paste("~", facet_var)), scales = "free") 
   
 }
 
