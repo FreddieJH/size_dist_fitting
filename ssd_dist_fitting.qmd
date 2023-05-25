@@ -15,7 +15,7 @@ knitr::opts_chunk$set(
 
 if(!dir.exists("output")) dir.create("output")
 if(!dir.exists("output/model_fits")) dir.create("output/model_fits")
-if(!dir.exists("output/model_fits")) dir.create("output/model_plots")
+if(!dir.exists("output/model_plots")) dir.create("output/model_plots")
 if(!dir.exists("output/data_figs")) dir.create("output/data_figs")
 
 rerun_models  <- FALSE # will take a while
@@ -461,6 +461,8 @@ plot_mod_fit <- function(mod_name, overwrite = FALSE){
   dist <- mods_summary %>% filter(model_name == mod_name)  %>% pull(distribution)
   xvar <- mods_summary %>% filter(model_name == mod_name)  %>% pull(varname)
   data_type <- mods_summary %>% filter(model_name == mod_name)  %>% pull(data_type)
+  all_spp <- str_detect(mod_name, "allspp")
+  
   facet_name <- 
     ifelse(
       mods_summary %>% filter(model_name == mod_name)  %>% pull(data) == "real", 
@@ -485,7 +487,8 @@ plot_mod_fit <- function(mod_name, overwrite = FALSE){
                           raw_data = rawdata,
                           dist = dist, 
                           xvar = xvar, 
-                          facet_var = facet_name)
+                          facet_var = facet_name, 
+                          allspp = all_spp)
     }
     
     save_plot(plot = mod_plot, 
@@ -501,7 +504,7 @@ plot_model_continuous <- function(stan_model_pars,
                                   raw_data,  
                                   dist, 
                                   xvar, 
-                                  facet_var = "species_indx"  ){
+                                  facet_var = "species_indx"){
   
   raw_data %>% 
     full_join(stan_model_pars,
@@ -535,12 +538,14 @@ plot_model_binned <- function(stan_model_pars,
                               raw_data,  
                               dist, 
                               xvar, 
-                              facet_var = "species_indx"){
+                              facet_var = "species_indx", 
+                              allspp){
   
   raw_data %>% 
     full_join(stan_model_pars,
               by = join_by(species_indx),
               multiple = "all")  %>% 
+    {if(allspp) filter(., species_indx %in% 1:20) else .} %>% 
     {if(dist == "norm") mutate(., 
                                fit = pnorm(size_max, mu,sigma) -  
                                  pnorm(size_min, mu, sigma)) else .} %>% 
@@ -786,7 +791,7 @@ We will start by looking only at 20 species
 if(run_largemodels){
   mod_05_allspp_data <- make_datalist(data_obs_count_allspp, data_obs_count_allspp_byspp)
   
-  mod_05_allspp_fit  <- run_stanmod("mod_05_allspp", overwrite = TRUE)
+  mod_05_allspp_fit  <- run_stanmod("mod_05_allspp")
   mod_05_allspp_pars <- extract_pars(mod_05_allspp_fit)
   plot_mod_fit("mod_05_allspp")
 }
