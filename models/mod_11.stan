@@ -54,5 +54,8 @@ model {
 }
 
 generated quantities {
-
+  real sigma[S];
+  for (sp in 1:S) { 
+    sigma[sp] = beta_0 + (beta_1*mu[sp]);
+  }
 }
