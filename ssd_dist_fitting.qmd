@@ -15,6 +15,8 @@ knitr::opts_chunk$set(
 
 if(!dir.exists("output")) dir.create("output")
 if(!dir.exists("output/model_fits")) dir.create("output/model_fits")
+if(!dir.exists("output/model_fits")) dir.create("output/model_plots")
+if(!dir.exists("output/data_figs")) dir.create("output/data_figs")
 
 rerun_models  <- FALSE # will take a while
 rerun_figures <- FALSE
@@ -781,7 +783,7 @@ We will start by looking only at 20 species
 if(run_largemodels){
   mod_05_allspp_data <- make_datalist(data_obs_count_allspp, data_obs_count_allspp_byspp)
   
-  mod_05_allspp_fit  <- run_stanmod("mod_05_allspp")
+  mod_05_allspp_fit  <- run_stanmod("mod_05_allspp", overwrite = TRUE)
   mod_05_allspp_pars <- extract_pars(mod_05_allspp_fit)
   plot_mod_fit("mod_05_allspp")
 }
