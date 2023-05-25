@@ -15,7 +15,7 @@ knitr::opts_chunk$set(
 
 if(!dir.exists("output")) dir.create("output")
 if(!dir.exists("output/model_fits")) dir.create("output/model_fits")
-if(!dir.exists("output/model_fits")) dir.create("output/model_plots")
+if(!dir.exists("output/model_plots")) dir.create("output/model_plots")
 if(!dir.exists("output/data_figs")) dir.create("output/data_figs")
 
 rerun_models  <- FALSE # will take a while
