@@ -36,6 +36,9 @@ library(stringr)
 library(rlang)
 library(posterior)
 
+
+rstan_options(auto_write = TRUE) # avoid recompilation of stan files
+
 ```
 
 ## Data import
