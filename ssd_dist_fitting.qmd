@@ -670,6 +670,8 @@ mod_05_fit  <- run_stanmod("mod_05")
 mod_05_pars <- extract_pars(mod_05_fit)
 plot_mod_fit("mod_05")
 
+traceplot(mod_06_fit, "sdlog")
+
 mod_05_pars %>% 
   ggplot() +
   aes(x = mu, 
@@ -975,6 +977,9 @@ plot_mod_fit("mod_08")
 
 traceplot(mod_08_fit, pars = "meanlog")
 traceplot(mod_08_fit, pars = "sdlog")
+traceplot(mod_08_fit, pars = "beta_0")
+traceplot(mod_08_fit, pars = "beta_1")
+
 ```
 
 
