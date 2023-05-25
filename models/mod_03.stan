@@ -19,7 +19,7 @@ model {
   real bin_prob;
   real sigma;
   // Prior distributions for mu and sigma
-  mu ~ normal(4, 5);
+  mu ~ normal(4, 1);
   ln_sigma ~ normal(0, 4);
   
 
