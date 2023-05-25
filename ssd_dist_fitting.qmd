@@ -529,7 +529,7 @@ plot_model_continuous <- function(stan_model_pars,
                     ymax = q95),
                 fill = "red",
                 alpha = 0.3) +
-    facet_wrap(as.formula(paste("~", facet_var)), scales = "free") 
+    facet_wrap(s.formula(paste("~", facet_var)), scales = "free") 
   
 }
 
@@ -825,37 +825,35 @@ if(run_largemodels){
 
 ```{r}
 if(run_largemodels){
+  
   mod_05_out <- 
-    data_obs_filtered %>% 
+    data_obs_count_allspp %>% 
     arrange(species_indx, size_class) %>% 
     select(species_name, species_indx, size_class, size_min, size_max, p) %>% 
-    full_join(mod_05_pars,
+    full_join(mod_05_allspp_pars,
               by = join_by(species_indx),
-              multiple = "all", 
-              relationship = "many-to-many") %>% 
-    pivot_wider(names_from = par, 
-                values_from = value)  %>% 
+              multiple = "all") %>% 
     mutate(fit = pnorm(size_max, mu, sigma) -  pnorm(size_min, mu, sigma)) %>%  
     select(species_name, species_indx, size_class, p, quantile, fit) %>% 
     pivot_wider(names_from = quantile,
-                values_from = fit)
+                values_from = fit) %>% 
+    filter(species_indx %in% 1:20)
   
   mod_06_out <- 
-    data_obs_filtered %>%  
-    full_join(mod_06_pars,
+    data_obs_count_allspp %>%  
+    full_join(mod_06_allspp_pars,
               by = join_by(species_indx),
-              multiple = "all", 
-              relationship = "many-to-many") %>% 
-    pivot_wider(names_from = par, 
-                values_from = value)  %>% 
+              multiple = "all") %>% 
     mutate(fit = plnorm(size_max, meanlog, sdlog) -  
              plnorm(size_min, meanlog, sdlog)) %>%  
     select(species_name, species_indx, size_class, p, quantile, fit) %>% 
     pivot_wider(names_from = quantile,
-                values_from = fit) 
+                values_from = fit) %>% 
+    filter(species_indx %in% 1:20)
   
   mod_05vsmod_06_plot <-
-    data_obs_filtered %>% 
+    data_obs_count_allspp %>% 
+    filter(species_indx %in% 1:20) %>% 
     ggplot() +
     aes(x = size_class, 
         y = p) +
@@ -892,18 +890,19 @@ if(run_largemodels){
 }
 ```
 
+
 ### Sum of squares
 
 ```{r}
 
-# sum_squares <- 
-#   xx3 %>% 
-#   mutate(s_norm = (norm_5-p)^2,
-#          s_lognorm = (lognorm_5-p)^2) %>% 
-#   summarise(ss_norm = sum(s_norm), 
-#             ss_lognorm = sum(s_lognorm), 
-#             .by = "species_name") %>% 
-#   mutate(q = ss_norm/(ss_norm + ss_lognorm)) 
+sum_squares <-
+  xx3 %>%
+  mutate(s_norm = (norm_5-p)^2,
+         s_lognorm = (lognorm_5-p)^2) %>%
+  summarise(ss_norm = sum(s_norm),
+            ss_lognorm = sum(s_lognorm),
+            .by = "species_name") %>%
+  mutate(q = ss_norm/(ss_norm + ss_lognorm))
 
 ```
 
@@ -911,7 +910,21 @@ if(run_largemodels){
 
 ```{r}
 
-mod_05_pars %>%
+mod_05_allspp_fit <- readRDS("output/model_fits/mod_05_allspp.rds")
+mod_05_allspp_pars <- extract_pars(mod_05_allspp_fit)
+
+mod_06_allspp_fit <- readRDS("output/model_fits/mod_06_allspp.rds")
+mod_06_allspp_pars <- extract_pars(mod_06_allspp_fit)
+
+mod_05_allspp_pars %>%
+  filter(quantile == "median") %>% 
+  ggplot(aes(x = mu,
+             y = sigma)) +
+  geom_point() +
+  stat_smooth()
+
+mod_05_allspp_pars %>%
+  filter(quantile == "median") %>% 
   ggplot(aes(x = mu,
              y = sigma)) +
   geom_point() +
@@ -919,11 +932,85 @@ mod_05_pars %>%
 
 ```
 
+### Weird species
+
+```{r}
+species_indx_table %>% 
+  filter(species_name == "Parma unifasciata")
+
+traceplot(mod_06_allspp_fit, "meanlog[18]")
+traceplot(mod_06_allspp_fit, "sdlog[18]")
+traceplot(mod_05_allspp_fit, "mu[2]")
+traceplot(mod_05_allspp_fit, "sigma[2]")
+
+xx <-
+  mod_05_allspp_fit %>% 
+    summarise_draws() %>% 
+      filter(species_indx == 2 ) %>% 
+
+    mutate(species_indx = str_extract(variable, "(?<=\\[)\\d*(?=\\])") %>% as.numeric()) %>% 
+    mutate(parameter = str_remove(variable, "\\[\\d*\\]")) %>% 
+    filter(!str_detect(parameter, "ln_")) %>% # transformed from generated quantities
+    filter(parameter != "lp__") %>% 
+
+    select(species_indx, 
+           parameter, 
+           median,
+           q5, 
+           q95) %>% 
+    drop_na(species_indx) %>% 
+    pivot_wider(values_from = median:q95,
+                names_from = parameter) %>% 
+    pivot_longer(cols = contains(c("median_", "q5_", "q95_")), 
+                 names_to = c("quantile", "parameter"),
+                 names_pattern = "(.*?)_(.*)") %>% # non-greedy
+    pivot_wider(values_from = value, 
+                names_from = parameter)
+
+
+
+
+data_obs_count_allspp %>% 
+    full_join(mod_05_allspp_pars,
+              by = join_by(species_indx),
+              multiple = "all")  %>% 
+    {if(dist == "norm") mutate(., 
+                               fit = pnorm(size_max, mu,sigma) -  
+                                 pnorm(size_min, mu, sigma)) else .} %>% 
+    {if(dist == "lnorm") mutate(., 
+                                fit = plnorm(size_max, meanlog, sdlog) -  
+                                  plnorm(size_min, meanlog, sdlog)) else .} %>%
+    select(!!sym(facet_var), !!sym(xvar), quantile, p, fit) %>% 
+    pivot_wider(names_from = quantile,
+                values_from = fit) %>%
+    ggplot() +
+    aes(x = !!sym(xvar), 
+        y = p) +
+    geom_point() +
+    geom_line() + 
+    geom_point(aes(y = median), 
+               col = "red",
+               alpha = 0.3) +
+    geom_line(aes(y = median), 
+              col = "red",
+              alpha = 0.3) +
+    geom_ribbon(aes(ymin = q5,
+                    ymax = q95),
+                fill = "red",
+                alpha = 0.3) +
+    facet_wrap(as.formula(paste("~", facet_var)), scales = "free") 
+
+
+```
+
+
+
 ### meanlog vs sdlog (lnorm)
 
 ```{r}
 
-mod_06_pars %>% 
+mod_06_allspp_pars %>% 
+  filter(quantile == "median") %>% 
   ggplot(aes(x = meanlog, 
              y = sdlog)) +
   geom_point() +
@@ -956,6 +1043,9 @@ mod_07_fit  <- run_stanmod("mod_07")
 mod_07_pars <- extract_pars(mod_07_fit)
 plot_mod_fit("mod_07")
 
+
+traceplot(mod_07_fit, pars = "beta_0")
+traceplot(mod_07_fit, pars = "beta_1")
 traceplot(mod_07_fit, pars = "mu")
 traceplot(mod_07_fit, pars = "sigma")
 
