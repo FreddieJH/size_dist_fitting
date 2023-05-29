@@ -7,3 +7,9 @@
 *.csv
 
 output/
+
+
+.rds
+
+.png
+
