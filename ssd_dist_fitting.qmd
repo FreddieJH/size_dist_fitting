@@ -37,7 +37,7 @@ library(cowplot)
 library(stringr)
 library(rlang)
 library(posterior)
-library(fitdistrplus)
+library(fitdistrplus, include.only = "fitdist")
 
 
 rstan_options(auto_write = TRUE) # avoid recompilation of stan files
@@ -111,10 +111,10 @@ data_obs_count_allspp <-
 
 data_obs_count_allspp_byspp <-
   data_obs_count_allspp %>% 
-  select(species_indx, 
-         totaln_spp, 
-         min_row, 
-         max_row) %>% 
+  dplyr::select(species_indx, 
+                totaln_spp, 
+                min_row, 
+                max_row) %>% 
   distinct() %>% 
   arrange(species_indx)
 
@@ -133,10 +133,10 @@ data_obs_count_20spp <-
 
 data_obs_count_20spp_byspp <-
   data_obs_count_20spp %>% 
-  select(species_indx, 
-         totaln_spp, 
-         min_row, 
-         max_row) %>% 
+  dplyr::select(species_indx, 
+                totaln_spp, 
+                min_row, 
+                max_row) %>% 
   distinct() %>% 
   arrange(species_indx)
 
@@ -176,7 +176,7 @@ for(i in 1:sim_n_spp){
       mutate(species_name = paste0("spp_", species_indx)) %>% 
       filter(size_class_raw > 1.25) %>% 
       mutate(size_class = rls_bin(size_class_raw)) %>% 
-      select(-num)
+      dplyr::select(-num)
   } else {
     xx <- 
       tibble(num = 1:sim_n_reps) %>% 
@@ -189,7 +189,7 @@ for(i in 1:sim_n_spp){
       mutate(species_name = paste0("spp_", species_indx)) %>% 
       filter(size_class_raw > 1.25) %>% 
       mutate(size_class = rls_bin(size_class_raw)) %>% 
-      select(-num)
+      dplyr::select(-num)
   }
   
   data_out <- bind_rows(data_out, xx)
@@ -197,7 +197,7 @@ for(i in 1:sim_n_spp){
 
 data_sim <- 
   data_out %>% 
-  left_join(rls_bin_table %>% select(size_class, size_indx),
+  left_join(rls_bin_table %>% dplyr::select(size_class, size_indx),
             by = join_by(size_class)) 
 
 # For binned simulated data
@@ -217,10 +217,10 @@ data_sim_count <-
 
 data_sim_byspp <-
   data_sim_count %>% 
-  select(species_indx, 
-         totaln_spp, 
-         min_row, 
-         max_row) %>% 
+  dplyr::select(species_indx, 
+                totaln_spp, 
+                min_row, 
+                max_row) %>% 
   distinct()
 
 ```
@@ -370,6 +370,8 @@ mods_summary <-
     "mod_12", "mod_12",  "real", "binned", "data_obs_count_20spp", "size_class", 20, "lnorm", "Yes", "per species", "predicted from par1",
     "mod_11_allspp", "mod_11", "real", "binned",  "data_obs_count_allspp", "size_class", 774, "norm", "Yes", "per species", "predicted from par1",
     "mod_12_allspp", "mod_12",  "real", "binned", "data_obs_count_allspp", "size_class", 774, "lnorm", "Yes", "per species", "predicted from par1",
+    "mod_13", "mod_13",  "real", "binned", "data_obs_count_20spp", "size_class", 20, "norm & lnorm", "Yes", "per species", "per species",
+    "mod_14", "mod_14",  "real", "binned", "data_obs_count_20spp", "size_class", 20, "norm & lnorm", "Yes", "per species", "predicted from par1",
   )
 
 ```
@@ -396,7 +398,7 @@ make_datalist <- function(count_data, spplevel_data){
   )
 }
 
-run_stanmod <- function(mod_name, overwrite = FALSE){
+run_stanmod <- function(mod_name, overwrite = FALSE, iter = 2000, warmup = 1500, chains = 3){
   
   
   filename <- paste0("output/model_fits/", mod_name, ".rds")
@@ -415,12 +417,12 @@ run_stanmod <- function(mod_name, overwrite = FALSE){
       stan(
         file = stanfile,
         data = datalist,
-        iter = 2500,
-        warmup = 500,
-        chains = 3,
+        iter = iter,
+        warmup = warmup,
+        chains = chains,
         refresh = 500,
         seed = 1,
-        cores = 3
+        cores = chains
       )
     
     saveRDS(mod_fit, filename)
@@ -434,17 +436,18 @@ run_stanmod <- function(mod_name, overwrite = FALSE){
 # extract parameters from a stan model in a tidy way
 extract_pars <- function(stan_model){
   
-  stan_model %>% 
+  stan_model %>%
     summarise_draws() %>% 
     mutate(species_indx = str_extract(variable, "(?<=\\[)\\d*(?=\\])") %>% as.numeric()) %>% 
     mutate(parameter = str_remove(variable, "\\[\\d*\\]")) %>% 
     filter(!str_detect(parameter, "ln_")) %>% # transformed from generated quantities
+    filter(!str_detect(parameter, "logit_")) %>% # transformed from generated quantities
     filter(parameter != "lp__") %>% 
-    select(species_indx, 
-           parameter, 
-           median,
-           q5, 
-           q95) %>% 
+    dplyr::select(species_indx, 
+                  parameter, 
+                  median,
+                  q5, 
+                  q95) %>% 
     drop_na(species_indx) %>% 
     pivot_wider(values_from = median:q95,
                 names_from = parameter) %>% 
@@ -462,7 +465,6 @@ plot_mod_fit <- function(mod_name, overwrite = FALSE){
   mod_pars <- eval(parse(text = paste0(mod_name, "_pars")))
   rawdata <- eval(parse(text = mods_summary %>% filter(model_name == mod_name)  %>% pull(data_source)))
   dist <- mods_summary %>% filter(model_name == mod_name)  %>% pull(distribution)
-  xvar <- mods_summary %>% filter(model_name == mod_name)  %>% pull(varname)
   data_type <- mods_summary %>% filter(model_name == mod_name)  %>% pull(data_type)
   all_spp <- str_detect(mod_name, "allspp")
   
@@ -519,7 +521,7 @@ plot_model_continuous <- function(stan_model_pars,
     {if(dist == "lnorm") mutate(., 
                                 fit = dlnorm(!!sym(xvar), 
                                              meanlog, sdlog)) else .} %>%
-    select(species_indx, !!sym(xvar), quantile, fit) %>% 
+    dplyr::select(!!sym(facet_var), !!sym(xvar), quantile, fit) %>% 
     pivot_wider(names_from = quantile,
                 values_from = fit) %>%
     ggplot() +
@@ -532,7 +534,11 @@ plot_model_continuous <- function(stan_model_pars,
                     ymax = q95),
                 fill = "red",
                 alpha = 0.3) +
-    facet_wrap(s.formula(paste("~", facet_var)), scales = "free") 
+    facet_wrap(as.formula(paste("~", facet_var)), scales = "free") 
+  
+  
+  
+  
   
 }
 
@@ -544,36 +550,76 @@ plot_model_binned <- function(stan_model_pars,
                               facet_var = "species_indx", 
                               allspp){
   
-  raw_data %>% 
-    full_join(stan_model_pars,
-              by = join_by(species_indx),
-              multiple = "all")  %>% 
-    {if(allspp) filter(., species_indx %in% 1:20) else .} %>% 
-    {if(dist == "norm") mutate(., 
-                               fit = pnorm(size_max, mu,sigma) -  
-                                 pnorm(size_min, mu, sigma)) else .} %>% 
-    {if(dist == "lnorm") mutate(., 
-                                fit = plnorm(size_max, meanlog, sdlog) -  
-                                  plnorm(size_min, meanlog, sdlog)) else .} %>%
-    select(!!sym(facet_var), !!sym(xvar), quantile, p, fit) %>% 
-    pivot_wider(names_from = quantile,
-                values_from = fit) %>%
-    ggplot() +
-    aes(x = !!sym(xvar), 
-        y = p) +
-    geom_point() +
-    geom_line() + 
-    geom_point(aes(y = median), 
-               col = "red",
-               alpha = 0.3) +
-    geom_line(aes(y = median), 
-              col = "red",
-              alpha = 0.3) +
-    geom_ribbon(aes(ymin = q5,
-                    ymax = q95),
-                fill = "red",
+  if(dist == "norm & lnorm"){
+    
+    raw_data %>% 
+      full_join(stan_model_pars,
+                by = join_by(species_indx),
+                multiple = "all")  %>% 
+      mutate(fit_norm = dnorm(!!sym(xvar), mu, sigma), 
+             fit_lnorm = dlnorm(!!sym(xvar), meanlog, sdlog)) %>% 
+      dplyr::select(!!sym(facet_var), !!sym(xvar), quantile, p, norm = fit_norm, lnorm = fit_lnorm) %>% 
+      pivot_wider(names_from = quantile,
+                  values_from = c(norm, lnorm)) %>%
+      ggplot() +
+      aes(x = !!sym(xvar), 
+          y = p) +
+      geom_point() +
+      geom_line() + 
+            geom_point(aes(y = norm_median), 
+                 col = "blue",
+                 alpha = 0.3) +
+      geom_line(aes(y = norm_median), 
+                col = "blue",
                 alpha = 0.3) +
-    facet_wrap(as.formula(paste("~", facet_var)), scales = "free") 
+      geom_ribbon(aes(ymin = norm_q5,
+                      ymax = norm_q95),
+                  fill = "blue",
+                  alpha = 0.3) +
+      geom_point(aes(y = lnorm_median), 
+                 col = "red",
+                 alpha = 0.3) +
+      geom_line(aes(y = lnorm_median), 
+                col = "red",
+                alpha = 0.3) +
+      geom_ribbon(aes(ymin = lnorm_q5,
+                      ymax = lnorm_q95),
+                  fill = "red",
+                  alpha = 0.3) +
+      facet_wrap(as.formula(paste("~", facet_var)), scales = "free") 
+    
+  } else {
+    raw_data %>% 
+      full_join(stan_model_pars,
+                by = join_by(species_indx),
+                multiple = "all")  %>% 
+      {if(allspp) filter(., species_indx %in% 1:20) else .} %>% 
+      {if(dist == "norm") mutate(., 
+                                 fit = pnorm(size_max, mu,sigma) -  
+                                   pnorm(size_min, mu, sigma)) else .} %>% 
+      {if(dist == "lnorm") mutate(., 
+                                  fit = plnorm(size_max, meanlog, sdlog) -  
+                                    plnorm(size_min, meanlog, sdlog)) else .} %>%
+      dplyr::select(!!sym(facet_var), !!sym(xvar), quantile, p, fit) %>% 
+      pivot_wider(names_from = quantile,
+                  values_from = fit) %>%
+      ggplot() +
+      aes(x = !!sym(xvar), 
+          y = p) +
+      geom_point() +
+      geom_line() + 
+      geom_point(aes(y = median), 
+                 col = "red",
+                 alpha = 0.3) +
+      geom_line(aes(y = median), 
+                col = "red",
+                alpha = 0.3) +
+      geom_ribbon(aes(ymin = q5,
+                      ymax = q95),
+                  fill = "red",
+                  alpha = 0.3) +
+      facet_wrap(as.formula(paste("~", facet_var)), scales = "free") 
+  }
   
 }
 
@@ -679,7 +725,7 @@ We will start by looking only at 20 species
 # same input data
 mod_05_data <- make_datalist(data_obs_count_20spp, data_obs_count_20spp_byspp)
 
-mod_05_fit  <- run_stanmod("mod_05", overwrite = T)
+mod_05_fit  <- run_stanmod("mod_05")
 mod_05_pars <- extract_pars(mod_05_fit)
 plot_mod_fit("mod_05")
 
@@ -719,12 +765,12 @@ plot_mod_fit("mod_06")
 mod_05_out <- 
   data_obs_count_20spp %>% 
   arrange(species_indx, size_class) %>% 
-  select(species_name, species_indx, size_class, size_min, size_max, p) %>% 
+  dplyr::select(species_name, species_indx, size_class, size_min, size_max, p) %>% 
   full_join(mod_05_pars,
             by = join_by(species_indx),
             multiple = "all") %>% 
   mutate(fit = pnorm(size_max, mu, sigma) -  pnorm(size_min, mu, sigma)) %>%  
-  select(species_name, species_indx, size_class, p, quantile, fit) %>% 
+  dplyr::select(species_name, species_indx, size_class, p, quantile, fit) %>% 
   pivot_wider(names_from = quantile,
               values_from = fit)
 
@@ -735,7 +781,7 @@ mod_06_out <-
             multiple = "all") %>% 
   mutate(fit = plnorm(size_max, meanlog, sdlog) -  
            plnorm(size_min, meanlog, sdlog)) %>%  
-  select(species_name, species_indx, size_class, p, quantile, fit) %>% 
+  dplyr::select(species_name, species_indx, size_class, p, quantile, fit) %>% 
   pivot_wider(names_from = quantile,
               values_from = fit) 
 
@@ -836,17 +882,17 @@ fitdistrplus::fitdist(log(mod_05_allspp_pars_med$sigma), "norm")
 if(run_largemodels){
   mod_06_allspp_data <- make_datalist(data_obs_count_allspp, data_obs_count_allspp_byspp)
   
-  mod_06_allspp_fit  <- run_stanmod("mod_06_allspp", overwrite = TRUE)
+  mod_06_allspp_fit  <- run_stanmod("mod_06_allspp")
   mod_06_allspp_pars <- extract_pars(mod_06_allspp_fit)
   plot_mod_fit("mod_06_allspp", overwrite = T)
 }
-
+mod_06_allspp_fit %>% 
+  spread_draws(meanlog[species], mean)
 
 # Values to inform priors
 mod_06_allspp_pars_med <-
   mod_06_allspp_pars %>% 
   filter(quantile == "median")
-
 
 mod_06_allspp_pars_med %>% 
   ggplot(aes(x = meanlog)) +
@@ -861,7 +907,7 @@ mod_06_allspp_pars_med %>%
   range()
 
 mod_06_allspp_pars_med %>% 
-   pull(sdlog) %>% 
+  pull(sdlog) %>% 
   range()
 
 fitdistrplus::fitdist(mod_06_allspp_pars_med$meanlog, "norm")
@@ -873,16 +919,16 @@ fitdistrplus::fitdist(mod_06_allspp_pars_med$sdlog, "norm")
 
 ```{r}
 if(run_largemodels){
-  
+    
   mod_05_out <- 
     data_obs_count_allspp %>% 
     arrange(species_indx, size_class) %>% 
-    select(species_name, species_indx, size_class, size_min, size_max, p) %>% 
+    dplyr::select(species_name, species_indx, size_class, size_min, size_max, p) %>% 
     full_join(mod_05_allspp_pars,
               by = join_by(species_indx),
               multiple = "all") %>% 
     mutate(fit = pnorm(size_max, mu, sigma) -  pnorm(size_min, mu, sigma)) %>%  
-    select(species_name, species_indx, size_class, p, quantile, fit) %>% 
+    dplyr::select(species_name, species_indx, size_class, p, quantile, fit) %>% 
     pivot_wider(names_from = quantile,
                 values_from = fit) %>% 
     filter(species_indx %in% 1:20)
@@ -894,7 +940,7 @@ if(run_largemodels){
               multiple = "all") %>% 
     mutate(fit = plnorm(size_max, meanlog, sdlog) -  
              plnorm(size_min, meanlog, sdlog)) %>%  
-    select(species_name, species_indx, size_class, p, quantile, fit) %>% 
+    dplyr::select(species_name, species_indx, size_class, p, quantile, fit) %>% 
     pivot_wider(names_from = quantile,
                 values_from = fit) %>% 
     filter(species_indx %in% 1:20)
@@ -1001,11 +1047,11 @@ xx <-
   filter(!str_detect(parameter, "ln_")) %>% # transformed from generated quantities
   filter(parameter != "lp__") %>% 
   
-  select(species_indx, 
-         parameter, 
-         median,
-         q5, 
-         q95) %>% 
+  dplyr::select(species_indx, 
+                parameter, 
+                median,
+                q5, 
+                q95) %>% 
   drop_na(species_indx) %>% 
   pivot_wider(values_from = median:q95,
               names_from = parameter) %>% 
@@ -1028,7 +1074,7 @@ data_obs_count_allspp %>%
   {if(dist == "lnorm") mutate(., 
                               fit = plnorm(size_max, meanlog, sdlog) -  
                                 plnorm(size_min, meanlog, sdlog)) else .} %>%
-  select(!!sym(facet_var), !!sym(xvar), quantile, p, fit) %>% 
+  dplyr::select(!!sym(facet_var), !!sym(xvar), quantile, p, fit) %>% 
   pivot_wider(names_from = quantile,
               values_from = fit) %>%
   ggplot() +
@@ -1276,13 +1322,13 @@ if(run_largemodels){
   mod_09_allspp_data <- 
     make_datalist(data_obs_count_allspp, 
                   data_obs_count_allspp_byspp)
-
-mod_09_allspp_fit  <- run_stanmod("mod_09_allspp")
-mod_09_allspp_pars <- extract_pars(mod_09_allspp_fit)
-plot_mod_fit("mod_09_allspp")
-
-traceplot(mod_09_allspp_fit, pars = "mu")
-traceplot(mod_09_allspp_fit, pars = "sigma")
+  
+  mod_09_allspp_fit  <- run_stanmod("mod_09_allspp")
+  mod_09_allspp_pars <- extract_pars(mod_09_allspp_fit)
+  plot_mod_fit("mod_09_allspp")
+  
+  traceplot(mod_09_allspp_fit, pars = "mu")
+  traceplot(mod_09_allspp_fit, pars = "sigma")
 }
 
 ```
@@ -1314,13 +1360,13 @@ traceplot(mod_10_fit, pars = "sdlog")
 
 if(run_largemodels){
   mod_10_allspp_data <- make_datalist(data_obs_count_allspp, data_obs_count_allspp_byspp)
-
-mod_10_allspp_fit  <- run_stanmod("mod_10_allspp", overwrite = T)
-mod_10_allspp_pars <- extract_pars(mod_10_allspp_fit)
-plot_mod_fit("mod_10_allspp")
-
-traceplot(mod_10_allspp_fit, pars = "meanlog")
-traceplot(mod_10_allspp_fit, pars = "sdlog")
+  
+  mod_10_allspp_fit  <- run_stanmod("mod_10_allspp", overwrite = T)
+  mod_10_allspp_pars <- extract_pars(mod_10_allspp_fit)
+  plot_mod_fit("mod_10_allspp")
+  
+  traceplot(mod_10_allspp_fit, pars = "meanlog")
+  traceplot(mod_10_allspp_fit, pars = "sdlog")
 }
 
 
@@ -1353,11 +1399,11 @@ traceplot(mod_11_fit, pars = "sigma")
 if(run_largemodels){
   mod_11_allspp_data <- make_datalist(data_obs_count_allspp, 
                                       data_obs_count_allspp_byspp)
-
-mod_11_allspp_fit  <- run_stanmod("mod_11_allspp", overwrite = T)
-mod_11_allspp_pars <- extract_pars(mod_11_allspp_fit)
-plot_mod_fit("mod_11_allspp")
-
+  
+  mod_11_allspp_fit  <- run_stanmod("mod_11_allspp", overwrite = T)
+  mod_11_allspp_pars <- extract_pars(mod_11_allspp_fit)
+  plot_mod_fit("mod_11_allspp")
+  
 }
 
 
@@ -1386,8 +1432,39 @@ traceplot(mod_12_fit, pars = "sdlog")
 ```
 
 
+## Model 13 (20 species)
+
+**Data:** Real binned data
+
+**Model:** Lognormal (with bin correction)
+
+**Parameters:** Per species meanlog, sdlog predicted from meanlog
+
+```{r mod13-modelfit}
+
+mod_13_data <- make_datalist(data_obs_count_20spp, data_obs_count_20spp_byspp)
+
+mod_13_fit  <- run_stanmod("mod_13", chains = 3, overwrite = TRUE)
+mod_13_pars <- extract_pars(mod_13_fit)
+plot_mod_fit("mod_13")
+
+traceplot(mod_13_fit, "meanlog")
 
 
+mod_13_pars %>% 
+  left_join(mod_05_pars %>% rename(sigma_mod05 = sigma, mu_mod05 = mu)) %>% 
+  ggplot(aes(mu, mu_mod05)) +
+  geom_point()
+
+traceplot(mod_13_fit, pars = "mu")
+traceplot(mod_13_fit, pars = "sigma")
+
+traceplot(mod_13_fit, pars = "meanlog")
+traceplot(mod_13_fit, pars = "sdlog")
+
+traceplot(mod_13_fit, pars = "q")
+
+```
 
 
 
@@ -1408,7 +1485,7 @@ Quick side note to try and run the mod05 and mod06 on all species.
 
 species_selection <- 
   data_obs %>% 
-  select(species_name) %>% 
+  dplyr::select(species_name) %>% 
   distinct() %>% 
   mutate(species_indx = 1:n())
 
@@ -1427,10 +1504,10 @@ data_obs_filtered <-
 
 data_obs_filtered_byspp <-
   data_obs_filtered %>% 
-  select(species_indx, 
-         totaln_spp, 
-         min_row, 
-         max_row) %>% 
+  dplyr::select(species_indx, 
+                totaln_spp, 
+                min_row, 
+                max_row) %>% 
   distinct() %>% 
   arrange(species_indx)
 
