@@ -786,7 +786,7 @@ save_plot(plot = mod_05vsmod_06_plot,
 
 We will start by looking only at 20 species
 
-**Note:** This uses the same stan code as modol_03, which is for the simulated data.
+**Note:** This uses the same stan code as model_03, which is for the simulated data.
 
 ```{r mod05-modelfit}
 
@@ -813,9 +813,9 @@ if(run_largemodels){
 if(run_largemodels){
   mod_06_allspp_data <- make_datalist(data_obs_count_allspp, data_obs_count_allspp_byspp)
   
-  mod_06_allspp_fit  <- run_stanmod("mod_06_allspp")
+  mod_06_allspp_fit  <- run_stanmod("mod_06_allspp", overwrite = TRUE)
   mod_06_allspp_pars <- extract_pars(mod_06_allspp_fit)
-  plot_mod_fit("mod_06_allspp")
+  plot_mod_fit("mod_06_allspp", overwrite = T)
 }
 
 ```
@@ -1220,6 +1220,25 @@ traceplot(mod_09_fit, pars = "sigma")
 
 ```
 
+```{r}
+
+if(run_largemodels){
+  
+  mod_09_allspp_data <- 
+    make_datalist(data_obs_count_allspp, 
+                  data_obs_count_allspp_byspp)
+
+mod_09_allspp_fit  <- run_stanmod("mod_09_allspp")
+mod_09_allspp_pars <- extract_pars(mod_09_allspp_fit)
+plot_mod_fit("mod_09_allspp")
+
+traceplot(mod_09_allspp_fit, pars = "mu")
+traceplot(mod_09_allspp_fit, pars = "sigma")
+}
+
+```
+
+
 ## Model 10 (20 species)
 
 **Data:** Real binned data
@@ -1241,6 +1260,24 @@ traceplot(mod_10_fit, pars = "sdlog")
 
 ```
 
+## Model 10 (774 species)
+
+```{r mod10-modelfit}
+
+if(run_largemodels){
+  mod_10_allspp_data <- make_datalist(data_obs_count_allspp, data_obs_count_allspp_byspp)
+
+mod_10_allspp_fit  <- run_stanmod("mod_10_allspp", overwrite = T)
+mod_10_allspp_pars <- extract_pars(mod_10_allspp_fit)
+plot_mod_fit("mod_10_allspp")
+
+traceplot(mod_10_allspp_fit, pars = "meanlog")
+traceplot(mod_10_allspp_fit, pars = "sdlog")
+}
+
+
+```
+
 ## Model 11 (20 species)
 
 **Data:** Real binned data
@@ -1259,6 +1296,22 @@ plot_mod_fit("mod_11")
 
 traceplot(mod_11_fit, pars = "mu")
 traceplot(mod_11_fit, pars = "sigma")
+
+```
+
+## Model 11 (774 species)
+
+```{r mod11-modelfit}
+if(run_largemodels){
+  mod_11_allspp_data <- make_datalist(data_obs_count_allspp, 
+                                      data_obs_count_allspp_byspp)
+
+mod_11_allspp_fit  <- run_stanmod("mod_11_allspp", overwrite = T)
+mod_11_allspp_pars <- extract_pars(mod_11_allspp_fit)
+plot_mod_fit("mod_11_allspp")
+
+}
+
 
 ```
 
