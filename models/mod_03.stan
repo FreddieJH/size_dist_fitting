@@ -11,8 +11,8 @@ data {
   int<lower=0>         n[I];     // fish in the bin
 }
 parameters {
-  real<lower = 0, upper = 4.5> ln_mu[S]; // mean size for each species
-  real<lower = 0, upper = 10> ln_sigma[S]; // standard deviation for each species
+  real<lower = 0, upper = 5> ln_mu[S]; // mean size for each species
+  real<lower = 0, upper = 5> ln_sigma[S]; // standard deviation for each species
 }
 
 model {
@@ -20,8 +20,8 @@ model {
   real sigma;
   real mu;
   // Prior distributions for mu and sigma
-  ln_mu ~ normal(4, 1);
-  ln_sigma ~ normal(0, 4);
+  ln_mu ~ normal(2.4, 0.8);
+  ln_sigma ~ normal(1.5, 0.8);
   
   // Likelihood for each observation
   
