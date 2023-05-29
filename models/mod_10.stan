@@ -11,7 +11,7 @@ data {
   int<lower=0>         n[I];     // fish in the bin
 }
 parameters {
-  real<lower = -4, upper = 8> meanlog[S]; // mean size for each species
+  real<lower = -4, upper = 6> meanlog[S]; // mean size for each species
   real<lower = 0, upper = 5> sdlog[S]; // standard deviation for each species
 }
 
@@ -19,8 +19,8 @@ model {
   real bin_prob;
   real normalisation_const;
   // Prior distributions for mu and sigma
-  meanlog ~ normal(3, 5);
-  sdlog ~ normal(0, 4);
+  meanlog ~ normal(2.5, 0.5);
+  sdlog ~ normal(0.5, 0.1);
   
   // Likelihood for each observation
   

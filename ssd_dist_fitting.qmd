@@ -1184,6 +1184,24 @@ traceplot(mod_10_fit, pars = "sdlog")
 
 ```
 
+## Model 10 (774 species)
+
+```{r mod10-modelfit}
+
+if(run_largemodels){
+  mod_10_allspp_data <- make_datalist(data_obs_count_allspp, data_obs_count_allspp_byspp)
+
+mod_10_allspp_fit  <- run_stanmod("mod_10_allspp", overwrite = T)
+mod_10_allspp_pars <- extract_pars(mod_10_allspp_fit)
+plot_mod_fit("mod_10_allspp")
+
+traceplot(mod_10_allspp_fit, pars = "meanlog")
+traceplot(mod_10_allspp_fit, pars = "sdlog")
+}
+
+
+```
+
 ## Model 11 (20 species)
 
 **Data:** Real binned data
