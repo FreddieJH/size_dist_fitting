@@ -670,7 +670,6 @@ mod_05_fit  <- run_stanmod("mod_05")
 mod_05_pars <- extract_pars(mod_05_fit)
 plot_mod_fit("mod_05")
 
-traceplot(mod_06_fit, "sdlog")
 
 mod_05_pars %>% 
   ggplot() +
@@ -802,9 +801,9 @@ if(run_largemodels){
 if(run_largemodels){
   mod_06_allspp_data <- make_datalist(data_obs_count_allspp, data_obs_count_allspp_byspp)
   
-  mod_06_allspp_fit  <- run_stanmod("mod_06_allspp")
+  mod_06_allspp_fit  <- run_stanmod("mod_06_allspp", overwrite = TRUE)
   mod_06_allspp_pars <- extract_pars(mod_06_allspp_fit)
-  plot_mod_fit("mod_06_allspp")
+  plot_mod_fit("mod_06_allspp", overwrite = T)
 }
 
 
@@ -1063,6 +1062,25 @@ traceplot(mod_09_fit, pars = "sigma")
 
 ```
 
+```{r}
+
+if(run_largemodels){
+  
+  mod_09_allspp_data <- 
+    make_datalist(data_obs_count_allspp, 
+                  data_obs_count_allspp_byspp)
+
+mod_09_allspp_fit  <- run_stanmod("mod_09_allspp")
+mod_09_allspp_pars <- extract_pars(mod_09_allspp_fit)
+plot_mod_fit("mod_09_allspp")
+
+traceplot(mod_09_allspp_fit, pars = "mu")
+traceplot(mod_09_allspp_fit, pars = "sigma")
+}
+
+```
+
+
 ## Model 10 (20 species)
 
 **Data:** Real binned data
@@ -1102,6 +1120,22 @@ plot_mod_fit("mod_11")
 
 traceplot(mod_11_fit, pars = "mu")
 traceplot(mod_11_fit, pars = "sigma")
+
+```
+
+## Model 11 (774 species)
+
+```{r mod11-modelfit}
+if(run_largemodels){
+  mod_11_allspp_data <- make_datalist(data_obs_count_allspp, 
+                                      data_obs_count_allspp_byspp)
+
+mod_11_allspp_fit  <- run_stanmod("mod_11_allspp", overwrite = T)
+mod_11_allspp_pars <- extract_pars(mod_11_allspp_fit)
+plot_mod_fit("mod_11_allspp")
+
+}
+
 
 ```
 
