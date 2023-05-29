@@ -37,6 +37,7 @@ library(cowplot)
 library(stringr)
 library(rlang)
 library(posterior)
+library(fitdistrplus)
 
 
 rstan_options(auto_write = TRUE) # avoid recompilation of stan files
@@ -798,6 +799,27 @@ if(run_largemodels){
   plot_mod_fit("mod_05_allspp", overwrite = TRUE)
 }
 
+# Values to inform priors
+
+mod_05_allspp_pars_med <-
+  mod_05_allspp_pars %>% 
+  filter(quantile == "median")
+
+mod_05_allspp_pars_med %>% 
+  ggplot(aes(x = mu %>% log())) +
+  geom_density()
+
+mod_05_allspp_pars_med %>% 
+  ggplot(aes(x = sigma %>% log())) +
+  geom_density()
+
+mod_05_allspp_pars_med$mu %>% log() %>% range()
+mod_05_allspp_pars_med$sigma %>% log() %>% range()
+
+fitdistrplus::fitdist(log(mod_05_allspp_pars_med$mu), "norm")
+fitdistrplus::fitdist(log(mod_05_allspp_pars_med$sigma), "norm")
+
+
 ```
 
 
@@ -810,6 +832,7 @@ if(run_largemodels){
 **Parameters:** Per species sdlog, per species meanlog
 
 ```{r mod06-modelfit}
+
 if(run_largemodels){
   mod_06_allspp_data <- make_datalist(data_obs_count_allspp, data_obs_count_allspp_byspp)
   
@@ -817,6 +840,32 @@ if(run_largemodels){
   mod_06_allspp_pars <- extract_pars(mod_06_allspp_fit)
   plot_mod_fit("mod_06_allspp", overwrite = T)
 }
+
+
+# Values to inform priors
+mod_06_allspp_pars_med <-
+  mod_06_allspp_pars %>% 
+  filter(quantile == "median")
+
+
+mod_06_allspp_pars_med %>% 
+  ggplot(aes(x = meanlog)) +
+  geom_density()
+
+mod_06_allspp_pars_med %>% 
+  ggplot(aes(x = sdlog)) +
+  geom_density()
+
+mod_06_allspp_pars_med %>% 
+  pull(meanlog) %>% 
+  range()
+
+mod_06_allspp_pars_med %>% 
+   pull(sdlog) %>% 
+  range()
+
+fitdistrplus::fitdist(mod_06_allspp_pars_med$meanlog, "norm")
+fitdistrplus::fitdist(mod_06_allspp_pars_med$sdlog, "norm")
 
 ```
 
@@ -1237,7 +1286,6 @@ traceplot(mod_09_allspp_fit, pars = "sigma")
 }
 
 ```
-
 
 ## Model 10 (20 species)
 
