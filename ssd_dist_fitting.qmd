@@ -785,7 +785,7 @@ save_plot(plot = mod_05vsmod_06_plot,
 
 We will start by looking only at 20 species
 
-**Note:** This uses the same stan code as modol_03, which is for the simulated data.
+**Note:** This uses the same stan code as model_03, which is for the simulated data.
 
 ```{r mod05-modelfit}
 if(run_largemodels){
