@@ -22,7 +22,7 @@ model {
   real bin_prob;
   real sdlog;
   // Prior distributions for mu and sigma
-  meanlog ~ normal(2, 5);
+  meanlog ~ normal(3, 1);
   
   beta_0 ~ normal(0, 4);
   beta_1 ~ normal(0, 4);
