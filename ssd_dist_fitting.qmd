@@ -801,17 +801,6 @@ run_multiple_mods(5,
                   all_species = FALSE,
                   overwrite_model = TRUE)
 
-run_stanmod("mod_07") %>% traceplot("mu")
-run_stanmod("mod_07") %>% traceplot("sigma")
-
-
-run_stanmod("mod_05")
-xx <- extract_pars("mod_05") 
-
-traceplot(run_stanmod("mod_05"), "mu")
-
-xx %>% ggplot(aes(mu, sigma)) + geom_point() + stat_smooth(method = "lm")
-lm(xx$sigma ~ xx$mu)
 ```
 
 ### Plot models
