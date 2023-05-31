@@ -414,8 +414,8 @@ run_stanmod <- function(mod_name, overwrite = FALSE){
       stan(
         file = stanfile,
         data = datalist,
-        iter = 2500,
-        warmup = 500,
+        iter = 2000,
+        warmup = 1500,
         chains = 3,
         refresh = 500,
         seed = 1,
@@ -1101,14 +1101,12 @@ where $k$ is the species id.
 
 ```{r mod07-allspp-modelfit}
 if(run_largemodels){
-  mod_07_allspp_data <- mod_05_allspp_data
+  mod_07_allspp_data <- make_datalist(data_obs_count_allspp, data_obs_count_allspp_byspp)
   
-  mod_07_allspp_fit  <- run_stanmod("mod_07_allspp")
+  mod_07_allspp_fit  <- run_stanmod("mod_07_allspp", overwrite = TRUE)
   mod_07_allspp_pars <- extract_pars(mod_07_allspp_fit)
-  plot_mod_fit("mod_07_allspp")
+  plot_mod_fit("mod_07_allspp", overwrite = TRUE)
   
-  traceplot(mod_07_allspp_fit, pars = "mu")
-  traceplot(mod_07_allspp_fit, pars = "sigma")
 }
 ```
 

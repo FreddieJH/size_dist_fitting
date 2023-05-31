@@ -39,7 +39,6 @@ model {
       target += binomial_lpmf(n[i] | N_species[sp], bin_prob);
     }
 
-    
   }
 
 }

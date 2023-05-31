@@ -11,7 +11,7 @@ data {
   int<lower=0>         n[I];     // fish in the bin
 }
 parameters {
-  real<lower = 0, upper = 100> mu[S]; // mean size for each species
+  real<lower = 0, upper = 5> ln_mu[S]; // mean size for each species
   // real<lower = 0, upper = 10> ln_sigma[S]; // standard deviation for each species
   real<lower = -10, upper = 3> beta_0;
   real<lower = -3, upper = 3> beta_1;
@@ -20,8 +20,9 @@ parameters {
 model {
   real bin_prob;
   real sigma;
+  real mu;
   // Prior distributions for mu and sigma
-  mu ~ normal(4, 5);
+  ln_mu ~ normal(2.4, 0.8);
 
   beta_0 ~ normal(0, 4);
   beta_1 ~ normal(0, 4);
@@ -32,12 +33,14 @@ model {
   for (sp in 1:S) { 
     
     // ln_sigma is easier to predict
-    sigma = beta_0 + (beta_1*mu[sp]);
+    mu = exp(ln_mu[sp]);
+    sigma = beta_0 + (beta_1*mu);
+    
     // within a species, all bins have to come from one or the other dist:
     for (i in i_min[sp]:i_max[sp]) { // for each species
         
-      bin_prob = (normal_cdf(l[b[i]+1], mu[sp], sigma) - 
-        normal_cdf(l[b[i]], mu[sp], sigma)); 
+      bin_prob = (normal_cdf(l[b[i]+1], mu, sigma) - 
+        normal_cdf(l[b[i]], mu, sigma)); 
 
         bin_prob = fmax(1e-8, bin_prob);
 
@@ -52,7 +55,9 @@ model {
 
 generated quantities {
   real sigma[S];
+  real mu[S];
   for (sp in 1:S) { 
+    mu[sp] = exp(ln_mu[sp]);
     sigma[sp] = beta_0 + (beta_1*mu[sp]);
   }
   
