@@ -13,8 +13,8 @@ data {
 parameters {
   real<lower = 0, upper = 5> ln_mu[S]; // mean size for each species
   
-  real<lower = -10, upper = 3> beta_0;
-  real<lower = -3, upper = 3> beta_1;
+  real<lower = -3, upper = 3> beta_0;
+  real<lower = -2, upper = 2> beta_1;
 }
 
 model {
@@ -25,8 +25,8 @@ model {
   // Prior distributions for mu and sigma
   ln_mu ~ normal(2.4, 0.8);
   
-  beta_0 ~ normal(0, 4);
-  beta_1 ~ normal(0, 4);
+  beta_0 ~ normal(0, 0.5);
+  beta_1 ~ normal(0.5, 0.5);
 
   // Likelihood for each observation
   

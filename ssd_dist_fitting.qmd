@@ -394,7 +394,6 @@ mods_summary <-
 
 ```{r modelling-functions}
 
-
 # make the stan datalist for models 03 and 04
 make_datalist <- function(count_data, spplevel_data){
   list(
@@ -420,7 +419,7 @@ run_stanmod <- function(mod_name,
   
   mod_fits_filename <- paste0("output/model_fits/", mod_name, ".rds")
   
-  if(!file.exists(filename) | overwrite){
+  if(!file.exists(mod_fits_filename) | overwrite){
     
     stanfile <-
       mods_summary %>% 
@@ -439,7 +438,8 @@ run_stanmod <- function(mod_name,
         refresh = 500,
         init_r = init_r,
         seed = 1,
-        cores = chains
+        cores = chains,
+        save_dso = FALSE
       )
     
     saveRDS(mod_fit, mod_fits_filename)
@@ -447,6 +447,19 @@ run_stanmod <- function(mod_name,
     mod_fit <- readRDS(mod_fits_filename)
   }
   return(mod_fit)
+}
+
+
+run_multiple_mods <- function(integer_vector, 
+                              all_species = FALSE, 
+                              overwrite_model = FALSE, 
+                              init_r = 2){
+  
+  integer_vector %>% 
+    str_pad(pad = "0", width = 2) %>% 
+    paste0("mod_", .) %>% 
+    {if(all_species) paste0(., "_allspp") else .} %>% 
+    map(run_stanmod, overwrite = overwrite_model, init_r = init_r)
 }
 
 
@@ -481,7 +494,7 @@ plot_mod_fit <- function(mod_name, overwrite = FALSE){
   
   mod_row <- mods_summary %>% filter(model_name == mod_name) 
   
-  filename <- paste0("output/model_plots/", mod_name, ".png")
+  mod_plots_filename <- paste0("output/model_plots/", mod_name, ".png")
   mod_pars <- extract_pars(mod_name)
   rawdata <- eval(parse(text = mod_row$data_source))
   dist <- mod_row$distribution
@@ -511,7 +524,7 @@ plot_mod_fit <- function(mod_name, overwrite = FALSE){
     if(mod_row$data == "real"){"real data."} else {"simulated data."}
   )
   
-  if(!file.exists(filename) | overwrite){
+  if(!file.exists(mod_plots_filename) | overwrite){
     
     if(data_type == "continuous"){
       mod_plot <- 
@@ -535,7 +548,7 @@ plot_mod_fit <- function(mod_name, overwrite = FALSE){
     }
     
     save_plot(plot = mod_plot, 
-              filename = filename, 
+              filename = mod_plots_filename, 
               base_height = 8)
   }
   
@@ -576,7 +589,7 @@ plot_model_continuous <- function(stan_model_pars,
                 alpha = 0.5) +
     facet_wrap(as.formula(paste("~", facet_var)), scales = "free")  +
     ggtitle(label = sub,
-            subtitle = paste0(dist, " (", if(dist == "norm"){"blue"}else{"red"}, ")"),)
+            subtitle = paste0(dist, " (", if(dist == "norm"){"blue"}else{"red"}, ")"))
   
 }
 
@@ -626,7 +639,7 @@ plot_model_binned <- function(stan_model_pars,
                   fill = "red",
                   alpha = 0.5) +
       facet_wrap(as.formula(paste("~", facet_var)), scales = "free")  +
-    ggtitle(paste0(dist, " (", if(dist == "norm"){"blue"}else{"red"}, ")"), 
+    ggtitle(label = paste0(dist, " (", if(dist == "norm"){"blue"}else{"red"}, ")"), 
             subtitle = sub)
     
   } else {
@@ -783,28 +796,29 @@ mod_05_data <- mod_06_data <- mod_07_data <-
 
 ```{r}
 
-run_multiple_mods <- function(integer_vector, 
-                              all_species = FALSE, 
-                              overwrite_model = FALSE){
-  
-  integer_vector %>% 
-    str_pad(pad = "0", width = 2) %>% 
-    paste0("mod_", .) %>% 
-    {if(all_species) paste0(., "_allspp") else .} %>% 
-    map(run_stanmod, overwrite = overwrite_model)
-}
+run_multiple_mods(5, 
+                  init_r = 1, 
+                  all_species = FALSE,
+                  overwrite_model = TRUE)
 
-# 20 species only models
-run_multiple_mods(3, overwrite_model = TRUE)
-run_multiple_mods(1:12, overwrite_model = TRUE)
+run_stanmod("mod_07") %>% traceplot("mu")
+run_stanmod("mod_07") %>% traceplot("sigma")
 
+
+run_stanmod("mod_05")
+xx <- extract_pars("mod_05") 
+
+traceplot(run_stanmod("mod_05"), "mu")
+
+xx %>% ggplot(aes(mu, sigma)) + geom_point() + stat_smooth(method = "lm")
+lm(xx$sigma ~ xx$mu)
 ```
 
 ### Plot models
 
 ```{r}
 
-1:12 %>% 
+5 %>% 
   str_pad(pad = "0", width = 2) %>% 
   paste0("mod_", .) %>% 
   map(plot_mod_fit, 

@@ -13,3 +13,5 @@ output/
 *.rds
 
 for_shane.qmd
+
+extra/
