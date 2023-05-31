@@ -51,6 +51,7 @@ library(rlang)
 library(posterior)
 library(fitdistrplus, include.only = "fitdist")
 library(purrr)
+library(patchwork)
 
 
 rstan_options(auto_write = TRUE) # avoid recompilation of stan files
@@ -334,6 +335,20 @@ if(!file.exists("output/data_figs/ssd_sim_20spp_log.png") | rerun_figures){
 
 ```
 
+## Data cleanup
+
+```{r}
+
+rm(
+  data_obs, 
+  data_obs_sample,
+  data_out, 
+  data_sim
+)
+
+```
+
+
 # Bayesian modelling
 
 ## Outline of models
@@ -431,15 +446,15 @@ run_stanmod <- function(mod_name,
     
     mod_fit <-
       stan(stanfile,
-        data = datalist,
-        iter = iter,
-        warmup = warmup,
-        chains = chains,
-        refresh = 500,
-        init_r = init_r,
-        seed = 1,
-        cores = chains,
-        save_dso = FALSE
+           data = datalist,
+           iter = iter,
+           warmup = warmup,
+           chains = chains,
+           refresh = 500,
+           init_r = init_r,
+           seed = 1,
+           cores = chains,
+           save_dso = FALSE
       )
     
     saveRDS(mod_fit, mod_fits_filename)
@@ -463,9 +478,23 @@ run_multiple_mods <- function(integer_vector,
 }
 
 
+plot_multiple_mods <- function(integer_vector, 
+                               all_species = FALSE, 
+                               overwrite_plot = FALSE){
+  
+  
+  integer_vector %>% 
+    str_pad(pad = "0", width = 2) %>% 
+    paste0("mod_", .) %>% 
+    {if(all_species) paste0(., "_allspp") else .} %>% 
+    map(plot_mod_fit, 
+        overwrite = overwrite_plot)
+}
+
+
 # extract parameters from a stan model in a tidy way
 extract_pars <- function(stan_model){
-
+  
   run_stanmod(stan_model, 
               overwrite = FALSE) %>%
     summarise_draws() %>% 
@@ -515,9 +544,9 @@ plot_mod_fit <- function(mod_name, overwrite = FALSE){
     if(all_spp){"774 species, "} else {"20 species, "},
     if(bin_corr){"Corrected for first bin, "} else {"Not corrected for first bin, "},
     if(dist == "norm"){
-       if(var_est){"sigma predicted from mu, "} else {"per-species sigma, "}
+      if(var_est){"sigma predicted from mu, "} else {"per-species sigma, "}
     } else if(dist == "lnorm") {
-        if(var_est){"sdlog predicted from meanlog, "} else {"per-species sdlog, "}
+      if(var_est){"sdlog predicted from meanlog, "} else {"per-species sdlog, "}
     } else if(dist == "norm & lnorm"){
       if(var_est){"variance pars predicted from location pars, "} else {"per-species variance pars, "}
     },
@@ -544,7 +573,7 @@ plot_mod_fit <- function(mod_name, overwrite = FALSE){
                           xvar = xvar, 
                           facet_var = facet_name, 
                           allspp = all_spp, 
-                              sub = subtitle)
+                          sub = subtitle)
     }
     
     save_plot(plot = mod_plot, 
@@ -563,7 +592,7 @@ plot_model_continuous <- function(stan_model_pars,
                                   facet_var = "species_indx", 
                                   sub = ""){
   
-    
+  
   raw_data %>% 
     full_join(stan_model_pars,
               by = join_by(species_indx),
@@ -639,8 +668,8 @@ plot_model_binned <- function(stan_model_pars,
                   fill = "red",
                   alpha = 0.5) +
       facet_wrap(as.formula(paste("~", facet_var)), scales = "free")  +
-    ggtitle(label = paste0(dist, " (", if(dist == "norm"){"blue"}else{"red"}, ")"), 
-            subtitle = sub)
+      ggtitle(label = paste0(dist, " (", if(dist == "norm"){"blue"}else{"red"}, ")"), 
+              subtitle = sub)
     
   } else {
     
@@ -684,7 +713,7 @@ comparison_plot <- function(mod1, mod2, plot_title = ""){
   
   mod_row1 <- mods_summary %>% filter(model_name == mod1) 
   mod_row2 <- mods_summary %>% filter(model_name == mod2) 
-
+  
   mod_pars1 <- extract_pars(mod1)
   mod_pars2 <- extract_pars(mod2)
   
@@ -754,7 +783,7 @@ comparison_plot <- function(mod1, mod2, plot_title = ""){
                 alpha = 0.5,
                 data = mod2_out) +
     facet_wrap(~species_name, scales = "free") +
-      ggtitle(label = plot_title, 
+    ggtitle(label = plot_title, 
             subtitle = "Normal (blue), lognormal (red), bin correction (dotted = no, solid = yes)")
   
   save_plot(plot = mod_plot, 
@@ -780,7 +809,7 @@ mod_01_data <-
     n_species = max(data_sim$species_indx),
     species_id = data_sim$species_indx,
     y = data_sim$size_class_raw
-    )
+  )
 
 mod_03_data <- mod_04_data <- 
   make_datalist(data_sim_count, data_sim_byspp)
@@ -812,11 +841,9 @@ run_multiple_mods(9,
 
 ```{r}
 
-5 %>% 
-  str_pad(pad = "0", width = 2) %>% 
-  paste0("mod_", .) %>% 
-  map(plot_mod_fit, 
-      overwrite = overwrite_smallplots)
+plot_multiple_mods(c(5,6, 7), 
+                   all_species = TRUE,
+                   overwrite_plot = TRUE)
 
 ```
 
@@ -835,11 +862,210 @@ comparison_plot("mod_06", "mod_10",
 comparison_plot("mod_07", 
                 "mod_11", "norm, correction vs no-correction, variance estimated (with bin correction)")
 
-
 comparison_plot("mod_05", "mod_07", "norm, variance per species vs estimated")
 comparison_plot("mod_06", "mod_08", "lnorm, variance per species vs estimated")
 comparison_plot("mod_09", "mod_11", "norm, variance per species vs estimated (with bin correction)")
 comparison_plot("mod_10", "mod_12", "lnorm, variance per species vs estimated (with bin correction)")
 
+```
+
+# Further analysis
+
+```{r}
+
+compare_pars_plot <- function(norm_mod, lnorm_mod, xlim = c(NA, NA), ylim = c(NA, NA)){
+  
+  norm_pars <- extract_pars(norm_mod) %>% filter(quantile == "median")
+  lnorm_pars <- extract_pars(lnorm_mod) %>% filter(quantile == "median")
+  
+  norm_lm <- lm(sigma ~ mu, data = norm_pars)
+  lnorm_lm <- lm(sdlog ~ meanlog, data = lnorm_pars)
+  
+  p1 <- 
+    mod_05_allspp_pars %>% 
+    mutate(fit = predict(norm_lm)) %>% 
+    ggplot() +
+    aes(
+      x = mu, 
+      y = sigma
+    ) +
+    geom_point() +
+    geom_line(aes(y = fit)) +
+    geom_line(aes(y = fit), 
+              col = "blue") +
+    stat_smooth(col = "orange") +
+    theme_cowplot(20)
+  
+  p2 <- 
+    mod_06_allspp_pars %>% 
+    mutate(fit = predict(lnorm_lm)) %>% 
+    ggplot() +
+    aes(
+      x = meanlog, 
+      y = sdlog
+    ) +
+    geom_point() +
+    geom_line(aes(y = fit), 
+              col = "red") +
+    stat_smooth() +
+    stat_smooth(col = "orange") +
+    theme_cowplot(20)
+  
+  p3 <- p1 + p2
+  
+  save_plot(filename = paste0("output/figures/", norm_mod, "_vs_", lnorm_mod, "_pars.png"), 
+            plot = p3, 
+            base_height = 8, 
+            base_asp = 1.618*2)
+}
+
+compare_pars_plot("mod_07_allspp", "mod_08_allspp")
+compare_pars_plot("mod_09_allspp", "mod_10_allspp")
+compare_pars_plot("mod_11_allspp", "mod_12_allspp")
+
+
+```
+
+```{r}
+
+mod_07_allspp_pars <- extract_pars("mod_07_allspp") %>% filter(quantile == "median")
+mod_08_allspp_pars <- extract_pars("mod_08_allspp") %>% filter(quantile == "median")
+
+lm1 <- lm(sigma ~ mu, data = mod_07_allspp_pars)
+lm2 <- lm(sdlog ~ meanlog, data = mod_08_allspp_pars)
+
+p4 <- 
+  mod_07_allspp_pars %>% 
+  mutate(fit = predict(lm1)) %>% 
+  ggplot() +
+  aes(
+    x = mu, 
+    y = sigma
+  ) +
+  geom_point() +
+  geom_line(aes(y = fit)) +
+  geom_line(aes(y = fit), 
+            col = "blue") +
+  theme_cowplot(20) +
+  lims(y = layer_scales(p1)$y$range$range, 
+       x = layer_scales(p1)$x$range$range)
+
+p5 <- 
+  mod_08_allspp_pars %>% 
+  mutate(fit = predict(lm2)) %>% 
+  ggplot() +
+  aes(
+    x = meanlog, 
+    y = sdlog
+  ) +
+  geom_point() +
+  geom_line(aes(y = fit), 
+            col = "red") +
+  theme_cowplot(20) +
+  lims(y = layer_scales(p2)$y$range$range, 
+       x = layer_scales(p2)$x$range$range)
+
+p6 <- p4 + p5
+
+save_plot(filename = "output/figures/mod_07_vs_mod_08_pars.png", 
+          plot = p6, 
+          base_height = 8, 
+          base_asp = 1.618*2)
+```
+
+```{r}
+
+
+mod_09_allspp_pars <- extract_pars("mod_09_allspp") %>% filter(quantile == "median")
+mod_10_allspp_pars <- extract_pars("mod_10_allspp") %>% filter(quantile == "median")
+
+lm1 <- lm(sigma ~ mu, data = mod_09_allspp_pars)
+lm2 <- lm(sdlog ~ meanlog, data = mod_10_allspp_pars)
+
+p7 <- 
+  mod_09_allspp_pars %>% 
+  mutate(fit = predict(lm1)) %>% 
+  ggplot() +
+  aes(
+    x = mu, 
+    y = sigma
+  ) +
+  geom_point() +
+  geom_line(aes(y = fit), 
+            col = "blue") +
+  stat_smooth(col = "orange") +
+  theme_cowplot(20) 
+
+p8 <- 
+  mod_10_allspp_pars %>% 
+  mutate(fit = predict(lm2)) %>% 
+  ggplot() +
+  aes(
+    x = meanlog, 
+    y = sdlog
+  ) +
+  geom_point() +
+  geom_line(aes(y = fit), 
+            col = "red") +
+  stat_smooth(col = "orange") +
+  theme_cowplot(20) 
+
+p9 <- p7 + p8
+
+save_plot(filename = "output/figures/mod_09_vs_mod_10_pars.png", 
+          plot = p9, 
+          base_height = 8, 
+          base_asp = 1.618*2)
+
+```
+
+```{r}
+
+
+mod_11_allspp_pars <- extract_pars("mod_11_allspp") %>% filter(quantile == "median")
+mod_12_allspp_pars <- extract_pars("mod_12_allspp") %>% filter(quantile == "median")
+
+lm1 <- lm(sigma ~ mu, data = mod_11_allspp_pars)
+lm2 <- lm(sdlog ~ meanlog, data = mod_12_allspp_pars)
+
+p10 <- 
+  mod_11_allspp_pars %>% 
+  mutate(fit = predict(lm1)) %>% 
+  ggplot() +
+  aes(
+    x = mu, 
+    y = sigma
+  ) +
+  geom_point() +
+  geom_line(aes(y = fit)) +
+  geom_line(aes(y = fit), 
+            col = "blue") +
+  stat_smooth(col = "orange") +
+  theme_cowplot(20) +
+  lims(y = layer_scales(p1)$y$range$range, 
+       x = layer_scales(p1)$x$range$range)
+
+p11 <- 
+  mod_12_allspp_pars %>% 
+  mutate(fit = predict(lm2)) %>% 
+  ggplot() +
+  aes(
+    x = meanlog, 
+    y = sdlog
+  ) +
+  geom_point() +
+  geom_line(aes(y = fit), 
+            col = "red") +
+  stat_smooth(col = "orange") +
+  theme_cowplot(20) +
+  lims(y = layer_scales(p2)$y$range$range, 
+       x = layer_scales(p2)$x$range$range)
+
+p12 <- p10 + p11
+
+save_plot(filename = "output/figures/mod_11_vs_mod_12_pars.png", 
+          plot = p6, 
+          base_height = 8, 
+          base_asp = 1.618*2)
 ```
 
