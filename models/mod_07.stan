@@ -12,9 +12,10 @@ data {
 }
 parameters {
   real<lower = 0, upper = 5> ln_mu[S]; // mean size for each species
-  // real<lower = 0, upper = 10> ln_sigma[S]; // standard deviation for each species
-  real<lower = -10, upper = 3> beta_0;
-  real<lower = -3, upper = 3> beta_1;
+  
+  real<lower = -3, upper = 3> beta_0;
+  real<lower = -2, upper = 2> beta_1;
+
 }
 
 model {
@@ -24,18 +25,17 @@ model {
   // Prior distributions for mu and sigma
   ln_mu ~ normal(2.4, 0.8);
 
-  beta_0 ~ normal(0, 4);
-  beta_1 ~ normal(0, 4);
+  beta_0 ~ normal(0, 0.5);
+  beta_1 ~ normal(0.5, 0.5);
 
-  // Likelihood for each observation
   
   // loop over each species
   for (sp in 1:S) { 
     
-    // ln_sigma is easier to predict
+
     mu = exp(ln_mu[sp]);
     sigma = beta_0 + (beta_1*mu);
-    
+
     // within a species, all bins have to come from one or the other dist:
     for (i in i_min[sp]:i_max[sp]) { // for each species
         
@@ -44,8 +44,7 @@ model {
 
         bin_prob = fmax(1e-8, bin_prob);
 
-      // target += n[i]*log(bin_prob); // this is shanes likelihood
-      target += binomial_lpmf(n[i] | N_species[sp], bin_prob); // my likelihood
+      target += n[i]*log(bin_prob);
     }
 
     
@@ -54,8 +53,10 @@ model {
 }
 
 generated quantities {
+  
   real sigma[S];
   real mu[S];
+
   for (sp in 1:S) { 
     mu[sp] = exp(ln_mu[sp]);
     sigma[sp] = beta_0 + (beta_1*mu[sp]);

@@ -39,7 +39,7 @@ model {
         
         bin_prob = fmax(1e-8, bin_prob);
 
-      target += binomial_lpmf(n[i] | N_species[sp], bin_prob);
+      target += n[i]*log(bin_prob);
     }
 
     

@@ -37,11 +37,9 @@ model {
       bin_prob = (normal_cdf(l[b[i]+1], mu, sigma) - 
         normal_cdf(l[b[i]], mu, sigma)); 
         
-        
         bin_prob = fmax(1e-8, bin_prob);
 
-      // target += n[i]*log(bin_prob); // this is shanes likelihood
-      target += binomial_lpmf(n[i] | N_species[sp], bin_prob); // my likelihood
+      target += n[i]*log(bin_prob); 
     }
 
     
