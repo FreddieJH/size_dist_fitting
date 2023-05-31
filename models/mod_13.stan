@@ -47,7 +47,6 @@ model {
   meanlog ~ normal(2.4, 0.8);
   sdlog ~ normal(0.4, 0.2);
   
-  
   logit_q ~ normal(0, 1);
 
   // Likelihood for each observation
@@ -77,17 +76,15 @@ model {
         bin_prob_norm = fmax(1e-8, bin_prob_norm);
         bin_prob_lnorm = fmax(1e-8, bin_prob_lnorm);
 
-      // target += n[i]*log(bin_prob); // this is shanes likelihood
-      total_prob_norm += binomial_lpmf(n[i] | N_species[sp], bin_prob_norm); // my likelihood
-      total_prob_lnorm += binomial_lpmf(n[i] | N_species[sp], bin_prob_lnorm); // my likelihood
-    
+      target += n[i]*log(bin_prob_norm); // this is shanes likelihood
+      target += n[i]*log(bin_prob_lnorm);
     }
     
-    max_prob = fmax(total_prob_norm, total_prob_lnorm);
-    normal_prob = exp(total_prob_norm - max_prob);
-    lognormal_prob = exp(total_prob_lnorm - max_prob);
+    max_prob = fmax(exp(total_prob_norm), exp(total_prob_lnorm));
+    normal_prob = exp(total_prob_norm) - max_prob;
+    lognormal_prob = exp(total_prob_lnorm) - max_prob;
 
-    target += log(q*exp(normal_prob) + (1.0 - q)*exp(lognormal_prob)); // add species log-likelihood term
+    target += log(q*(normal_prob) + (1.0 - q)*lognormal_prob); // add species log-likelihood term
 
   }
 }

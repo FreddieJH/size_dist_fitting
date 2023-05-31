@@ -12,7 +12,6 @@ data {
 }
 parameters {
   real<lower = -4, upper = 8> meanlog[S]; // mean size for each species
-  // real<lower = 0, upper = 5> sdlog[S]; // standard deviation for each species
   
   real<lower = -3, upper = 3> beta_0;
   real<lower = -0.05, upper = 0.05> beta_1;
@@ -42,7 +41,7 @@ model {
         
         bin_prob = fmax(1e-8, bin_prob);
 
-      target += binomial_lpmf(n[i] | N_species[sp], bin_prob);
+      target += n[i]*log(bin_prob);
     }
 
     

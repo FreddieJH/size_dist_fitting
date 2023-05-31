@@ -11,8 +11,8 @@ data {
   int<lower=0>         n[I];     // fish in the bin
 }
 parameters {
-  real<lower = 0, upper = 100> mu[S]; // mean size for each species
-  // real<lower = 0, upper = 10> ln_sigma[S]; // standard deviation for each species
+  real<lower = 0, upper = 5> ln_mu[S]; // mean size for each species
+  
   real<lower = -10, upper = 3> beta_0;
   real<lower = -3, upper = 3> beta_1;
 }
@@ -21,8 +21,9 @@ model {
   real bin_prob;
   real normalisation_const;
   real sigma;
+  real mu;
   // Prior distributions for mu and sigma
-  mu ~ normal(4, 5);
+  ln_mu ~ normal(2.4, 0.8);
   
   beta_0 ~ normal(0, 4);
   beta_1 ~ normal(0, 4);
@@ -32,20 +33,20 @@ model {
   // loop over each species
   for (sp in 1:S) { 
     
-    sigma = beta_0 + (beta_1*mu[sp]);
+    mu = exp(ln_mu[sp]);
+    sigma = beta_0 + (beta_1*mu);
     // within a species, all bins have to come from one or the other dist:
     for (i in i_min[sp]:i_max[sp]) { // for each species
     
     // probability of NOT being in the first bin (i.e. less than 1.25cm)
-    normalisation_const = 1 - normal_cdf(l[1], mu[sp], sigma); 
+    normalisation_const = 1 - normal_cdf(l[1], mu, sigma); 
         
-      bin_prob = (normal_cdf(l[b[i]+1], mu[sp], sigma) - 
-        normal_cdf(l[b[i]], mu[sp], sigma))/normalisation_const; 
+      bin_prob = (normal_cdf(l[b[i]+1], mu, sigma) - 
+        normal_cdf(l[b[i]], mu, sigma))/normalisation_const; 
         
         bin_prob = fmax(1e-8, bin_prob);
 
-      // target += n[i]*log(bin_prob); // this is shanes likelihood
-      target += binomial_lpmf(n[i] | N_species[sp], bin_prob); // my likelihood
+      target += n[i]*log(bin_prob);
     }
 
     
@@ -55,7 +56,10 @@ model {
 
 generated quantities {
   real sigma[S];
+  real mu[S];
   for (sp in 1:S) { 
+    mu[sp] = exp(ln_mu[sp]);
     sigma[sp] = beta_0 + (beta_1*mu[sp]);
+    
   }
 }

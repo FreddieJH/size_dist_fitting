@@ -12,7 +12,7 @@ data {
 }
 parameters {
   real<lower = 0, upper = 100> mu[S]; // mean size for each species
-  // real<lower = 0, upper = 10> ln_sigma[S]; // standard deviation for each species
+  
   real<lower = -10, upper = 3> beta_0;
   real<lower = -3, upper = 3> beta_1;
 }
@@ -41,8 +41,7 @@ model {
 
         bin_prob = fmax(1e-8, bin_prob);
 
-      // target += n[i]*log(bin_prob); // this is shanes likelihood
-      target += binomial_lpmf(n[i] | N_species[sp], bin_prob); // my likelihood
+      target += n[i]*log(bin_prob);
     }
 
     
