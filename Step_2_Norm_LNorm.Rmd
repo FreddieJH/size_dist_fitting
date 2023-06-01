@@ -1,0 +1,461 @@
+---
+title: "Independent normal and log-normal fits"
+author: "Shane A. Richards"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: show
+    highlight: tango
+    theme: cerulean
+    toc: yes
+  toc_float: no
+  word_document:
+    toc: yes
+  pdf_document:
+    toc: yes
+---
+
+# Notes
+
+* Normal and log-normal distribution is fit independently for each species
+* The only way to get the model to fit is to assume that some fraction `eps` of observations are randomly allocated across possible bins. 
+
+# Findings
+
+* Coefficient of variation is fairly consistent except for one species having a small mean size
+    * however the coefficient of variation is not meaningful here as mu_Nch of the normal curve falls below the smallest bin `1.25 cm`
+
+# Data Wrangling
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(ggrepel)
+library(rstan)
+library(bayesplot)
+library(cowplot)
+library(RColorBrewer)
+```
+
+```{r message=FALSE, warning=FALSE}
+rm(list = ls()) # clear memory
+
+df_test <- read_csv("extra/sim_and_obs_data.csv") # mix of real and simulated data
+```
+
+```{r}
+# Create a data frame with length bin midpoints and boundaries
+
+# create a vector of bin length mid-points
+length_mids = c(2.5, 5, 7.5, 10, 12.5, 15, 20, 25, 30, 35, 40, 50, 
+  seq(from=62.5, to=200, by=12.5), 
+  seq(from=250, to=500, by=50))
+# above needs to be modified a little as represents bin centres not boundaries!
+
+# create a data frame that links fish lengths with bin indices
+df_lengths <- tibble(
+  size_indx = 1:length(length_mids),
+  size_class = length_mids
+) %>%
+	mutate(lwr = 0.0, upr = 0.0)
+
+df_lengths$lwr[1] <- 0.5*df_lengths$size_class[1]
+n_lengths <- nrow(df_lengths)
+for(i in 2:n_lengths) {
+  df_lengths$lwr[i] <- 0.5*(df_lengths$size_class[i-1] + df_lengths$size_class[i]) 	
+  df_lengths$upr[i-1] <- df_lengths$lwr[i]	
+}
+df_lengths$upr[n_lengths] <- 1000.0	
+```
+
+```{r}
+# add size class index
+df_test <- df_test %>% left_join(dplyr::select(df_lengths, size_class, size_indx), by = "size_class")
+```
+
+## Data plots
+
+```{r}
+prop_use <- 1.0   # proportion of data used
+eps      <- 1E-4  # proportion of lengths randomly assigned
+
+max_size_indx    <- max(df_test$size_indx)
+max_species_indx <- max(df_test$species_indx)
+
+df_fit <- expand_grid(
+  species_indx = 1:max_species_indx,
+  size_indx    = 1:max_size_indx) %>%
+  left_join(dplyr::select(df_test, "species_indx", "size_indx","n"), 
+    by = c("species_indx", "size_indx"))
+
+df_fit$n[is.na(df_fit$n)] <- 0 
+df_fit <- df_fit %>% mutate(n_rounded = floor(prop_use * n))
+
+df_fit <- df_fit %>% left_join(df_lengths, by = "size_indx")
+
+# calculate species mean sizes and fit an approximate log-normal distribution
+df_tmp <- df_fit %>%
+  dplyr::select(species_indx, n_rounded) %>%
+  group_by(species_indx) %>%
+  summarise(N_rounded = sum(n_rounded))
+
+df_fit <- df_fit %>% 
+  left_join(df_tmp, by = "species_indx") %>%
+  mutate(f_rounded = n_rounded/N_rounded)
+```
+
+```{r}
+ggplot(data = df_fit) + 
+  geom_step(mapping = aes(x = lwr, y = f_rounded)) + 
+  facet_wrap( ~ species_indx, ncol = 8) +
+  scale_y_log10() + scale_x_log10() +
+  labs(x = "Fish length (cm)",  y = "Fish frequency") +
+  theme_bw()
+```
+
+```{r}
+# calculate species mean sizes and fit an approximate log-normal distribution
+df_mean_size <- df_fit %>%
+  dplyr::select(species_indx, n, size_class, size_indx) %>%
+  mutate(prod = n*size_class) %>%
+  group_by(species_indx) %>%
+  summarise(N = sum(n), SumProd = sum(prod)) %>%
+  mutate(mean_size = SumProd/N)
+
+community_size_E  <- mean(df_mean_size$mean_size)
+community_size_SD <- sd(df_mean_size$mean_size)
+
+mu_N_c_LN <- log(community_size_E / 
+  sqrt(1 + ((community_size_SD^2)/(community_size_E^2))))
+SD_c_LN <- sqrt(log(1 + (community_size_SD^2)/(community_size_E^2)))
+
+sizes <- seq(from = 0.5*min(df_mean_size$mean_size), 
+  to = 1.25*max(df_mean_size$mean_size), length.out = 100)
+
+df_LN_PDF <- tibble(
+  size = sizes,
+  f = dlnorm(sizes, meanlog = mu_N_c_LN, sdlog = SD_c_LN))
+
+ggplot() +
+  geom_line(data = df_LN_PDF, aes(x = size, y = f)) +
+  geom_point(data = df_mean_size, aes(x = mean_size, y = 0)) +
+  labs(x = "Mean species length (cm)", y = "Probability density") +
+  theme_bw()
+```
+
+```{r}
+# create a data frame to send to stan for fitting
+df_fit_stan <- df_fit %>%
+	filter(n_rounded > 0)
+
+I <- nrow(df_fit_stan)             # size-class observations
+B <- max(df_fit_stan$size_indx)    # maximu_Nm bin group
+S <- max(df_fit_stan$species_indx) 
+
+# create a data frame that locates indices for each species
+df_species <- df_fit_stan %>%
+	group_by(species_indx) %>%
+	summarise(.groups = "drop", 
+    data_rows = n(), 
+    N_Species = sum(n_rounded),
+    indx_min = min(size_indx), 
+    indx_max = max(size_indx)) %>%
+  mutate(
+    i_min = 0, 
+    i_max = 0)
+
+df_species$i_min[1] <- 1
+df_species$i_max[S] <- nrow(df_fit_stan)
+if (S > 1) {
+  for (s in 2:S) {
+    df_species$i_max[s-1] <- df_species$i_min[s-1] + df_species$data_rows[s-1] - 1
+    df_species$i_min[s]   <- df_species$i_max[s-1] + 1
+  }
+}
+
+stan_dat <- list(
+  I = I,     # number of observations
+  S = S,     # number of species
+  B = B,     # maximu_Nm number of bins
+  l = df_lengths$lwr[1:(B+1)],  # length cut-offs (left side)
+  i_min = df_species$i_min,     # minimu_Nm observation index for each species
+  i_max = df_species$i_max,     # maximu_Nm observation index for each species
+  s = df_fit_stan$species_indx,          # species index
+  b = df_fit_stan$size_indx,             # bin index
+  n = as.integer(df_fit_stan$n_rounded)) # individual counts    
+
+glimpse(stan_dat) # show data fed to rstan
+```
+
+```{r}
+# fit the independent normal pdfs model
+fit_n <- stan(file = 'models/Step_2_Norm_LNorm.stan', data = stan_dat,
+  iter = 1000, warmup = 500, chains = 2, refresh = 250, seed = 1)
+```
+
+```{r}
+# normal and log--normal means
+print(fit_n, pars = c("mu_N", "mu_LN"))
+```
+
+```{r}
+# check for chain convergence
+rstan::traceplot(object = fit_n, pars = "mu_N", inc_warmup = TRUE, 
+  ncol = 8)
+```
+
+```{r}
+# check for chain convergence
+rstan::traceplot(object = fit_n, pars = "cv_N", inc_warmup = FALSE, 
+  ncol = 8)
+```
+
+```{r}
+# check for chain convergence
+rstan::traceplot(object = fit_n, pars = "eps_N", inc_warmup = FALSE, 
+  ncol = 8)
+```
+
+```{r}
+# mean (of the normal distribution contribution) for each species
+mcmc_intervals(fit_n, 
+  pars = c("mu_N[1]", "mu_N[2]", "mu_N[3]", "mu_N[4]", "mu_N[5]",
+           "mu_N[6]", "mu_N[7]", "mu_N[8]", "mu_N[9]", "mu_N[10]", 
+           "mu_N[11]", "mu_N[12]", "mu_N[13]", "mu_N[14]", "mu_N[15]",
+           "mu_N[16]", "mu_N[17]", "mu_N[18]", "mu_N[19]", "mu_N[20]"),
+  point_est = "median", prob = 0.5, prob_outer = 0.90) +
+  theme_bw()
+```
+
+```{r}
+# coefficient of variation (of the normal distribution contribution) for each species
+mcmc_intervals(fit_n, 
+  pars = c("cv_N[1]",  "cv_N[2]",  "cv_N[3]",  "cv_N[4]",
+    	       "cv_N[5]",  "cv_N[6]",  "cv_N[7]",  "cv_N[8]",
+    	       "cv_N[9]",  "cv_N[10]", "cv_N[11]", "cv_N[12]",
+    	       "cv_N[13]", "cv_N[14]", "cv_N[15]", "cv_N[16]",
+    	       "cv_N[17]", "cv_N[18]", "cv_N[19]", "cv_N[20]"),
+  point_est = "median", prob = 0.5, prob_outer = 0.90) +
+  theme_bw()
+```
+
+```{r}
+# coefficient of variation (of the normal distribution contribution) for each species
+mcmc_intervals(fit_n, 
+  pars = c("eps_N[1]",  "eps_N[2]",  "eps_N[3]",  "eps_N[4]",
+    	     "eps_N[5]",  "eps_N[6]",  "eps_N[7]",  "eps_N[8]",
+    	     "eps_N[9]",  "eps_N[10]", "eps_N[11]", "eps_N[12]",
+           "eps_N[17]", "eps_N[18]", "eps_N[19]", "eps_N[20]"),
+  point_est = "median", prob = 0.5, prob_outer = 0.90) +
+  theme_bw()
+```
+
+```{r}
+# look for evidence that the coefficient of variation associated with 
+# the normal distribution contribution to the PMF is similar across species
+l_par <- rstan::extract(fit_n) 
+
+# normal
+m_mu_N <- l_par$mu_N
+m_cv_N <- l_par$cv_N
+
+m_mu_N_quantile <- t(apply(m_mu_N, 2, quantile, probs = c(0.05, 0.5, 0.95)))
+df_mu_N_quantile <- as.data.frame(m_mu_N_quantile)
+names(df_mu_N_quantile) <- c("mu_N_lwr", "mu_N_mdn",  "mu_N_upr")
+
+m_cv_quantile <- t(apply(m_cv_N, 2, quantile, probs = c(0.05, 0.5, 0.95)))
+df_cv_quantile <- as.data.frame(m_cv_quantile)
+names(df_cv_quantile) <- c("cv_lwr", "cv_mdn",  "cv_upr")
+
+df_mu_N_cv <- cbind(df_mu_N_quantile, df_cv_quantile)
+df_mu_N_cv$species_indx <- 1:S
+
+p1 <- ggplot(filter(df_mu_N_cv, cv_mdn < 2)) +
+  geom_point(aes(x = mu_N_mdn, y = cv_mdn)) +
+  geom_errorbar(aes(x = mu_N_mdn, y = cv_mdn, 
+    xmin = mu_N_lwr, xmax = mu_N_upr, ymin = cv_lwr, ymax = cv_upr)) +
+  geom_text_repel(aes(x = mu_N_mdn, y = cv_mdn, label = species_indx)) +
+  labs(x = "Mean", y = "Coefficient of variation", subtitle = "Normal") + 
+  theme_bw()
+
+# log-normal
+m_mu_LN    <- l_par$mu_N
+m_sigma_LN <- l_par$sigma_LN
+
+m_mu_LN_quantile <- t(apply(m_mu_LN, 2, quantile, probs = c(0.05, 0.5, 0.95)))
+df_mu_LN_quantile <- as.data.frame(m_mu_LN_quantile)
+names(df_mu_LN_quantile) <- c("mu_LN_lwr", "mu_LN_mdn",  "mu_LN_upr")
+
+m_sigma_quantile <- t(apply(m_sigma_LN, 2, quantile, probs = c(0.05, 0.5, 0.95)))
+df_sigma_quantile <- as.data.frame(m_sigma_quantile)
+names(df_sigma_quantile) <- c("sigma_lwr", "sigma_mdn",  "sigma_upr")
+
+df_mu_LN_sigma <- cbind(df_mu_LN_quantile, df_sigma_quantile)
+df_mu_LN_sigma$species_indx <- 1:S
+
+p2 <- ggplot(filter(df_mu_LN_sigma, sigma_mdn < 2)) +
+  geom_point(aes(x = mu_LN_mdn, y = sigma_mdn)) +
+  geom_errorbar(aes(x = mu_LN_mdn, y = sigma_mdn, 
+    xmin = mu_LN_lwr, xmax = mu_LN_upr, ymin = sigma_lwr, ymax = sigma_upr)) +
+  geom_text_repel(aes(x = mu_LN_mdn, y = sigma_mdn, label = species_indx)) +
+  labs(x = "Mean", y = "Sigma", subtitle = "Log-normal") + 
+  theme_bw()
+
+plot_grid(p1, p2)
+```
+
+* For species that are not too small (i.e. when the normal distribution describes most of the intra-species variation in fish lengths), the cov is similar across species (about 0.4).
+
+```{r}
+# for each species and bin size predict probability of fish being in the bin
+df_predict <- expand_grid(
+  species_indx = 1:S, size_indx = 1:(B-1)) %>%
+  left_join(df_lengths, by = "size_indx")
+
+df_predict$p_025_N = 0.0 # create a column
+df_predict$p_500_N = 0.0 # create a column
+df_predict$p_975_N = 0.0 # create a column
+
+df_predict$p_025_LN = 0.0 # create a column
+df_predict$p_500_LN = 0.0 # create a column
+df_predict$p_975_LN = 0.0 # create a column
+
+l   <- stan_dat$l
+b   <- stan_dat$b
+eps_N <- l_par$eps_N
+eps_LN <- l_par$eps_LN
+
+f <- rep(0, B)
+for (i in 1:B) {
+  f[i] = (l[i+1] - l[i]) / (l[B+1] - l[1]) # calculate relative bin widths
+}
+
+for (i in 1:nrow(df_predict)) {
+  sp         <- df_predict$species_indx[i] # species index
+  j          <- df_predict$size_indx[i]    # size index
+  mu_N_sp    <- l_par$mu_N[ ,sp]
+  sigma_N_sp <- mu_N_sp * l_par$cv_N[ ,sp]
+  
+  norm_c_N <-  1.0 - pnorm(l[1], mu_N_sp, sigma_N_sp) # normalising constant
+
+  p_N <- (pnorm(l[j+1], mu_N_sp, sigma_N_sp) - 
+    pnorm(l[j], mu_N_sp, sigma_N_sp)) / norm_c_N
+  
+  p_N <- (1.0 - eps_N[ ,sp])*p_N + eps_N[ ,sp]*f[b[j]]; 
+  
+  df_predict$p_025_N[i] <- quantile(p_N, p = 0.025)
+  df_predict$p_500_N[i] <- quantile(p_N, p = 0.500)
+  df_predict$p_975_N[i] <- quantile(p_N, p = 0.975)
+  
+  ln_mu_LN_sp  <- l_par$ln_mu_LN[ ,sp]
+  sigma_LN_sp  <- l_par$sigma_LN[ ,sp]
+  
+  lnorm_c_LN <-  1.0 - plnorm(l[1], ln_mu_LN_sp, sigma_LN_sp) # normalising constant
+
+  p_LN <- (plnorm(l[j+1], ln_mu_LN_sp, sigma_LN_sp) - 
+    plnorm(l[j], ln_mu_LN_sp, sigma_LN_sp)) / lnorm_c_LN
+  
+  p_LN <- (1.0 - eps_LN[ ,sp])*p_LN + eps_LN[ ,sp]*f[b[j]]; 
+  
+  df_predict$p_025_LN[i] <- quantile(p_LN, p = 0.025)
+  df_predict$p_500_LN[i] <- quantile(p_LN, p = 0.500)
+  df_predict$p_975_LN[i] <- quantile(p_LN, p = 0.975)
+}
+```
+
+```{r}
+# compare predicted probabilities with frequencies of observations
+ggplot() +
+  geom_ribbon(data = filter(df_predict, p_025_N > 1E-7, p_975_N > 1E-7),
+    aes(x = size_class, ymin = p_025_N, ymax = p_975_N), fill = "salmon") +
+  geom_line(data = filter(df_predict, p_500_N > 1E-7),
+    aes(x = size_class, y = p_500_N), color = "red") +
+  geom_ribbon(data = filter(df_predict, p_025_LN > 1E-7, p_975_LN > 1E-7),
+    aes(x = size_class, ymin = p_025_LN, ymax = p_975_LN), fill = "lightblue") +
+  geom_line(data = filter(df_predict, p_500_LN > 1E-7),
+    aes(x = size_class, y = p_500_LN), color = "blue") +
+  geom_point(data = filter(df_fit, f_rounded > 0),
+    aes(x = size_class, y = f_rounded), color= "black") +
+  scale_x_log10() + scale_y_log10() +
+  facet_wrap( ~ species_indx, ncol = 8) +
+  labs(x = "Size class (cm)", y = "Probability", 
+    subtitle = "normal (red), log-normal (blue)") +
+  theme_bw()
+```
+
+```{r}
+# for each species generate log-likelihoods of the data sets for plausible parameters for both models 
+REPS <- length(l_par$lp__) # number of parameter replicates
+
+df_LL <- expand_grid(species_indx= 1:S, Rep = 1:REPS, Normal = 0.0, LogNormal = 0.0)
+
+i_min <- stan_dat$i_min
+i_max <- stan_dat$i_max
+n     <- stan_dat$n
+
+for (sp in 1:S) { # for each species i
+  # normal
+  mu_N_sp     <- l_par$mu_N[ ,sp]
+  sigma_N_sp  <- mu_N_sp * l_par$cv_N[ ,sp]
+  norm_c_N    <- 1.0 - pnorm(l[1], mu_N_sp, sigma_N_sp) # normalising constant
+  # log-normal
+  ln_mu_LN_sp <- l_par$ln_mu_LN[ ,sp]
+  sigma_LN_sp <- l_par$sigma_LN[ ,sp]
+  lnorm_c_LN  <- 1.0 - plnorm(l[1], ln_mu_LN_sp, sigma_LN_sp) # normalising constant
+  # reset log-likelihoods
+  LL_N  <- 0.0
+  LL_LN <- 0.0
+  for (j in i_min[sp]:i_max[sp]) { # for each observation of the species
+  	# normal
+    # probability of being in bin (prior to misclassification)
+    p_N = (pnorm(l[b[j]+1], mu_N_sp, sigma_N_sp) - 
+           pnorm(l[b[j]],   mu_N_sp, sigma_N_sp)) / norm_c_N; 
+    # add misclassification probability (ensures non-zero p)
+    p_N = (1.0 - eps_N[ ,sp])*p_N + eps_N[ ,sp]*f[b[j]]; 
+
+    LL_N <- LL_N + n[j]*log(p_N) # add log-likelihood for observation across param reps
+  
+   	# log-normal
+    # probability of being in bin (prior to misclassification)
+    p_LN <- (plnorm(l[b[j]+1], ln_mu_LN_sp, sigma_LN_sp) - 
+             plnorm(l[b[j]],   ln_mu_LN_sp, sigma_LN_sp)) / lnorm_c_LN
+    # add misclassification probability (ensures non-zero p)
+    p_LN <- (1.0 - eps_LN[ ,sp])*p_LN + eps_LN[ ,sp]*f[b[j]]; 
+    
+    LL_LN <- LL_LN + n[j]*log(p_LN) # add log-likelihood for observation across param reps
+  }
+  
+  # store log-likelihoods
+  df_LL$Normal[(1 + (sp-1)*REPS):(sp*REPS)] <- LL_N 
+  df_LL$LogNormal[(1 + (sp-1)*REPS):(sp*REPS)] <- LL_LN 
+}
+
+
+# convert to long format for plotting
+df_plot <- pivot_longer(df_LL, names_to = "Model", values_to = "LogLikelihood", cols = 3:4)
+df_plot$Model <- factor(df_plot$Model, levels = c("Normal", "LogNormal"))
+		
+df_LL <- df_LL %>%
+  mutate(NormalWin  = Normal > LogNormal)
+
+df_winners <- df_LL %>%
+  group_by(species_indx) %>%
+	dplyr::summarise(
+    Normal_better = mean(NormalWin))
+
+NormalWins <- which(df_winners$Normal_better > 0.5)
+NormalWins
+
+LogNormalWins <- which(df_winners$Normal_better < 0.5)
+LogNormalWins
+```
+
+```{r}
+ggplot(df_plot) +
+	geom_boxplot(aes(x = Model, y = LogLikelihood / 1000, color = Model, fill = Model),
+    outlier.size = 0.2) +
+	facet_wrap( ~ species_indx, scale = "free_y", ncol = 8) + 
+  scale_color_manual(values=c("red", "blue")) + 
+  scale_fill_manual(values=c("salmon", "lightblue")) + 
+	theme_bw() +
+	theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+```
