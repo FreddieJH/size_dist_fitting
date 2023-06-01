@@ -432,15 +432,9 @@ run_stanmod <- function(mod_name,
     mod_fit <-
       stan(stanfile,
         data = datalist,
-<<<<<<< HEAD
-        iter = 2000,
-        warmup = 1500,
-        chains = 3,
-=======
         iter = iter,
         warmup = warmup,
         chains = chains,
->>>>>>> 5e9a92716e0b426b4885ab0938d45e45cd94608a
         refresh = 500,
         init_r = init_r,
         seed = 1,
@@ -796,15 +790,22 @@ mod_05_data <- mod_06_data <- mod_07_data <-
   mod_11_data <- mod_12_data <-
   make_datalist(data_obs_count_20spp, data_obs_count_20spp_byspp)
 
+
+mod_05_allspp_data <- mod_06_allspp_data <- mod_07_allspp_data <-
+  mod_08_allspp_data <- mod_09_allspp_data <- mod_10_allspp_data <- 
+  mod_11_allspp_data <- mod_12_allspp_data <-
+  make_datalist(data_obs_count_allspp, data_obs_count_allspp_byspp)
+
+
 ```
 
 ### Running models
 
 ```{r}
 
-run_multiple_mods(5, 
+run_multiple_mods(c(11), 
                   init_r = 1, 
-                  all_species = FALSE,
+                  all_species = TRUE,
                   overwrite_model = TRUE)
 
 ```
@@ -821,146 +822,8 @@ run_multiple_mods(5,
 
 ```
 
-<<<<<<< HEAD
-
-## Model 07 (774 species)
-
-**Data:** Real binned data
-
-**Model:** Normal
-
-**Parameters:** Per species mu, sigma predicted from mu
-
-
-The formula for predicting sigma:
-
-$$
-\sigma_k = \beta_0 + \beta_1 \cdot \mu_k
-$$
-
-where $k$ is the species id. 
-
-```{r mod07-allspp-modelfit}
-if(run_largemodels){
-  mod_07_allspp_data <- make_datalist(data_obs_count_allspp, data_obs_count_allspp_byspp)
-  
-  mod_07_allspp_fit  <- run_stanmod("mod_07_allspp", overwrite = TRUE)
-  mod_07_allspp_pars <- extract_pars(mod_07_allspp_fit)
-  plot_mod_fit("mod_07_allspp", overwrite = TRUE)
-  
-}
-```
-
-## Model 08 (774 species)
-
-**Data:** Real binned data
-
-**Model:** Lognormal
-
-**Parameters:** Per species meanlog, sdlog predicted from meanlog
-
-The formula for predicting sdlog:
-
-$$
-\alpha_k = \beta_0 + \beta_1 \cdot \gamma_k
-$$
-
-where $k$ is the species id, and $\alpha$ and $\gamma$ represent meanlog and sdlog. 
-
-```{r mod08-allspp-modelfit}
-if(run_largemodels){
-  mod_08_allspp_data <- mod_05_allspp_data
-  
-  mod_08_allspp_fit  <- run_stanmod("mod_08_allspp")
-  mod_08_allspp_pars <- extract_pars(mod_08_allspp_fit)
-  plot_mod_fit("mod_08_allspp")
-  
-  traceplot(mod_08_allspp_fit, pars = "mu")
-  traceplot(mod_08_allspp_fit, pars = "sigma")
-}
-```
-
-## Model 07 vs 08
-
-```{r}
-
-mod_06_allspp_pars <- extract_pars(run_stanmod("mod_06_allspp"))
-mod_05_allspp_pars <- extract_pars(run_stanmod("mod_05_allspp"))
-
-mod_05_allspp_pars %>% 
-  filter(species_indx == 13)
-
-mod_06_allspp_pars %>% 
-  filter(species_indx == 13)
-
-data_obs_count_allspp %>% 
-  filter(species_indx == 13) %>% 
-  ggplot() +
-  aes(size_class, p) +
-  geom_point() + 
-  geom_line()
-
-mod_07_allspp_fit  <- run_stanmod("mod_07_allspp")
-mod_07_allspp_pars <- extract_pars(mod_07_allspp_fit)
-
-mod_08_allspp_fit  <- run_stanmod("mod_08_allspp")
-mod_08_allspp_pars <- extract_pars(mod_08_allspp_fit)
-
-
-mod_08_allspp_fit %>% traceplot("meanlog[13]")
-mod_08_allspp_fit %>% traceplot("sdlog[13]")
-
-mod_07_allspp_pars %>% 
-  filter(quantile == "median") %>% 
-  ggplot() +
-  aes(x = mu, 
-      y = sigma) + 
-  geom_point() + 
-  stat_smooth()
-
-mod_07_allspp_pars %>% 
-  filter(quantile == "median") %>% 
-  ggplot() +
-  aes(x = mu, 
-      y = sigma/mu) + 
-  geom_point() + 
-  stat_smooth()
-
-mod_08_allspp_pars %>% 
-  filter(quantile == "median") %>% 
-  ggplot() +
-  aes(x = meanlog, 
-      y = sdlog) + 
-  geom_point() + 
-  stat_smooth()
-
-mod_08_allspp_pars
-```
-
-
-## Model 09 (20 species)
-
-**Data:** Real binned data
-
-**Model:** Normal (with bin correction)
-
-**Parameters:** Per species mu, per species sigma
-
-```{r mod09-modelfit}
-
-mod_09_data <- mod_05_data
-
-mod_09_fit  <- run_stanmod("mod_09")
-mod_09_pars <- extract_pars(mod_09_fit)
-plot_mod_fit("mod_09")
-
-traceplot(mod_09_fit, pars = "mu")
-traceplot(mod_09_fit, pars = "sigma")
-
-```
-=======
 ### Comparing models
->>>>>>> 5e9a92716e0b426b4885ab0938d45e45cd94608a
+
 
 ```{r}
 
