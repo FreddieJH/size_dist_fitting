@@ -20,6 +20,8 @@ model {
   real normalisation_const;
   real sigma;
   real mu;
+  
+  real total_binprob;
   // Prior distributions for mu and sigma
  ln_mu ~ normal(2.4, 0.8);
   ln_sigma ~ normal(0, 4);
@@ -30,6 +32,7 @@ model {
   
   // loop over each species
   for (sp in 1:S) { 
+    total_binprob = 0.0;
     mu = exp(ln_mu[sp]);
       sigma = exp(ln_sigma[sp]);
     // within a species, all bins have to come from one or the other dist:
@@ -41,11 +44,13 @@ model {
       bin_prob = (normal_cdf(l[b[i]+1], mu, sigma) - 
         normal_cdf(l[b[i]], mu, sigma))/normalisation_const; 
         
-        bin_prob = fmax(1e-8, bin_prob);
+        bin_prob = fmax(1e-200, bin_prob);
+        
+        total_binprob += bin_prob;
         target += n[i]*log(bin_prob);
     }
 
-    
+    print(total_binprob);
   }
 
 }

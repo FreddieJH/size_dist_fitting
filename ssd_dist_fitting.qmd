@@ -39,6 +39,7 @@ overwrite_largeplots  <- FALSE
 
 ```{r packages}
 
+library(readr)
 library(dplyr)
 library(ggplot2)
 library(arrow)
@@ -332,19 +333,6 @@ if(!file.exists("output/data_figs/ssd_sim_20spp_log.png") | rerun_figures){
   
 }
 
-
-```
-
-## Data cleanup
-
-```{r}
-
-rm(
-  data_obs, 
-  data_obs_sample,
-  data_out, 
-  data_sim
-)
 
 ```
 
@@ -819,16 +807,52 @@ mod_05_data <- mod_06_data <- mod_07_data <-
   mod_11_data <- mod_12_data <-
   make_datalist(data_obs_count_20spp, data_obs_count_20spp_byspp)
 
+
+count_data <-
+  read_csv("extra/sim_and_obs_data.csv") %>% 
+  left_join(rls_bin_table, 
+            by = join_by(size_class, size_min, size_max)) %>% 
+  add_count(species_indx, wt = n, name = "totaln_spp") %>% 
+  mutate(p = n/totaln_spp) %>% 
+  mutate(row = 1:n()) %>% 
+  mutate(min_row = min(row), 
+         max_row = max(row),
+         .by = species_indx)
+
+spplevel_data <-
+  count_data %>% 
+  dplyr::select(species_indx, 
+                totaln_spp, 
+                min_row, 
+                max_row) %>% 
+  distinct()
+
+mod_11_data <- mod_12_data <-
+  mod_09_data <- mod_10_data <- 
+list(
+    I = nrow(count_data),
+    S = max(count_data$species_indx),
+    B = max(count_data$size_indx),
+    l = rls_bin_table$size_min[1:(max(count_data$size_indx)+1)],
+    N_species = spplevel_data$totaln_spp,
+    i_min     = spplevel_data$min_row,
+    i_max     = spplevel_data$max_row,
+    s = count_data$species_indx,
+    b = count_data$size_indx,
+    n = count_data$n
+  )
+
 ```
 
 ### Running models
 
 ```{r}
 
-run_multiple_mods(5, 
+run_multiple_mods(9:10, 
                   init_r = 1, 
                   all_species = FALSE,
                   overwrite_model = TRUE)
+
 
 ```
 
@@ -836,9 +860,9 @@ run_multiple_mods(5,
 
 ```{r}
 
-plot_multiple_mods(c(5,6, 7), 
+plot_multiple_mods(c(9), 
                    all_species = TRUE,
-                   overwrite_plot = TRUE)
+                   overwrite_plot = FALSE)
 
 ```
 
@@ -865,6 +889,8 @@ comparison_plot("mod_10", "mod_12", "lnorm, variance per species vs estimated (w
 ```
 
 # Further analysis
+
+## Parameter regression
 
 ```{r}
 
@@ -921,146 +947,97 @@ compare_pars_plot("mod_11_allspp", "mod_12_allspp")
 
 ```
 
-```{r}
-
-mod_07_allspp_pars <- extract_pars("mod_07_allspp") %>% filter(quantile == "median")
-mod_08_allspp_pars <- extract_pars("mod_08_allspp") %>% filter(quantile == "median")
-
-lm1 <- lm(sigma ~ mu, data = mod_07_allspp_pars)
-lm2 <- lm(sdlog ~ meanlog, data = mod_08_allspp_pars)
-
-p4 <- 
-  mod_07_allspp_pars %>% 
-  mutate(fit = predict(lm1)) %>% 
-  ggplot() +
-  aes(
-    x = mu, 
-    y = sigma
-  ) +
-  geom_point() +
-  geom_line(aes(y = fit)) +
-  geom_line(aes(y = fit), 
-            col = "blue") +
-  theme_cowplot(20) +
-  lims(y = layer_scales(p1)$y$range$range, 
-       x = layer_scales(p1)$x$range$range)
-
-p5 <- 
-  mod_08_allspp_pars %>% 
-  mutate(fit = predict(lm2)) %>% 
-  ggplot() +
-  aes(
-    x = meanlog, 
-    y = sdlog
-  ) +
-  geom_point() +
-  geom_line(aes(y = fit), 
-            col = "red") +
-  theme_cowplot(20) +
-  lims(y = layer_scales(p2)$y$range$range, 
-       x = layer_scales(p2)$x$range$range)
-
-p6 <- p4 + p5
-
-save_plot(filename = "output/figures/mod_07_vs_mod_08_pars.png", 
-          plot = p6, 
-          base_height = 8, 
-          base_asp = 1.618*2)
-```
+## Log-likelihood comparison
 
 ```{r}
 
+get_ll <- function(species_indx, sigma, mu){
+  target = 0
+  for (i in mod_11_data$i_min[species_indx]:mod_11_data$i_max[species_indx]) { 
+    
+    normalisation_const = 1 - pnorm(mod_11_data$l[1], mu, sigma); 
+        
+      bin_prob = (pnorm(mod_11_data$l[mod_11_data$b[i]+1], mu, sigma) - 
+        pnorm(mod_11_data$l[mod_11_data$b[i]], mu, sigma))/normalisation_const; 
+        
+        bin_prob = max(1e-8, bin_prob);
 
-mod_09_allspp_pars <- extract_pars("mod_09_allspp") %>% filter(quantile == "median")
-mod_10_allspp_pars <- extract_pars("mod_10_allspp") %>% filter(quantile == "median")
+      target = target + mod_11_data$n[i]*log(bin_prob);
+  }
+  return(target)
+}
 
-lm1 <- lm(sigma ~ mu, data = mod_09_allspp_pars)
-lm2 <- lm(sdlog ~ meanlog, data = mod_10_allspp_pars)
+get_ll_lnorm <- function(species_indx, sdlog, meanlog){
+  target = 0
+  for (i in mod_11_data$i_min[species_indx]:mod_11_data$i_max[species_indx]) { 
+    
+    normalisation_const = 1 - plnorm(mod_11_data$l[1], meanlog, sdlog); 
+        
+      bin_prob = (plnorm(mod_11_data$l[mod_11_data$b[i]+1], meanlog, sdlog) - 
+        plnorm(mod_11_data$l[mod_11_data$b[i]], meanlog, sdlog))/normalisation_const; 
+        
+        bin_prob = max(1e-8, bin_prob);
 
-p7 <- 
-  mod_09_allspp_pars %>% 
-  mutate(fit = predict(lm1)) %>% 
-  ggplot() +
-  aes(
-    x = mu, 
-    y = sigma
-  ) +
-  geom_point() +
-  geom_line(aes(y = fit), 
-            col = "blue") +
-  stat_smooth(col = "orange") +
-  theme_cowplot(20) 
+      target = target + mod_11_data$n[i]*log(bin_prob);
+  }
+  return(target)
+}
 
-p8 <- 
-  mod_10_allspp_pars %>% 
-  mutate(fit = predict(lm2)) %>% 
-  ggplot() +
-  aes(
-    x = meanlog, 
-    y = sdlog
-  ) +
-  geom_point() +
-  geom_line(aes(y = fit), 
-            col = "red") +
-  stat_smooth(col = "orange") +
-  theme_cowplot(20) 
+get_ll(1, 5, 3)
 
-p9 <- p7 + p8
 
-save_plot(filename = "output/figures/mod_09_vs_mod_10_pars.png", 
-          plot = p9, 
-          base_height = 8, 
-          base_asp = 1.618*2)
+par_table <- 
+  run_stanmod("mod_09") %>% 
+  posterior::as_draws_df() %>% 
+  mutate(draws = row_number()) %>% 
+  pivot_longer(cols = -draws) %>% 
+  filter(!str_detect(name, "ln")) %>% 
+  mutate(species_indx = str_extract(name, "(?!\\[)\\d*(?=\\])") %>% as.numeric(),
+         parameter = str_extract(name, ".*(?=\\[.*)")) %>% 
+  drop_na(species_indx) %>% 
+  select(-name) %>% 
+  pivot_wider(names_from = parameter, 
+              values_from = value) %>% 
+  mutate(ll = pmap_dbl(.l = list(species_indx = species_indx, 
+                                 sigma = sigma, 
+                                 mu = mu), 
+                       .f = get_ll))
+  
+par_table2 <- 
+    run_stanmod("mod_10") %>% 
+  posterior::as_draws_df() %>% 
+  mutate(draws = row_number()) %>% 
+  pivot_longer(cols = -draws) %>% 
+  filter(!str_detect(name, "ln")) %>% 
+  mutate(species_indx = str_extract(name, "(?!\\[)\\d*(?=\\])") %>% as.numeric(),
+         parameter = str_extract(name, ".*(?=\\[.*)")) %>% 
+  drop_na(species_indx) %>% 
+  select(-name) %>% 
+  pivot_wider(names_from = parameter, 
+              values_from = value) %>% 
+  mutate(ll_lnorm = pmap_dbl(.l = list(species_indx = species_indx, 
+                                 sdlog = sdlog, 
+                                 meanlog = meanlog), 
+                       .f = get_ll_lnorm))
+  
+ll_plots <- 
+  par_table %>%
+  left_join(par_table2) %>% 
+  left_join(read_csv("extra/the_secret_v2.csv")) %>% 
+  # filter(simulated, dist == "N") %>% 
+  pivot_longer(cols = c(ll, ll_lnorm)) %>% 
+  left_join(data_obs_count_20spp %>% 
+              select(species_indx, species_name) %>% distinct()) %>% 
+  ggplot(aes(y =  value, 
+             x = name, col = name)) +
+   scale_color_manual(values=c("red", "blue"))+
+    geom_boxplot() +
+  facet_wrap(~species_indx, scales = "free",ncol =8)
+
+save_plot("output/figures/ll_plots_all.png",
+            ll_plots,  
+          base_height = 8)
 
 ```
 
-```{r}
-
-
-mod_11_allspp_pars <- extract_pars("mod_11_allspp") %>% filter(quantile == "median")
-mod_12_allspp_pars <- extract_pars("mod_12_allspp") %>% filter(quantile == "median")
-
-lm1 <- lm(sigma ~ mu, data = mod_11_allspp_pars)
-lm2 <- lm(sdlog ~ meanlog, data = mod_12_allspp_pars)
-
-p10 <- 
-  mod_11_allspp_pars %>% 
-  mutate(fit = predict(lm1)) %>% 
-  ggplot() +
-  aes(
-    x = mu, 
-    y = sigma
-  ) +
-  geom_point() +
-  geom_line(aes(y = fit)) +
-  geom_line(aes(y = fit), 
-            col = "blue") +
-  stat_smooth(col = "orange") +
-  theme_cowplot(20) +
-  lims(y = layer_scales(p1)$y$range$range, 
-       x = layer_scales(p1)$x$range$range)
-
-p11 <- 
-  mod_12_allspp_pars %>% 
-  mutate(fit = predict(lm2)) %>% 
-  ggplot() +
-  aes(
-    x = meanlog, 
-    y = sdlog
-  ) +
-  geom_point() +
-  geom_line(aes(y = fit), 
-            col = "red") +
-  stat_smooth(col = "orange") +
-  theme_cowplot(20) +
-  lims(y = layer_scales(p2)$y$range$range, 
-       x = layer_scales(p2)$x$range$range)
-
-p12 <- p10 + p11
-
-save_plot(filename = "output/figures/mod_11_vs_mod_12_pars.png", 
-          plot = p6, 
-          base_height = 8, 
-          base_asp = 1.618*2)
-```
 
