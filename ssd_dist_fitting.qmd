@@ -807,12 +807,6 @@ mod_05_data <- mod_06_data <- mod_07_data <-
   mod_11_data <- mod_12_data <-
   make_datalist(data_obs_count_20spp, data_obs_count_20spp_byspp)
 
-<<<<<<< HEAD
-mod_05_allspp_data <- mod_06_allspp_data <- mod_07_allspp_data <-
-  mod_08_allspp_data <- mod_09_allspp_data <- mod_10_allspp_data <- 
-  mod_11_allspp_data <- mod_12_allspp_data <-
-  make_datalist(data_obs_count_allspp, data_obs_count_allspp_byspp)
-=======
 
 count_data <-
   read_csv("extra/sim_and_obs_data.csv") %>% 
@@ -847,7 +841,7 @@ list(
     b = count_data$size_indx,
     n = count_data$n
   )
->>>>>>> ff093c73c7070b483d7b139451d938463dd9633f
+
 
 ```
 
@@ -855,11 +849,8 @@ list(
 
 ```{r}
 
-<<<<<<< HEAD
-run_multiple_mods(9, 
-=======
-run_multiple_mods(9:10, 
->>>>>>> ff093c73c7070b483d7b139451d938463dd9633f
+
+run_multiple_mods(8, 
                   init_r = 1, 
                   all_species = TRUE,
                   overwrite_model = TRUE)
