@@ -40,6 +40,7 @@ library(RColorBrewer)
 rm(list = ls()) # clear memory
 
 df_test <- read_csv("extra/sim_and_obs_data.csv") # mix of real and simulated data
+
 ```
 
 ```{r}

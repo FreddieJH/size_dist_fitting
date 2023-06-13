@@ -807,41 +807,10 @@ mod_05_data <- mod_06_data <- mod_07_data <-
   mod_11_data <- mod_12_data <-
   make_datalist(data_obs_count_20spp, data_obs_count_20spp_byspp)
 
-
-count_data <-
-  read_csv("extra/sim_and_obs_data.csv") %>% 
-  left_join(rls_bin_table, 
-            by = join_by(size_class, size_min, size_max)) %>% 
-  add_count(species_indx, wt = n, name = "totaln_spp") %>% 
-  mutate(p = n/totaln_spp) %>% 
-  mutate(row = 1:n()) %>% 
-  mutate(min_row = min(row), 
-         max_row = max(row),
-         .by = species_indx)
-
-spplevel_data <-
-  count_data %>% 
-  dplyr::select(species_indx, 
-                totaln_spp, 
-                min_row, 
-                max_row) %>% 
-  distinct()
-
-mod_11_data <- mod_12_data <-
-  mod_09_data <- mod_10_data <- 
-list(
-    I = nrow(count_data),
-    S = max(count_data$species_indx),
-    B = max(count_data$size_indx),
-    l = rls_bin_table$size_min[1:(max(count_data$size_indx)+1)],
-    N_species = spplevel_data$totaln_spp,
-    i_min     = spplevel_data$min_row,
-    i_max     = spplevel_data$max_row,
-    s = count_data$species_indx,
-    b = count_data$size_indx,
-    n = count_data$n
-  )
-
+mod_05_allspp_data <- mod_06_allspp_data <- mod_07_allspp_data <-
+  mod_08_allspp_data <- mod_09_allspp_data <- mod_10_allspp_data <- 
+  mod_11_allspp_data <- mod_12_allspp_data <-mod_13_allspp_data <- 
+  make_datalist(data_obs_count_allspp, data_obs_count_allspp_byspp)
 
 ```
 
@@ -849,7 +818,7 @@ list(
 
 ```{r}
 
-run_multiple_mods(9:10, 
+run_multiple_mods(12, 
                   init_r = 1, 
                   all_species = TRUE,
                   overwrite_model = TRUE)
@@ -860,9 +829,11 @@ run_multiple_mods(9:10,
 
 ```{r}
 
-plot_multiple_mods(c(9), 
+plot_multiple_mods(12, 
                    all_species = TRUE,
-                   overwrite_plot = FALSE)
+                   overwrite_plot = TRUE)
+
+mod_13_allspp_fit <- run_stanmod("mod_13_allspp")
 
 ```
 
