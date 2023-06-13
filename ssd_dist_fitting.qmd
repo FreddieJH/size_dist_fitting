@@ -53,6 +53,7 @@ library(posterior)
 library(fitdistrplus, include.only = "fitdist")
 library(purrr)
 library(patchwork)
+library(scales)
 
 
 rstan_options(auto_write = TRUE) # avoid recompilation of stan files
@@ -63,8 +64,8 @@ rstan_options(auto_write = TRUE) # avoid recompilation of stan files
 
 ```{r data-import}
 
-data_obs   <- read_parquet("data/data_obs_cleaned.parquet")
-data_survs <- read_parquet("data/survey_list_m1_aus.parquet")
+data_obs   <- read_parquet("input/data/data_obs_cleaned.parquet")
+data_survs <- read_parquet("input/data/survey_list_m1_aus.parquet")
 
 rls_bin_breaks <- 
   data_obs %>% 
@@ -88,7 +89,7 @@ species_indx_table <-
     species_name = species_list, 
     species_indx = 1:length(species_list))
 
-if(!file.exists("data/data_obs_cleaned_sample.parquet")){
+if(!file.exists("input/data/data_obs_cleaned_sample.parquet")){
   # random 20 species
   set.seed(1)
   random_species <- 
@@ -103,7 +104,7 @@ if(!file.exists("data/data_obs_cleaned_sample.parquet")){
   
 }
 
-data_obs_sample <- read_parquet("data/data_obs_cleaned_sample.parquet")
+data_obs_sample <- read_parquet("input/data/data_obs_cleaned_sample.parquet")
 
 ```
 
@@ -148,6 +149,54 @@ data_obs_count_20spp <-
 
 data_obs_count_20spp_byspp <-
   data_obs_count_20spp %>% 
+  dplyr::select(species_indx, 
+                totaln_spp, 
+                min_row, 
+                max_row) %>% 
+  distinct() %>% 
+  arrange(species_indx)
+
+
+# Population level, not species level 
+gridcells <-
+  data_survs %>% 
+  mutate(lat_grid = round(latitude), 
+         lon_grid = round(longitude), 
+         lat_lon = paste(lat_grid, lon_grid, sep = "_")) %>% 
+  select(survey_id, lat_lon)
+  
+
+newdata <- 
+ data_obs %>% 
+  left_join(gridcells) %>% 
+  mutate(species_name = paste(species_name, lat_lon, sep = "__")) %>% 
+  count(species_name, size_class) %>% 
+  add_count(species_name, name = "n_bins") %>% 
+  add_count(species_name, wt = n, name = "n_total") %>% 
+  filter(n_bins >= 4, 
+         n_total >= 200)
+
+species_list_new <- unique(newdata$species_name)
+
+species_indx_table_new <- 
+  tibble(
+    species_name = species_list_new, 
+    species_indx = 1:length(species_list_new))
+  
+data_obs_count_allspp <- 
+  newdata %>% 
+  left_join(species_indx_table_new, by = join_by(species_name)) %>% 
+  left_join(rls_bin_table, by = join_by(size_class)) %>% 
+  add_count(species_indx, wt = n, name = "totaln_spp") %>% 
+  arrange(species_indx, size_indx) %>%
+  mutate(p = n/totaln_spp) %>% 
+  mutate(row = 1:n()) %>% 
+  mutate(min_row = min(row), 
+         max_row = max(row),
+         .by = species_indx)
+
+data_obs_count_allspp_byspp <-
+  data_obs_count_allspp %>% 
   dplyr::select(species_indx, 
                 totaln_spp, 
                 min_row, 
@@ -387,6 +436,7 @@ mods_summary <-
     "mod_11_allspp", "mod_11", "real", "binned",  "data_obs_count_allspp", "size_class", 774, "norm", "Yes", "per species", "predicted from par1",
     "mod_12_allspp", "mod_12",  "real", "binned", "data_obs_count_allspp", "size_class", 774, "lnorm", "Yes", "per species", "predicted from par1",
     "mod_13", "mod_13",  "real", "binned", "data_obs_count_20spp", "size_class", 20, "norm & lnorm", "Yes", "per species", "per species",
+    "mod_13_allspp", "mod_13",  "real", "binned", "data_obs_count_allspp", "size_class", 774, "norm & lnorm", "Yes", "per species", "per species",
     "mod_14", "mod_14",  "real", "binned", "data_obs_count_20spp", "size_class", 20, "norm & lnorm", "Yes", "per species", "predicted from par1",
   )
 
@@ -428,7 +478,7 @@ run_stanmod <- function(mod_name,
       mods_summary %>% 
       filter(model_name == mod_name)  %>% 
       pull(stan_file) %>% 
-      paste0("models/", ., ".stan")
+      paste0("input/models/", ., ".stan")
     
     datalist <- eval(parse(text = paste0(mod_name, "_data")))
     
@@ -468,7 +518,8 @@ run_multiple_mods <- function(integer_vector,
 
 plot_multiple_mods <- function(integer_vector, 
                                all_species = FALSE, 
-                               overwrite_plot = FALSE){
+                               overwrite_plot = FALSE,
+                               overwrite_pars = FALSE){
   
   
   integer_vector %>% 
@@ -476,43 +527,54 @@ plot_multiple_mods <- function(integer_vector,
     paste0("mod_", .) %>% 
     {if(all_species) paste0(., "_allspp") else .} %>% 
     map(plot_mod_fit, 
-        overwrite = overwrite_plot)
+        overwrite = overwrite_plot, 
+        overwrite_pars = overwrite_pars)
 }
 
 
 # extract parameters from a stan model in a tidy way
-extract_pars <- function(stan_model){
+extract_pars <- function(stan_model, overwrite_pars = TRUE){
   
-  run_stanmod(stan_model, 
-              overwrite = FALSE) %>%
-    summarise_draws() %>% 
-    mutate(species_indx = str_extract(variable, "(?<=\\[)\\d*(?=\\])") %>% as.numeric()) %>% 
-    mutate(parameter = str_remove(variable, "\\[\\d*\\]")) %>% 
-    filter(!str_detect(parameter, "ln_")) %>% # transformed from generated quantities
-    filter(!str_detect(parameter, "logit_")) %>% # transformed from generated quantities
-    filter(parameter != "lp__") %>% 
-    dplyr::select(species_indx, 
-                  parameter, 
-                  median,
-                  q5, 
-                  q95) %>% 
-    drop_na(species_indx) %>% 
-    pivot_wider(values_from = median:q95,
-                names_from = parameter) %>% 
-    pivot_longer(cols = contains(c("median_", "q5_", "q95_")), 
-                 names_to = c("quantile", "parameter"),
-                 names_pattern = "(.*?)_(.*)") %>% # non-greedy
-    pivot_wider(values_from = value, 
-                names_from = parameter)
+  pars_filename <- paste0("output/model_pars/", stan_model, ".csv")
+  
+  if(!file.exists(pars_filename) | overwrite_pars){
+    pars_output <- 
+      run_stanmod(stan_model, 
+                  overwrite = FALSE) %>%
+      summarise_draws() %>% 
+      mutate(species_indx = str_extract(variable, "(?<=\\[)\\d*(?=\\])") %>% as.numeric()) %>% 
+      mutate(parameter = str_remove(variable, "\\[\\d*\\]")) %>% 
+      filter(!str_detect(parameter, "ln_")) %>% # transformed from generated quantities
+      filter(!str_detect(parameter, "logit_")) %>% # transformed from generated quantities
+      filter(parameter != "lp__") %>% 
+      dplyr::select(species_indx, 
+                    parameter, 
+                    median,
+                    q5, 
+                    q95) %>% 
+      drop_na(species_indx) %>% 
+      pivot_wider(values_from = median:q95,
+                  names_from = parameter) %>% 
+      pivot_longer(cols = contains(c("median_", "q5_", "q95_")), 
+                   names_to = c("quantile", "parameter"),
+                   names_pattern = "(.*?)_(.*)") %>% # non-greedy
+      pivot_wider(values_from = value, 
+                  names_from = parameter)
+    
+    write_csv(x = pars_output, file = pars_filename)
+  } else {
+    pars_output <- read_csv(pars_filename, show_col_types = FALSE)
+  }
+  return(pars_output)
 }
 
 
-plot_mod_fit <- function(mod_name, overwrite = FALSE){
+plot_mod_fit <- function(mod_name, overwrite = FALSE, overwrite_pars = FALSE){
   
   mod_row <- mods_summary %>% filter(model_name == mod_name) 
   
   mod_plots_filename <- paste0("output/model_plots/", mod_name, ".png")
-  mod_pars <- extract_pars(mod_name)
+  mod_pars <- extract_pars(mod_name, overwrite_pars = overwrite_pars)
   rawdata <- eval(parse(text = mod_row$data_source))
   dist <- mod_row$distribution
   xvar <- mod_row$varname
@@ -625,8 +687,9 @@ plot_model_binned <- function(stan_model_pars,
       full_join(stan_model_pars,
                 by = join_by(species_indx),
                 multiple = "all")  %>% 
-      mutate(fit_norm = dnorm(!!sym(xvar), mu, sigma), 
-             fit_lnorm = dlnorm(!!sym(xvar), meanlog, sdlog)) %>% 
+      {if(allspp) filter(., species_indx %in% 1:20) else .} %>% 
+      mutate(fit_norm = pnorm(size_max, mu, sigma) -  pnorm(size_min, mu, sigma), 
+             fit_lnorm = plnorm(size_max, meanlog, sdlog) - plnorm(size_min, meanlog, sdlog)) %>% 
       dplyr::select(!!sym(facet_var), !!sym(xvar), quantile, p, norm = fit_norm, lnorm = fit_lnorm) %>% 
       pivot_wider(names_from = quantile,
                   values_from = c(norm, lnorm)) %>%
@@ -661,7 +724,7 @@ plot_model_binned <- function(stan_model_pars,
     
   } else {
     
-    raw_data %>% 
+    xx <- raw_data %>% 
       full_join(stan_model_pars,
                 by = join_by(species_indx),
                 multiple = "all")  %>% 
@@ -804,43 +867,13 @@ mod_03_data <- mod_04_data <-
 
 mod_05_data <- mod_06_data <- mod_07_data <-
   mod_08_data <- mod_09_data <- mod_10_data <- 
-  mod_11_data <- mod_12_data <-
+  mod_11_data <- mod_12_data <- mod_13_data <-
   make_datalist(data_obs_count_20spp, data_obs_count_20spp_byspp)
 
-
-count_data <-
-  read_csv("extra/sim_and_obs_data.csv") %>% 
-  left_join(rls_bin_table, 
-            by = join_by(size_class, size_min, size_max)) %>% 
-  add_count(species_indx, wt = n, name = "totaln_spp") %>% 
-  mutate(p = n/totaln_spp) %>% 
-  mutate(row = 1:n()) %>% 
-  mutate(min_row = min(row), 
-         max_row = max(row),
-         .by = species_indx)
-
-spplevel_data <-
-  count_data %>% 
-  dplyr::select(species_indx, 
-                totaln_spp, 
-                min_row, 
-                max_row) %>% 
-  distinct()
-
-mod_11_data <- mod_12_data <-
-  mod_09_data <- mod_10_data <- 
-list(
-    I = nrow(count_data),
-    S = max(count_data$species_indx),
-    B = max(count_data$size_indx),
-    l = rls_bin_table$size_min[1:(max(count_data$size_indx)+1)],
-    N_species = spplevel_data$totaln_spp,
-    i_min     = spplevel_data$min_row,
-    i_max     = spplevel_data$max_row,
-    s = count_data$species_indx,
-    b = count_data$size_indx,
-    n = count_data$n
-  )
+mod_05_allspp_data <- mod_06_allspp_data <- mod_07_allspp_data <-
+  mod_08_allspp_data <- mod_09_allspp_data <- mod_10_allspp_data <- 
+  mod_11_allspp_data <- mod_12_allspp_data <- mod_13_allspp_data <-
+  make_datalist(data_obs_count_allspp, data_obs_count_allspp_byspp)
 
 ```
 
@@ -848,10 +881,17 @@ list(
 
 ```{r}
 
-run_multiple_mods(9:10, 
+run_multiple_mods(13, 
                   init_r = 1, 
                   all_species = FALSE,
                   overwrite_model = TRUE)
+
+run_stanmod("mod_13") %>% traceplot("mu")
+run_stanmod("mod_13") %>% traceplot("cv")
+run_stanmod("mod_13") %>% traceplot("meanlog")
+run_stanmod("mod_13") %>% traceplot("sdlog")
+
+
 
 
 ```
@@ -860,9 +900,22 @@ run_multiple_mods(9:10,
 
 ```{r}
 
-plot_multiple_mods(c(9), 
+plot_multiple_mods(integer_vector = 13, 
                    all_species = TRUE,
-                   overwrite_plot = FALSE)
+                   overwrite_plot = TRUE, 
+                   overwrite_pars = TRUE)
+
+extract_pars("mod_13_allspp", overwrite_pars = FALSE) %>% 
+  ggplot(aes(x = cv_N)) +
+  geom_density()
+
+
+run_stanmod("mod_13_allspp") %>% traceplot(pars)
+
+pars <- 
+  1:20 %>% 
+  # str_pad(width = 2, pad = 0) %>% 
+  paste0("mu_N[", ., "]")
 
 ```
 
@@ -893,6 +946,25 @@ comparison_plot("mod_10", "mod_12", "lnorm, variance per species vs estimated (w
 ## Parameter regression
 
 ```{r}
+
+xx <- extract_pars("mod_13_allspp")
+
+
+xx %>% 
+  filter(quantile == "median") %>% 
+  ggplot(aes(x = meanlog) ) +
+  geom_density()
+
+xx %>% 
+  filter(quantile == "median") %>% 
+  ggplot(aes(mu, cv)) +
+  geom_point()
+
+xx %>% 
+  filter(quantile == "median") %>% pull(sdlog) %>% plot()
+  ggplot(aes(meanlog, sdlog)) +
+  geom_point()
+
 
 compare_pars_plot <- function(norm_mod, lnorm_mod, xlim = c(NA, NA), ylim = c(NA, NA)){
   
@@ -940,9 +1012,48 @@ compare_pars_plot <- function(norm_mod, lnorm_mod, xlim = c(NA, NA), ylim = c(NA
             base_asp = 1.618*2)
 }
 
-compare_pars_plot("mod_07_allspp", "mod_08_allspp")
-compare_pars_plot("mod_09_allspp", "mod_10_allspp")
-compare_pars_plot("mod_11_allspp", "mod_12_allspp")
+
+get_ll <- function(mod_data, species_indx, sigma, mu, meanlog, sdlog, eps_LN, eps_N){
+  
+  f <- c()
+  l <- mod_data$l
+  b <-  mod_data$b
+  i_min <- mod_data$i_min
+  i_max <- mod_data$i_max
+  B <-  mod_data$B
+  n <-  mod_data$n
+  
+  
+  for (k in 1:B) {
+    f[k] = (l[k+1] - l[k]) / (l[B+1] - l[1]);	#// calculate relative bin widths
+  }
+  
+  ll_norm = 0
+  ll_lnorm = 0
+  
+  norm_c_N = 1.0 - pnorm(l[1], mu, sigma); 
+  norm_c_LN = 1.0 - plnorm(l[1], meanlog, sdlog); 
+  
+  for (j in i_min[species_indx]:i_max[species_indx]) { #// observation j
+    # // probability of being in bin (prior to misclassification)
+    p_N = (pnorm(l[b[j]+1], mu, sigma) - 
+             pnorm(l[b[j]], mu, sigma)) / norm_c_N; 
+    # // add misclassification probability (ensures non-zero p)
+    p_N = (1.0 - eps_N)*p_N + eps_N*f[b[j]]; 
+    
+    # // probability of being in bin (prior to misclassification)
+    p_LN = (plnorm(l[b[j]+1], meanlog, sdlog) - 
+              plnorm(l[b[j]], meanlog, sdlog)) / norm_c_LN;
+    # // add misclassification probabily (ensures non-zero p)
+    p_LN = (1.0 - eps_LN)*p_LN + eps_LN*f[b[j]]; 
+    
+    ll_norm = ll_norm + n[j]*log(p_N) 
+    ll_lnorm = ll_lnorm + n[j]*log(p_LN); 
+  }
+  return(tibble(ll_norm, ll_lnorm))
+}
+
+
 
 
 ```
@@ -951,92 +1062,292 @@ compare_pars_plot("mod_11_allspp", "mod_12_allspp")
 
 ```{r}
 
-get_ll <- function(species_indx, sigma, mu){
-  target = 0
-  for (i in mod_11_data$i_min[species_indx]:mod_11_data$i_max[species_indx]) { 
-    
-    normalisation_const = 1 - pnorm(mod_11_data$l[1], mu, sigma); 
-        
-      bin_prob = (pnorm(mod_11_data$l[mod_11_data$b[i]+1], mu, sigma) - 
-        pnorm(mod_11_data$l[mod_11_data$b[i]], mu, sigma))/normalisation_const; 
-        
-        bin_prob = max(1e-8, bin_prob);
-
-      target = target + mod_11_data$n[i]*log(bin_prob);
-  }
-  return(target)
+if(!file.exists("output/likelihoods/mod_13_allspp_poplvl.parquet")){
+  par_table <- 
+    run_stanmod("mod_13_allspp") %>% 
+    posterior::as_draws_df() %>% 
+    mutate(draws = row_number()) %>% 
+    pivot_longer(cols = -draws) %>% 
+    filter(!str_detect(name, "ln")) %>% 
+    mutate(species_indx = str_extract(name, "(?!\\[)\\d*(?=\\])") %>% as.numeric(),
+           parameter = str_extract(name, ".*(?=\\[.*)")) %>% 
+    drop_na(species_indx) %>% 
+    select(-name) %>% 
+    pivot_wider(names_from = parameter, 
+                values_from = value) 
+  
+  par_table2 <- 
+    par_table %>% 
+    mutate(ll = pmap(.l = list(species_indx = species_indx, 
+                               sigma = sigma, 
+                               mu = mu, 
+                               meanlog = meanlog, 
+                               sdlog = sdlog,
+                               eps_N = eps_N,
+                               eps_LN = eps_LN), 
+                     .f = get_ll,
+                     mod_data = mod_13_allspp_data)) 
+  
+  par_table3 <- 
+    par_table2 %>% 
+    unnest(cols = ll) %>% 
+    pivot_longer(cols = c(ll_norm, ll_lnorm), 
+                 names_to = "dist", 
+                 values_to = "ll") %>% 
+    left_join(data_obs_count_allspp %>% 
+                select(species_indx, species_name) %>% distinct()) 
+  
+  
+  write_parquet(par_table3, "output/likelihoods/mod_13_allspp_poplvl.parquet")
 }
 
-get_ll_lnorm <- function(species_indx, sdlog, meanlog){
-  target = 0
-  for (i in mod_11_data$i_min[species_indx]:mod_11_data$i_max[species_indx]) { 
-    
-    normalisation_const = 1 - plnorm(mod_11_data$l[1], meanlog, sdlog); 
-        
-      bin_prob = (plnorm(mod_11_data$l[mod_11_data$b[i]+1], meanlog, sdlog) - 
-        plnorm(mod_11_data$l[mod_11_data$b[i]], meanlog, sdlog))/normalisation_const; 
-        
-        bin_prob = max(1e-8, bin_prob);
-
-      target = target + mod_11_data$n[i]*log(bin_prob);
-  }
-  return(target)
-}
-
-get_ll(1, 5, 3)
+par_table3 <- read_parquet("output/likelihoods/mod_13_allspp_poplvl.parquet")
 
 
-par_table <- 
-  run_stanmod("mod_09") %>% 
-  posterior::as_draws_df() %>% 
-  mutate(draws = row_number()) %>% 
-  pivot_longer(cols = -draws) %>% 
-  filter(!str_detect(name, "ln")) %>% 
-  mutate(species_indx = str_extract(name, "(?!\\[)\\d*(?=\\])") %>% as.numeric(),
-         parameter = str_extract(name, ".*(?=\\[.*)")) %>% 
-  drop_na(species_indx) %>% 
-  select(-name) %>% 
-  pivot_wider(names_from = parameter, 
-              values_from = value) %>% 
-  mutate(ll = pmap_dbl(.l = list(species_indx = species_indx, 
-                                 sigma = sigma, 
-                                 mu = mu), 
-                       .f = get_ll))
-  
-par_table2 <- 
-    run_stanmod("mod_10") %>% 
-  posterior::as_draws_df() %>% 
-  mutate(draws = row_number()) %>% 
-  pivot_longer(cols = -draws) %>% 
-  filter(!str_detect(name, "ln")) %>% 
-  mutate(species_indx = str_extract(name, "(?!\\[)\\d*(?=\\])") %>% as.numeric(),
-         parameter = str_extract(name, ".*(?=\\[.*)")) %>% 
-  drop_na(species_indx) %>% 
-  select(-name) %>% 
-  pivot_wider(names_from = parameter, 
-              values_from = value) %>% 
-  mutate(ll_lnorm = pmap_dbl(.l = list(species_indx = species_indx, 
-                                 sdlog = sdlog, 
-                                 meanlog = meanlog), 
-                       .f = get_ll_lnorm))
-  
-ll_plots <- 
-  par_table %>%
-  left_join(par_table2) %>% 
-  left_join(read_csv("extra/the_secret_v2.csv")) %>% 
-  # filter(simulated, dist == "N") %>% 
-  pivot_longer(cols = c(ll, ll_lnorm)) %>% 
-  left_join(data_obs_count_20spp %>% 
-              select(species_indx, species_name) %>% distinct()) %>% 
-  ggplot(aes(y =  value, 
-             x = name, col = name)) +
-   scale_color_manual(values=c("red", "blue"))+
-    geom_boxplot() +
-  facet_wrap(~species_indx, scales = "free",ncol =8)
+ll_wide <- 
+  par_table3 %>% 
+  pivot_wider(names_from = dist, 
+              values_from = ll) %>% 
+  mutate(diff = ll_norm - ll_lnorm) %>% 
+  summarise(norm_better = sum(diff>0)/1500, 
+            .by = species_name) 
 
-save_plot("output/figures/ll_plots_all.png",
-            ll_plots,  
+prop_better <-
+  ll_wide %>% 
+  ggplot() +
+  aes(x = norm_better) + 
+  geom_rect(aes(ymin = -Inf, ymax = Inf, xmin = 0, xmax = 0.5), fill = "red", alpha = 0.5) +
+  geom_rect(aes(ymin = -Inf, ymax = Inf, xmin = 0.5, xmax = 1), fill = "blue", alpha = 0.5) +
+  geom_density(linewidth = 2) +
+  geom_rug() +
+  theme_cowplot(20) +
+  labs(x = "Proportion of samples where Normal is better") 
+
+
+save_plot("output/figures/proportion_samples_normal.png",
+          prop_better,  
           base_height = 8)
+
+
+
+ll_wide %>% 
+  mutate(group = case_when(norm_better > 0.9 ~ "Always Normal",
+                           norm_better < 0.1 ~ "Always Logormal", 
+                            TRUE ~ "inconclusive")) %>% 
+  left_join(summarise(data_obs_count_allspp, 
+                      mean_size = mean(size_class, wt = n), 
+                      .by = species_name)) %>% 
+  ggplot(aes(y = group, x = mean_size)) +
+  geom_boxplot()
+
+
+ll_wide_normalised <- 
+  par_table3 %>% 
+  left_join(data_obs_count_allspp_byspp) %>% 
+  mutate(ll = ll/totaln_spp) %>% 
+  pivot_wider(names_from = dist, 
+              values_from = ll) %>% 
+  mutate(diff = ll_norm - ll_lnorm) 
+
+ll_perspp_normalised <- 
+  ll_wide_normalised %>% 
+  summarise(diff = median(diff), 
+            ll_norm = median(ll_norm), 
+            ll_lnorm = median(ll_lnorm),
+            .by = species_name)
+
+plot_ll_normalised <- 
+  ll_perspp_normalised %>%
+  left_join(summarise(data_obs_count_allspp, 
+                      mean_size = mean(size_class, wt = n), 
+                      .by = species_name)) %>% 
+  left_join(ll_wide) %>% 
+  ggplot() +
+  aes(
+    x = mean_size,
+    y = diff
+  ) + 
+  geom_rect(aes(ymin = -Inf, ymax = 0, xmin = -Inf, xmax = Inf), fill = "red", alpha = 0.5) +
+  geom_rect(aes(ymin = 0, ymax = Inf, xmin = -Inf, xmax = Inf), fill = "blue", alpha = 0.5) +
+  geom_point(size = 2) +
+  stat_smooth(col = "orange") +
+  labs(x = "Species mean size", 
+       y = "Normalised loglikelighood ratio (norm_LL_N-norm_LL_LN)") +
+  theme_cowplot(20)
+
+plot_ll_normalised_v2 <- 
+  ll_perspp_normalised %>%
+  left_join(summarise(data_obs_count_allspp, 
+                      mean_size = mean(size_class, wt = n), 
+                      .by = species_name)) %>% 
+  left_join(ll_wide) %>% 
+  ggplot() +
+  aes(
+    x = mean_size,
+    y = diff,
+    col = norm_better
+  ) + 
+  geom_point(size = 2) +
+  stat_smooth(col = "orange") +
+  labs(x = "Species mean size", 
+       y = "Normalised loglikelighood ratio (norm_LL_N-norm_LL_LN)") +
+  theme_cowplot(20)
+
+
+save_plot("output/figures/normalised_ll_proof.png",
+          plot_ll_normalised_v2,  
+          base_height = 8)
+
+plot_ll_normalised_v3 <- 
+  ll_perspp_normalised %>%
+  pivot_longer(cols = starts_with("ll_")) %>% 
+  left_join(summarise(data_obs_count_allspp, 
+                      mean_size = mean(size_class, wt = n), 
+                      .by = species_name)) %>% 
+  left_join(ll_wide) %>% 
+  ggplot() +
+  aes(
+    x = mean_size,
+    y = value,
+    col = name
+  ) + 
+  # geom_rect(aes(ymin = -Inf, ymax = 0, xmin = -Inf, xmax = Inf), fill = "red", alpha = 0.5) +
+  # geom_rect(aes(ymin = 0, ymax = Inf, xmin = -Inf, xmax = Inf), fill = "blue", alpha = 0.5) +
+  geom_point(size = 2, alpha = 0.5) +
+  stat_smooth() +
+  labs(x = "Species mean size (cm)", 
+       y = "Normalised loglikelighood") +
+  theme_cowplot(20)
+
+
+
+save_plot("output/figures/normalised_ll_bydist.png",
+          plot_ll_normalised_v3,  
+          base_height = 8)
+
+
+
+
+
+
+
+ll_wide %>% 
+  
+   left_join(summarise(data_obs_count_allspp, 
+                      mean_size = mean(size_class, wt = n), 
+                      .by = species_name)) %>% 
+  ggplot() + 
+  aes(
+    x = mean_size, 
+    y = norm_better
+  ) +
+  geom_point() +
+  stat_smooth()
+
+
+ll_wide %>% 
+  left_join(data_obs_count_allspp %>% select(species_name, species_indx) %>% distinct()) %>% 
+   left_join(data_obs_count_allspp_byspp) %>% 
+  ggplot() + 
+  aes(
+    x = totaln_spp %>% log(), 
+    y = norm_better 
+  ) +
+  geom_point() +
+  stat_smooth()
+
+ll_wide %>% 
+  summarise
+
+
+par_table3 %>% 
+  pivot_wider(names_from = dist, 
+              values_from = ll) %>% 
+  # arrange(species_indx) %>% 
+  reframe(sum_ll_norm = sum(ll_norm), 
+            sum_ll_lnorm = sum(ll_lnorm), 
+            mean_ll_norm = mean(ll_norm), 
+            mean_ll_lnorm = mean(ll_lnorm),
+            diff = mean(ll_norm - ll_lnorm), 
+          .by = species_name) %>% 
+  mutate(diff2 = mean_ll_norm - mean_ll_lnorm) %>% View()
+  mutate(norm_better = sum_ll_norm > sum_ll_lnorm,
+         norm_better2 = mean_ll_norm > mean_ll_lnorm, 
+         norm_better3 = diff > 0) %>% 
+  filter(norm_better != norm_better3)
+  count(norm_better)
+
+
+ll_ratio_plot <- 
+  par_table3 %>% 
+  pivot_wider(names_from = dist, 
+              values_from = ll) %>% 
+  mutate(diff = ll_norm - ll_lnorm) %>% 
+  summarise(mean_ratio = median(diff), 
+            .by = species_name) %>% 
+  arrange(desc(mean_ratio)) %>% 
+  left_join(summarise(data_obs_count_allspp, 
+                      mean_size = mean(size_class, wt = n), 
+                      .by = species_name)) %>% 
+  ggplot(aes(mean_size, 
+             mean_ratio %>% log())) +
+  geom_ribbon(aes(ymin = 0, ymax = Inf, xmin = -Inf, xmax = Inf), fill = "blue", alpha = 0.8) +
+  geom_ribbon(aes(ymin = -Inf, ymax = 0, xmin = -Inf, xmax = Inf), fill = "red", alpha = 0.8) +
+  geom_point(size = 2) +
+  stat_smooth(col = "orange") +
+  theme_cowplot(20) +
+  scale_x_continuous(labels = label_number(suffix = "cm")) +
+  labs(x = "Species mean size", 
+       y = "Likelihood ratio median(ll_N-ll_LN)")
+
+save_plot("output/figures/ll_ratio_plot_mod_13.png",
+          ll_ratio_plot,  
+          base_height = 8)
+
+xx %>% 
+  ggplot(aes(mean_ratio)) +
+  geom_vline(xintercept = 1, col = "red")+
+  geom_density() +
+  labs(x = "LL_NORM/LL_LNORM") 
+
+data_obs_count_allspp %>% 
+  filter(species_name %in% head(xx, n = 20)$species_name) %>% 
+  ggplot() +
+  aes(x = size_class, 
+      y = p) +
+  geom_point() + 
+  geom_line() +
+  facet_wrap(~species_name, scales = "free")
+
+data_obs_count_allspp %>% 
+  filter(species_name %in% tail(xx, n = 20)$species_name) %>% 
+  ggplot() +
+  aes(x = size_class, 
+      y = p) +
+  geom_point() + 
+  geom_line() +
+  facet_wrap(~species_name, scales = "free")
+
+ll_plots <- 
+  par_table3 %>% 
+  filter(species_name %in% data_obs_count_20spp$species_name) %>% 
+  mutate(dist = case_when(dist == "ll_norm" ~ "Normal", 
+                          dist == "ll_lnorm" ~ "Lognormal")) %>% 
+  ggplot(aes(x =  dist, 
+             y = ll,
+             col = dist)) +
+  scale_color_manual(values=c("Lognormal" = "red", 
+                              "Normal" = "blue"))+
+  geom_boxplot() +
+  facet_wrap(~species_name, scales = "free") +
+  labs(x = "", 
+       y = "Loglikelihood") +
+  theme(legend.position = "none")
+
+save_plot("output/figures/ll_plots_mod_13.png",
+          ll_plots,  
+          base_height = 8)
+
 
 ```
 
