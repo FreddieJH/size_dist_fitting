@@ -164,10 +164,10 @@ gridcells <-
          lon_grid = round(longitude), 
          lat_lon = paste(lat_grid, lon_grid, sep = "_")) %>% 
   select(survey_id, lat_lon)
-  
 
-newdata <- 
- data_obs %>% 
+
+data_obs_poplvl <- 
+  data_obs %>% 
   left_join(gridcells) %>% 
   mutate(species_name = paste(species_name, lat_lon, sep = "__")) %>% 
   count(species_name, size_class) %>% 
@@ -176,15 +176,14 @@ newdata <-
   filter(n_bins >= 4, 
          n_total >= 200)
 
-species_list_new <- unique(newdata$species_name)
-
 species_indx_table_new <- 
   tibble(
-    species_name = species_list_new, 
-    species_indx = 1:length(species_list_new))
-  
-data_obs_count_allspp <- 
-  newdata %>% 
+    species_name = unique(data_obs_poplvl$species_name), 
+    species_indx = 1:length(unique(data_obs_poplvl$species_name))
+  )
+
+data_obs_count_poplvl <- 
+  data_obs_poplvl %>% 
   left_join(species_indx_table_new, by = join_by(species_name)) %>% 
   left_join(rls_bin_table, by = join_by(size_class)) %>% 
   add_count(species_indx, wt = n, name = "totaln_spp") %>% 
@@ -195,8 +194,8 @@ data_obs_count_allspp <-
          max_row = max(row),
          .by = species_indx)
 
-data_obs_count_allspp_byspp <-
-  data_obs_count_allspp %>% 
+data_obs_count_poplvl_byspp <-
+  data_obs_count_poplvl %>% 
   dplyr::select(species_indx, 
                 totaln_spp, 
                 min_row, 
@@ -437,7 +436,7 @@ mods_summary <-
     "mod_12_allspp", "mod_12",  "real", "binned", "data_obs_count_allspp", "size_class", 774, "lnorm", "Yes", "per species", "predicted from par1",
     "mod_13", "mod_13",  "real", "binned", "data_obs_count_20spp", "size_class", 20, "norm & lnorm", "Yes", "per species", "per species",
     "mod_13_allspp", "mod_13",  "real", "binned", "data_obs_count_allspp", "size_class", 774, "norm & lnorm", "Yes", "per species", "per species",
-    "mod_14", "mod_14",  "real", "binned", "data_obs_count_20spp", "size_class", 20, "norm & lnorm", "Yes", "per species", "predicted from par1",
+    "mod_13_poplvl", "mod_13",  "real", "binned", "data_obs_count_poplvl", "size_class", 774, "norm & lnorm", "Yes", "per species", "predicted from par1",
   )
 
 ```
@@ -875,24 +874,30 @@ mod_05_allspp_data <- mod_06_allspp_data <- mod_07_allspp_data <-
   mod_11_allspp_data <- mod_12_allspp_data <- mod_13_allspp_data <-
   make_datalist(data_obs_count_allspp, data_obs_count_allspp_byspp)
 
+
+mod_13_poplvl_data <-
+  make_datalist(data_obs_count_poplvl, data_obs_count_poplvl)
+
 ```
 
 ### Running models
 
 ```{r}
 
-run_multiple_mods(13, 
+run_multiple_mods(1:13, 
                   init_r = 1, 
                   all_species = FALSE,
-                  overwrite_model = TRUE)
+                  overwrite_model = FALSE)
 
-run_stanmod("mod_13") %>% traceplot("mu")
+run_multiple_mods(9:13, 
+                  init_r = 1, 
+                  all_species = TRUE,
+                  overwrite_model = FALSE)
+
+run_stanmod("mod_13_allspp") %>% traceplot("mu")
 run_stanmod("mod_13") %>% traceplot("cv")
 run_stanmod("mod_13") %>% traceplot("meanlog")
 run_stanmod("mod_13") %>% traceplot("sdlog")
-
-
-
 
 ```
 
@@ -947,23 +952,92 @@ comparison_plot("mod_10", "mod_12", "lnorm, variance per species vs estimated (w
 
 ```{r}
 
-xx <- extract_pars("mod_13_allspp")
+
+mod_13_fit <- run_stanmod("mod_13_allspp")
+mod_13_pars <- extract_pars("mod_13_allspp", overwrite_pars = FALSE)
 
 
-xx %>% 
+mod_13_pars %>% 
   filter(quantile == "median") %>% 
   ggplot(aes(x = meanlog) ) +
   geom_density()
 
-xx %>% 
+mod_13_pars %>% 
   filter(quantile == "median") %>% 
   ggplot(aes(mu, cv)) +
   geom_point()
 
-xx %>% 
-  filter(quantile == "median") %>% pull(sdlog) %>% plot()
+mod_13_pars %>% 
+  filter(quantile == "median") %>% 
   ggplot(aes(meanlog, sdlog)) +
   geom_point()
+
+mod_13_pars_extra <-
+  mod_13_pars %>% 
+  left_join(species_indx_table_new) %>% 
+  rename(species_lat_lon = species_name) %>% 
+  mutate(species_name = str_extract(species_lat_lon, ".*(?=__)"), 
+         lat = str_extract(species_lat_lon, "(?<=__).*(?=_)") %>% as.numeric(), 
+         lon = str_extract(species_lat_lon, "(?<=_)(\\d|-)*$") %>% as.numeric())
+
+mod_13_pars_extra %>% 
+  filter(quantile == "median") %>% 
+  filter(species_name == "Abudefduf bengalensis") %>% 
+  ggplot(aes(x = mu, 
+             y = lat)) +
+  geom_point() +
+  stat_smooth() 
+
+mod_13_pars_extra %>% 
+  filter(quantile == "median") %>% 
+  filter(species_name %in% head(species_list, 20)) %>% 
+  ggplot(aes(x = lat, 
+             y = mu)) +
+  geom_point() +
+  stat_smooth(method = "lm") +
+  facet_wrap(~species_name, scales = "free")
+
+output_table <- tibble()
+for(sp in unique(mod_13_pars_extra$species_name)){
+  for(par in c("mu", "sigma", "sdlog", "meanlog")){
+    
+    mod_formula <- as.formula(paste0(par, "~ lat"))
+    
+    mod_vals <- 
+      mod_13_pars_extra %>% 
+      filter(quantile == "median") %>% 
+      filter(species_name == sp ) %>% 
+      lm(mod_formula, data = .) %>% 
+      broom::tidy()
+    
+    output_table <-
+      output_table %>% 
+      bind_rows(
+        tibble(
+          species_name = sp, 
+          parameter = par,
+          slope = mod_vals$estimate[2], 
+          intercept = mod_vals$estimate[1],
+          slope_p = mod_vals$p.value[2], 
+          intercept_p = mod_vals$p.value[1] 
+        )
+      )
+  }
+  
+}
+
+
+output_table %>% 
+  left_join(summarise(data_obs_count_allspp %>% mutate(species_name =str_extract(species_name, ".*(?=__)")), 
+                      mean_size = mean(size_class, wt = n), 
+                      .by = species_name)) %>% 
+  ggplot(aes(x = mean_size, 
+             y = slope)) +
+  geom_point() + 
+  stat_smooth() +
+  facet_wrap(~parameter)
+
+
 
 
 compare_pars_plot <- function(norm_mod, lnorm_mod, xlim = c(NA, NA), ylim = c(NA, NA)){
@@ -1062,7 +1136,7 @@ get_ll <- function(mod_data, species_indx, sigma, mu, meanlog, sdlog, eps_LN, ep
 
 ```{r}
 
-if(!file.exists("output/likelihoods/mod_13_allspp_poplvl.parquet")){
+if(!file.exists("output/likelihoods/mod_13_poplvl.parquet")){
   par_table <- 
     run_stanmod("mod_13_allspp") %>% 
     posterior::as_draws_df() %>% 
@@ -1098,10 +1172,10 @@ if(!file.exists("output/likelihoods/mod_13_allspp_poplvl.parquet")){
                 select(species_indx, species_name) %>% distinct()) 
   
   
-  write_parquet(par_table3, "output/likelihoods/mod_13_allspp_poplvl.parquet")
+  write_parquet(par_table3, "output/likelihoods/mod_13_poplvl.parquet")
 }
 
-par_table3 <- read_parquet("output/likelihoods/mod_13_allspp_poplvl.parquet")
+par_table3 <- read_parquet("output/likelihoods/mod_13_poplvl.parquet")
 
 
 ll_wide <- 
@@ -1133,7 +1207,7 @@ save_plot("output/figures/proportion_samples_normal.png",
 ll_wide %>% 
   mutate(group = case_when(norm_better > 0.9 ~ "Always Normal",
                            norm_better < 0.1 ~ "Always Logormal", 
-                            TRUE ~ "inconclusive")) %>% 
+                           TRUE ~ "inconclusive")) %>% 
   left_join(summarise(data_obs_count_allspp, 
                       mean_size = mean(size_class, wt = n), 
                       .by = species_name)) %>% 
@@ -1233,7 +1307,7 @@ save_plot("output/figures/normalised_ll_bydist.png",
 
 ll_wide %>% 
   
-   left_join(summarise(data_obs_count_allspp, 
+  left_join(summarise(data_obs_count_allspp, 
                       mean_size = mean(size_class, wt = n), 
                       .by = species_name)) %>% 
   ggplot() + 
@@ -1247,7 +1321,7 @@ ll_wide %>%
 
 ll_wide %>% 
   left_join(data_obs_count_allspp %>% select(species_name, species_indx) %>% distinct()) %>% 
-   left_join(data_obs_count_allspp_byspp) %>% 
+  left_join(data_obs_count_allspp_byspp) %>% 
   ggplot() + 
   aes(
     x = totaln_spp %>% log(), 
@@ -1265,17 +1339,17 @@ par_table3 %>%
               values_from = ll) %>% 
   # arrange(species_indx) %>% 
   reframe(sum_ll_norm = sum(ll_norm), 
-            sum_ll_lnorm = sum(ll_lnorm), 
-            mean_ll_norm = mean(ll_norm), 
-            mean_ll_lnorm = mean(ll_lnorm),
-            diff = mean(ll_norm - ll_lnorm), 
+          sum_ll_lnorm = sum(ll_lnorm), 
+          mean_ll_norm = mean(ll_norm), 
+          mean_ll_lnorm = mean(ll_lnorm),
+          diff = mean(ll_norm - ll_lnorm), 
           .by = species_name) %>% 
   mutate(diff2 = mean_ll_norm - mean_ll_lnorm) %>% View()
-  mutate(norm_better = sum_ll_norm > sum_ll_lnorm,
-         norm_better2 = mean_ll_norm > mean_ll_lnorm, 
-         norm_better3 = diff > 0) %>% 
+mutate(norm_better = sum_ll_norm > sum_ll_lnorm,
+       norm_better2 = mean_ll_norm > mean_ll_lnorm, 
+       norm_better3 = diff > 0) %>% 
   filter(norm_better != norm_better3)
-  count(norm_better)
+count(norm_better)
 
 
 ll_ratio_plot <- 
