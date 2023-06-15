@@ -453,8 +453,8 @@ make_datalist <- function(mod_name){
   
   count_data_name <- 
     case_when(mod_name %in% c("mod_01, mod_02") ~ "data_sim", 
-              str_detect(mod_name, "_allspp") ~ "data_count_allspp", 
-              str_detect(mod_name, "_poplvl") ~ "data_count_poplvl", 
+              str_detect(mod_name, "_allspp") ~ "data_obs_count_allspp", 
+              str_detect(mod_name, "_poplvl") ~ "data_obs_count_poplvl", 
               TRUE ~ "data_obs_count_20spp")
 
   spplevel_data_name <- paste0(count_data_name, "_byspp") 
@@ -942,8 +942,24 @@ comparison_plot("mod_10", "mod_12", "lnorm, variance per species vs estimated (w
 
 ```{r}
 
+xx2 <- run_stanmod("mod_14_poplvl", overwrite = TRUE)
 
-xx <- run_stanmod("mod_13_poplvl", overwrite = TRUE)
+xx2 %>% traceplot("mu")
+xx2 %>% traceplot("sigma")
+xx2 %>% traceplot("meanlog")
+xx2 %>% traceplot("sdlog")
+xx2 %>% traceplot("select_mu")
+xx2 %>% traceplot("select_s")
+
+
+logis <- function(x, mu, s) 1/(1+exp(-(x-mu)/s))
+
+tibble(x = seq(0, 20, by = 0.1)) %>% 
+  mutate(p = logis(x, 0.75, 0.19))%>% 
+  ggplot(aes(x = x, y = p)) +
+  geom_line() + 
+  geom_vline(xintercept = 2.5) + 
+  geom_vline(xintercept = 1.25, lty = 2)
 
 read_rds("output/model_fits/mod_13_poplvl.rds")
 
