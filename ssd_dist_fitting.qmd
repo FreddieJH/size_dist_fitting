@@ -449,7 +449,19 @@ mods_summary <-
 ```{r modelling-functions}
 
 # make the stan datalist for models 03 and 04
-make_datalist <- function(count_data, spplevel_data){
+make_datalist <- function(mod_name){
+  
+  count_data_name <- 
+    case_when(mod_name %in% c("mod_01, mod_02") ~ "data_sim", 
+              str_detect(mod_name, "_allspp") ~ "data_count_allspp", 
+              str_detect(mod_name, "_poplvl") ~ "data_count_poplvl", 
+              TRUE ~ "data_obs_count_20spp")
+
+  spplevel_data_name <- paste0(count_data_name, "_byspp") 
+  
+  count_data <- get(count_data_name)
+  spplevel_data <- get(spplevel_data_name)
+  
   list(
     I = nrow(count_data),
     S = max(count_data$species_indx),
@@ -481,7 +493,7 @@ run_stanmod <- function(mod_name,
       pull(stan_file) %>% 
       paste0("input/models/", ., ".stan")
     
-    datalist <- eval(parse(text = paste0(mod_name, "_data")))
+    datalist <- make_datalist(mod_name)
     
     mod_fit <-
       stan(stanfile,
@@ -854,38 +866,6 @@ comparison_plot <- function(mod1, mod2, plot_title = ""){
 
 ## Models
 
-### Data for models
-
-```{r}
-
-mod_01_data <- 
-  mod_02_data <-
-  list(
-    n = nrow(data_sim),
-    n_species = max(data_sim$species_indx),
-    species_id = data_sim$species_indx,
-    y = data_sim$size_class_raw
-  )
-
-mod_03_data <- mod_04_data <- 
-  make_datalist(data_sim_count, data_sim_byspp)
-
-mod_05_data <- mod_06_data <- mod_07_data <-
-  mod_08_data <- mod_09_data <- mod_10_data <- 
-  mod_11_data <- mod_12_data <- mod_13_data <-
-  make_datalist(data_obs_count_20spp, data_obs_count_20spp_byspp)
-
-mod_05_allspp_data <- mod_06_allspp_data <- mod_07_allspp_data <-
-  mod_08_allspp_data <- mod_09_allspp_data <- mod_10_allspp_data <- 
-  mod_11_allspp_data <- mod_12_allspp_data <- mod_13_allspp_data <-
-  make_datalist(data_obs_count_allspp, data_obs_count_allspp_byspp)
-
-
-mod_13_poplvl_data <-
-  make_datalist(data_obs_count_poplvl , 
-                data_obs_count_poplvl_byspp)
-
-```
 
 ### Running models
 
@@ -967,9 +947,8 @@ xx <- run_stanmod("mod_13_poplvl", overwrite = TRUE)
 
 read_rds("output/model_fits/mod_13_poplvl.rds")
 
-
 mod_13_poplvl_pars <- 
-  extract_pars("mod_13_poplvl", overwrite_pars = FALSE) %>% 
+  extract_pars("mod_13_poplvl", overwrite_pars = TRUE) %>% 
   left_join(species_indx_table_poplvl) %>% 
   rename(species_lat_lon = species_name) %>% 
   mutate(species_name = str_extract(species_lat_lon, ".*(?=__)"), 
@@ -979,47 +958,16 @@ mod_13_poplvl_pars <-
                       mean_size = mean(size_class, wt = n), 
                       .by = species_name)) 
 
-
-data_obs_count_poplvl %>% 
-  rename(species_lat_lon = species_name) %>% 
-  mutate(species_name = str_extract(species_lat_lon, ".*(?=__)"), 
-         lat = str_extract(species_lat_lon, "(?<=__).*(?=_)") %>% as.numeric(), 
-         lon = str_extract(species_lat_lon, "(?<=_)(\\d|-)*$") %>% as.numeric()) %>% 
-  filter(species_name == "Abudefduf bengalensis") %>% 
-  ggplot() +
-  aes(
-    x = size_class, 
-    y = p
-  ) +
-  geom_line() +
-  geom_point() +
-  facet_grid(lon ~ lat)
-
-plot_logis <- function(x, mu, s){
-  tibble(size = x) %>% 
-    expand_grid(mu = mu, s = s) %>% mutate(p = 1/(1+(exp(-(size-mu)/s))))  %>% 
-    ggplot(aes(x = size, y = p)) + 
-    geom_line() +
-    ylim(c(0, 1))
-}
-plot_logis(0:100, 20, 1) 
-
-
 raw_data <- 
   data_obs_count_poplvl %>% 
-  rename(species_lat_lon = species_name) %>% 
-  mutate(species_name = str_extract(species_lat_lon, ".*(?=__)"), 
-         lat = str_extract(species_lat_lon, "(?<=__).*(?=_)") %>% as.numeric(), 
-         lon = str_extract(species_lat_lon, "(?<=_)(\\d|-)*$") %>% as.numeric())
-  
+  rename(species_lat_lon = species_name)
 
 stan_model_pars <- mod_13_poplvl_pars
+  
 
 raw_data %>% 
-  full_join(stan_model_pars,
-            by = join_by(species_indx),
+  left_join(stan_model_pars,
             multiple = "all")  %>% 
-  filter(species_name == "Abudefduf bengalensis") %>% 
   mutate(fit_norm = pnorm(size_max, mu, sigma) -  pnorm(size_min, mu, sigma), 
          fit_lnorm = plnorm(size_max, meanlog, sdlog) - plnorm(size_min, meanlog, sdlog)) %>% 
   dplyr::select(lat, lon, size_class, quantile, p, norm = fit_norm, lnorm = fit_lnorm) %>% 
