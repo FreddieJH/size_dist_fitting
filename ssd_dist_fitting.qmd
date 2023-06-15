@@ -174,9 +174,10 @@ data_obs_poplvl <-
   add_count(species_name, name = "n_bins") %>% 
   add_count(species_name, wt = n, name = "n_total") %>% 
   filter(n_bins >= 4, 
-         n_total >= 200)
+         n_total >= 200) %>% 
+  filter(str_detect(species_name, "Abudefduf bengalensis"))
 
-species_indx_table_new <- 
+species_indx_table_poplvl <- 
   tibble(
     species_name = unique(data_obs_poplvl$species_name), 
     species_indx = 1:length(unique(data_obs_poplvl$species_name))
@@ -184,7 +185,7 @@ species_indx_table_new <-
 
 data_obs_count_poplvl <- 
   data_obs_poplvl %>% 
-  left_join(species_indx_table_new, by = join_by(species_name)) %>% 
+  left_join(species_indx_table_poplvl, by = join_by(species_name)) %>% 
   left_join(rls_bin_table, by = join_by(size_class)) %>% 
   add_count(species_indx, wt = n, name = "totaln_spp") %>% 
   arrange(species_indx, size_indx) %>%
@@ -436,7 +437,8 @@ mods_summary <-
     "mod_12_allspp", "mod_12",  "real", "binned", "data_obs_count_allspp", "size_class", 774, "lnorm", "Yes", "per species", "predicted from par1",
     "mod_13", "mod_13",  "real", "binned", "data_obs_count_20spp", "size_class", 20, "norm & lnorm", "Yes", "per species", "per species",
     "mod_13_allspp", "mod_13",  "real", "binned", "data_obs_count_allspp", "size_class", 774, "norm & lnorm", "Yes", "per species", "per species",
-    "mod_13_poplvl", "mod_13",  "real", "binned", "data_obs_count_poplvl", "size_class", 774, "norm & lnorm", "Yes", "per species", "predicted from par1",
+    "mod_13_poplvl", "mod_13",  "real", "binned", "data_obs_count_poplvl", "size_class", 774, "norm & lnorm", "Yes", "per species", "per species",
+    "mod_14_poplvl", "mod_14",  "real", "binned", "data_obs_count_poplvl", "size_class", 774, "norm & lnorm", "Yes", "per species", "predicted from par1",
   )
 
 ```
@@ -504,6 +506,7 @@ run_stanmod <- function(mod_name,
 
 run_multiple_mods <- function(integer_vector, 
                               all_species = FALSE, 
+                              poplvl = FALSE,
                               overwrite_model = FALSE, 
                               init_r = 2){
   
@@ -511,12 +514,14 @@ run_multiple_mods <- function(integer_vector,
     str_pad(pad = "0", width = 2) %>% 
     paste0("mod_", .) %>% 
     {if(all_species) paste0(., "_allspp") else .} %>% 
+    {if(poplvlv) paste0(., "_poplvl") else .} %>% 
     map(run_stanmod, overwrite = overwrite_model, init_r = init_r)
 }
 
 
 plot_multiple_mods <- function(integer_vector, 
                                all_species = FALSE, 
+                               poplvl = FALSE,
                                overwrite_plot = FALSE,
                                overwrite_pars = FALSE){
   
@@ -525,6 +530,7 @@ plot_multiple_mods <- function(integer_vector,
     str_pad(pad = "0", width = 2) %>% 
     paste0("mod_", .) %>% 
     {if(all_species) paste0(., "_allspp") else .} %>% 
+    {if(poplvlv) paste0(., "_poplvl") else .} %>% 
     map(plot_mod_fit, 
         overwrite = overwrite_plot, 
         overwrite_pars = overwrite_pars)
@@ -876,7 +882,8 @@ mod_05_allspp_data <- mod_06_allspp_data <- mod_07_allspp_data <-
 
 
 mod_13_poplvl_data <-
-  make_datalist(data_obs_count_poplvl, data_obs_count_poplvl)
+  make_datalist(data_obs_count_poplvl , 
+                data_obs_count_poplvl_byspp)
 
 ```
 
@@ -889,7 +896,7 @@ run_multiple_mods(1:13,
                   all_species = FALSE,
                   overwrite_model = FALSE)
 
-run_multiple_mods(9:13, 
+run_multiple_mods(13, 
                   init_r = 1, 
                   all_species = TRUE,
                   overwrite_model = FALSE)
@@ -910,7 +917,10 @@ plot_multiple_mods(integer_vector = 13,
                    overwrite_plot = TRUE, 
                    overwrite_pars = TRUE)
 
-extract_pars("mod_13_allspp", overwrite_pars = FALSE) %>% 
+
+run_multiple_mods()
+
+extract_pars("mod_13_poplvl", overwrite_pars = FALSE) %>% 
   ggplot(aes(x = cv_N)) +
   geom_density()
 
@@ -948,13 +958,109 @@ comparison_plot("mod_10", "mod_12", "lnorm, variance per species vs estimated (w
 
 # Further analysis
 
+## Population level
+
+```{r}
+
+
+xx <- run_stanmod("mod_13_poplvl", overwrite = TRUE)
+
+read_rds("output/model_fits/mod_13_poplvl.rds")
+
+
+mod_13_poplvl_pars <- 
+  extract_pars("mod_13_poplvl", overwrite_pars = FALSE) %>% 
+  left_join(species_indx_table_poplvl) %>% 
+  rename(species_lat_lon = species_name) %>% 
+  mutate(species_name = str_extract(species_lat_lon, ".*(?=__)"), 
+         lat = str_extract(species_lat_lon, "(?<=__).*(?=_)") %>% as.numeric(), 
+         lon = str_extract(species_lat_lon, "(?<=_)(\\d|-)*$") %>% as.numeric()) %>% 
+  left_join(summarise(data_obs_count_allspp, 
+                      mean_size = mean(size_class, wt = n), 
+                      .by = species_name)) 
+
+
+data_obs_count_poplvl %>% 
+  rename(species_lat_lon = species_name) %>% 
+  mutate(species_name = str_extract(species_lat_lon, ".*(?=__)"), 
+         lat = str_extract(species_lat_lon, "(?<=__).*(?=_)") %>% as.numeric(), 
+         lon = str_extract(species_lat_lon, "(?<=_)(\\d|-)*$") %>% as.numeric()) %>% 
+  filter(species_name == "Abudefduf bengalensis") %>% 
+  ggplot() +
+  aes(
+    x = size_class, 
+    y = p
+  ) +
+  geom_line() +
+  geom_point() +
+  facet_grid(lon ~ lat)
+
+plot_logis <- function(x, mu, s){
+  tibble(size = x) %>% 
+    expand_grid(mu = mu, s = s) %>% mutate(p = 1/(1+(exp(-(size-mu)/s))))  %>% 
+    ggplot(aes(x = size, y = p)) + 
+    geom_line() +
+    ylim(c(0, 1))
+}
+plot_logis(0:100, 20, 1) 
+
+
+raw_data <- 
+  data_obs_count_poplvl %>% 
+  rename(species_lat_lon = species_name) %>% 
+  mutate(species_name = str_extract(species_lat_lon, ".*(?=__)"), 
+         lat = str_extract(species_lat_lon, "(?<=__).*(?=_)") %>% as.numeric(), 
+         lon = str_extract(species_lat_lon, "(?<=_)(\\d|-)*$") %>% as.numeric())
+  
+
+stan_model_pars <- mod_13_poplvl_pars
+
+raw_data %>% 
+  full_join(stan_model_pars,
+            by = join_by(species_indx),
+            multiple = "all")  %>% 
+  filter(species_name == "Abudefduf bengalensis") %>% 
+  mutate(fit_norm = pnorm(size_max, mu, sigma) -  pnorm(size_min, mu, sigma), 
+         fit_lnorm = plnorm(size_max, meanlog, sdlog) - plnorm(size_min, meanlog, sdlog)) %>% 
+  dplyr::select(lat, lon, size_class, quantile, p, norm = fit_norm, lnorm = fit_lnorm) %>% 
+  pivot_wider(names_from = quantile,
+              values_from = c(norm, lnorm)) %>%
+  ggplot() +
+  aes(x = size_class, 
+      y = p) +
+  geom_point() +
+  geom_line() + 
+  geom_point(aes(y = norm_median), 
+             col = "blue",
+             alpha = 0.5) +
+  geom_line(aes(y = norm_median), 
+            col = "blue",
+            alpha = 0.5) +
+  geom_ribbon(aes(ymin = norm_q5,
+                  ymax = norm_q95),
+              fill = "blue",
+              alpha = 0.5) +
+  geom_point(aes(y = lnorm_median), 
+             col = "red",
+             alpha = 0.5) +
+  geom_line(aes(y = lnorm_median), 
+            col = "red",
+            alpha = 0.5) +
+  geom_ribbon(aes(ymin = lnorm_q5,
+                  ymax = lnorm_q95),
+              fill = "red",
+              alpha = 0.5) +
+  facet_grid(lon~lat, scales = "free")
+
+```
+
+
 ## Parameter regression
 
 ```{r}
 
 
-mod_13_fit <- run_stanmod("mod_13_allspp")
-mod_13_pars <- extract_pars("mod_13_allspp", overwrite_pars = FALSE)
+# mod_13_fit <- run_stanmod("mod_13_poplvl", overwrite = FALSE)
 
 
 mod_13_pars %>% 
@@ -973,12 +1079,7 @@ mod_13_pars %>%
   geom_point()
 
 mod_13_pars_extra <-
-  mod_13_pars %>% 
-  left_join(species_indx_table_new) %>% 
-  rename(species_lat_lon = species_name) %>% 
-  mutate(species_name = str_extract(species_lat_lon, ".*(?=__)"), 
-         lat = str_extract(species_lat_lon, "(?<=__).*(?=_)") %>% as.numeric(), 
-         lon = str_extract(species_lat_lon, "(?<=_)(\\d|-)*$") %>% as.numeric())
+  mod_13_pars 
 
 mod_13_pars_extra %>% 
   filter(quantile == "median") %>% 
@@ -1033,6 +1134,7 @@ output_table %>%
                       .by = species_name)) %>% 
   ggplot(aes(x = mean_size, 
              y = slope)) +
+  
   geom_point() + 
   stat_smooth() +
   facet_wrap(~parameter)
