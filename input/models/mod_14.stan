@@ -19,13 +19,23 @@ data {
 parameters {
 	// normal parameters
   vector<lower= -1.0,upper=4.0>[S]  ln_mu;     // log-species mean length
-  vector<lower= -4,upper=4.0>[S]  ln_cv;     // log-species coefficient of variation
+  // vector<lower= -1.5,upper=4.0>[S]  ln_cv;     // log-species coefficient of variation
   vector<lower= -8.0,upper=-4.0>[S] logit_eps_N; // logistic-species misclassification
+  real<lower=-8, upper =8> beta_0;
+  real<lower=0, upper =8> beta_1;
+
+  
 
 	// log-normal parameters
   vector<lower= -1.0,upper=4.0>[S]  ln_meanlog;     // log-species mean length
-  vector<lower= -4,upper=4.0>[S]  ln_sdlog;  // log-species sihgma
+  // vector<lower= -1.5,upper=4.0>[S]  ln_sdlog;  // log-species sihgma
   vector<lower= -8.0,upper=-4.0>[S] logit_eps_LN; // logistic-species misclassification
+  
+  real<lower=-8, upper =8> beta_2;
+  real<lower=0, upper =8> beta_3;
+  
+  real<lower = 0, upper = 20> select_mu;
+  real<lower = 0, upper = 10> select_s;
 }
 
 model {
@@ -44,15 +54,27 @@ model {
 	real norm_c_LN;   // normalising constant (less than 1)
 	real p_LN;        // probability of being in observed bin
 	vector[S] eps_LN; // probability randomly allocated for species
+	
+	real selectivity;
 
 	// priors on model parameters
 	ln_mu     ~ normal( 2.0, 1.0); // Log prior for species mean lengths
-	ln_cv     ~ normal(-0.6, 1.0); // Log prior on cv 
+	// ln_cv     ~ normal(-0.6, 1.0); // Log prior on cv 
 	logit_eps_N ~ normal(-6.0, 1.0); // Logistic prior on misclassification 
 
 	ln_meanlog ~ normal( 2.0, 1.0); // Log prior for species mean lengths
-	ln_sdlog  ~ normal(-0.6, 1.0); // Log prior on cv 
+	// ln_sdlog  ~ normal(-0.6, 1.0); // Log prior on cv 
 	logit_eps_LN ~ normal(-6.0, 1.0); // Logistic prior on misclassification 
+	
+	
+	beta_0 ~ normal(0, 3);
+	beta_1 ~ normal(0, 3);
+	beta_2 ~ normal(0, 2);
+	beta_3 ~ normal(0, 2);
+	
+	select_mu ~ normal(0, 2);
+	select_s ~ normal(0, 2);
+	
 
   for (i in 1:B) {
     f[i] = (l[i+1] - l[i]) / (l[B+1] - l[1]);	// calculate relative bin widths
@@ -67,12 +89,14 @@ model {
   for (i in 1:S) { // for each species i
     // normal
     mu     = exp(ln_mu[i]);
-    sigma  = mu * exp(ln_cv[i]);
+    sigma  = beta_0 + (beta_1*mu);
    	norm_c_N = 1.0 - normal_cdf(l[1], mu, sigma); // normalising constant
    	// log-normal
    	meanlog     = exp(ln_meanlog[i]);
-    sdlog  = exp(ln_sdlog[i]);
+    sdlog  = beta_2 + (beta_3*meanlog);
    	norm_c_LN = 1.0 - lognormal_cdf(l[1], meanlog, sdlog); // normalising constant
+
+    selectivity = 1/(1+exp(-((l[1]-select_mu)/select_s)));	 
 
    	for (j in i_min[i]:i_max[i]) { // observation j
    		// probability of being in bin (prior to misclassification)
@@ -104,12 +128,12 @@ generated quantities {
   
   for (i in 1:S) {
      mu[i]  = exp(ln_mu[i]);
-     cv[i]  = exp(ln_cv[i]);
-     sigma[i] = cv[i]*mu[i];
+     // cv[i] = exp(ln_cv[i]);
+     sigma[i] = beta_0 + beta_1*mu[i];
      eps_N[i] = exp(logit_eps_N[i]) / (1.0 + exp(logit_eps_N[i]));
 
      meanlog[i]   = exp(ln_meanlog[i]);
-     sdlog[i] = exp(ln_sdlog[i]);
+     sdlog[i] = beta_2 + beta_3*meanlog[i];
      eps_LN[i]   = exp(logit_eps_LN[i]) / (1.0 + exp(logit_eps_LN[i]));
   }
 }
