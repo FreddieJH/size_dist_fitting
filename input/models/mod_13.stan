@@ -6,51 +6,52 @@
  
 data {
   int<lower=1> I;                  // number of observations
-  int<lower=1> S;                  // number of species
+  int<lower=1> S;                  // number of populations
   int<lower=1> B;                  // number of length bins
   real<lower=0.0> l[B+1];          // boundaries of each bin
-  int<lower=1,upper=I> i_min[S];   // min obs index for each species
-  int<lower=1,upper=I> i_max[S];   // max obs index for each species
-  int<lower=1,upper=S> s[I];       // species ID (not used here)
+  int<lower=1,upper=I> i_min[S];   // min obs index for each population
+  int<lower=1,upper=I> i_max[S];   // max obs index for each population
+  int<lower=1,upper=S> s[I];       // population ID (not used here)
   int<lower=1,upper=B> b[I];       // bin
   int<lower=1>         n[I];       // fish in the bin
+  real<lower=0.0> meansize[S];      // mean body size of the population
 }
  
 parameters {
 	// normal parameters
-  vector<lower= -1.0,upper=4.0>[S]  ln_mu;     // log-species mean length
-  vector<lower= -4,upper=4.0>[S]  ln_cv;     // log-species coefficient of variation
-  vector<lower= -8.0,upper=-4.0>[S] logit_eps_N; // logistic-species misclassification
+  vector<lower= -1.0,upper=5.0>[S]  ln_mu;     // log-population mean length
+  vector<lower= -4,upper=4.0>[S]  ln_cv;     // log-population coefficient of variation
+  vector<lower= -8.0,upper=-4.0>[S] logit_eps_N; // logistic-population misclassification
 
 	// log-normal parameters
-  vector<lower= -1.0,upper=4.0>[S]  ln_meanlog;     // log-species mean length
-  vector<lower= -4,upper=4.0>[S]  ln_sdlog;  // log-species sihgma
-  vector<lower= -8.0,upper=-4.0>[S] logit_eps_LN; // logistic-species misclassification
+  vector<lower= -1.0,upper=1.0>[S]  ln_meanlog;     // log-population mean length
+  vector<lower= -4,upper=4.0>[S]  ln_sdlog;  // log-population sihgma
+  vector<lower= -8.0,upper=-4.0>[S] logit_eps_LN; // logistic-population misclassification
 }
 
 model {
 	vector[B] f;     // probability in bin when randomly allocated
 
   // normal variables
-  real mu;       // species standard deviation
-  real sigma;    // species standard deviation
+  real mu;       // population standard deviation
+  real sigma;    // population standard deviation
 	real norm_c_N;   // normalising constant (less than 1)
 	real p_N;        // probability of being in observed bin
-	vector[S] eps_N; // probability randomly allocated for species
+	vector[S] eps_N; // probability randomly allocated for population
 
   // log-normal variables
   real meanlog;
-  real sdlog;    // species standard deviation
+  real sdlog;    // population standard deviation
 	real norm_c_LN;   // normalising constant (less than 1)
 	real p_LN;        // probability of being in observed bin
-	vector[S] eps_LN; // probability randomly allocated for species
+	vector[S] eps_LN; // probability randomly allocated for population
 
 	// priors on model parameters
-	ln_mu     ~ normal( 2.0, 1.0); // Log prior for species mean lengths
+	
 	ln_cv     ~ normal(-0.6, 1.0); // Log prior on cv 
 	logit_eps_N ~ normal(-6.0, 1.0); // Logistic prior on misclassification 
 
-	ln_meanlog ~ normal( 2.0, 1.0); // Log prior for species mean lengths
+	
 	ln_sdlog  ~ normal(-0.6, 1.0); // Log prior on cv 
 	logit_eps_LN ~ normal(-6.0, 1.0); // Logistic prior on misclassification 
 
@@ -64,7 +65,10 @@ model {
     eps_LN[i] = exp(logit_eps_LN[i]) / (1.0 + exp(logit_eps_LN[i]));	
   }
 
-  for (i in 1:S) { // for each species i
+  for (i in 1:S) { // for each population i
+  
+  ln_mu[i]     ~ normal(meansize[i], 0.5); // Log prior for population mean lengths
+  ln_meanlog[i] ~ normal(log(meansize[i]), 0.1); // Log prior for population mean lengths
     // normal
     mu     = exp(ln_mu[i]);
     sigma  = mu * exp(ln_cv[i]);
@@ -93,14 +97,14 @@ model {
 }
 
 generated quantities {
-  real mu[S];   // species mean
-  real cv[S];   // species cv
-  real sigma[S];   // species cv
-  real eps_N[S];  // species misclassification
+  real mu[S];   // population mean
+  real cv[S];   // population cv
+  real sigma[S];   // population cv
+  real eps_N[S];  // population misclassification
   
-  real meanlog[S];    // species mean
-  real sdlog[S]; // species sigma
-  real eps_LN[S];   // species misclassification
+  real meanlog[S];    // population mean
+  real sdlog[S]; // population sigma
+  real eps_LN[S];   // population misclassification
   
   for (i in 1:S) {
      mu[i]  = exp(ln_mu[i]);
@@ -113,4 +117,3 @@ generated quantities {
      eps_LN[i]   = exp(logit_eps_LN[i]) / (1.0 + exp(logit_eps_LN[i]));
   }
 }
-
