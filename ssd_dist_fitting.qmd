@@ -10,28 +10,11 @@ execute:
 ---
 
 ```{r setup, include = FALSE}
-# 
-# knitr::opts_chunk$set(
-#   comment = FALSE, 
-#   warning = FALSE, 
-#   error   = FALSE, 
-#   message = FALSE
-# )
-
 
 if(!dir.exists("output")) dir.create("output")
 if(!dir.exists("output/model_fits")) dir.create("output/model_fits")
 if(!dir.exists("output/model_plots")) dir.create("output/model_plots")
 if(!dir.exists("output/data_figs")) dir.create("output/data_figs")
-
-rerun_models  <- FALSE # will take a while
-rerun_figures <- FALSE
-
-overwrite_smallmodels <- TRUE
-overwrite_smallplots  <- TRUE
-overwrite_largemodels <- FALSE
-overwrite_largeplots  <- FALSE
-
 
 ```
 
@@ -54,7 +37,7 @@ library(fitdistrplus, include.only = "fitdist")
 library(purrr)
 library(patchwork)
 library(scales)
-
+library(magick)
 
 rstan_options(auto_write = TRUE) # avoid recompilation of stan files
 
@@ -65,228 +48,154 @@ rstan_options(auto_write = TRUE) # avoid recompilation of stan files
 ```{r data-import}
 
 data_obs   <- read_parquet("input/data/data_obs_cleaned.parquet")
-data_survs <- read_parquet("input/data/survey_list_m1_aus.parquet")
+data_survs <- 
+  read_parquet("input/data/survey_list_m1_aus.parquet") %>% 
+  mutate(lat_grid = round(latitude), 
+         lon_grid = round(longitude), 
+         lat_lon = paste(lat_grid, lon_grid, sep = "_")) 
+data_sim <- read_parquet("input/data/data_simulated.parquet")
 
-rls_bin_breaks <- 
+set.seed(1)
+data_obs_sample <-
   data_obs %>% 
-  pull(size_class) %>% 
-  unique() %>% 
-  sort()
-
-rls_bin_table <-
-  tibble(size_class = c(0, rls_bin_breaks, 500)) %>% 
-  mutate(
-    size_indx  = 0:(length(size_class)-1),
-    size_min = (size_class + lag(size_class))/2,
-    size_max = lead(size_min)
-  ) %>% 
-  filter(size_class %in% c(rls_bin_breaks, 500))
-
-species_list <- data_obs %>% pull(species_name) %>% unique()
-
-species_indx_table <- 
-  tibble(
-    species_name = species_list, 
-    species_indx = 1:length(species_list))
-
-if(!file.exists("input/data/data_obs_cleaned_sample.parquet")){
-  # random 20 species
-  set.seed(1)
-  random_species <- 
-    tibble(
-      species_name = sample(unique(data_obs$species_name), 20), 
-      species_indx = 1:20)
-  
-  data_obs %>% 
-    filter(species_name %in% random_species$species_name) %>% 
-    left_join(random_species, by = join_by(species_name)) %>% 
-    write_parquet("data/data_obs_cleaned_sample.parquet")
-  
-}
-
-data_obs_sample <- read_parquet("input/data/data_obs_cleaned_sample.parquet")
+  filter(species_name %in% sample(unique(data_obs$species_name), 20))
 
 ```
 
 ## Data wrangling
 
+### Wrangling functions
+
 ```{r data-wrangling}
 
-data_obs_count_allspp <- 
-  data_obs %>% 
-  count(species_name, size_class) %>% 
-  left_join(species_indx_table, by = join_by(species_name)) %>% 
-  left_join(rls_bin_table, by = join_by(size_class)) %>% 
-  add_count(species_indx, wt = n, name = "totaln_spp") %>% 
-  arrange(species_indx, size_indx) %>%
-  mutate(p = n/totaln_spp) %>% 
-  mutate(row = 1:n()) %>% 
-  mutate(min_row = min(row), 
-         max_row = max(row),
-         .by = species_indx) 
 
-data_obs_count_allspp_byspp <-
-  data_obs_count_allspp %>% 
-  dplyr::select(species_indx, 
-                totaln_spp, 
-                min_row, 
-                max_row) %>% 
-  distinct() %>% 
-  arrange(species_indx)
+# output clean body size bin table given a vector of body sizes
+get_bintable <- function(size_vector){
+  
+  sizebins <- 
+    size_vector %>% 
+    unique() %>% 
+    c(0) %>%
+    sort()
+  
+  tibble(size_class = sizebins) %>% 
+    mutate(size_indx = 0:(nrow(.)-1),
+           size_min = (size_class + lag(size_class))/2,
+           size_max = lead(size_min)) %>% 
+    filter(size_class != 0) %>% 
+    mutate(size_max = case_when(size_class == max(sizebins) ~ size_class + (size_class-size_min), 
+                                TRUE ~ size_max))
+}
 
+# function that takes population number, size_class, and n
+clean_data <- function(count_table, 
+                           population = "population", 
+                           sizes = "size_class", 
+                           count = "n"){
+  
+  sizebin_tbl <- 
+    count_table %>% 
+    pull(!!sizes) %>% 
+    get_bintable()
+  
+  popln_tbl <- 
+    count_table %>% 
+    select(!!population) %>% 
+    distinct() %>% 
+    mutate(population_indx = row_number())
+  
+  
+  count_table %>% 
+    rename(size_class := !!sizes) %>% 
+    left_join(popln_tbl, by = join_by(!!population)) %>% 
+    left_join(sizebin_tbl, by = join_by(size_class)) %>% 
+    add_count(population_indx, wt = n, name = "population_n") %>% 
+    arrange(population_indx, size_indx) %>%
+    mutate(p = n/population_n) %>% 
+    mutate(row = 1:n()) %>% 
+    mutate(min_row = min(row), 
+           max_row = max(row),
+           .by = population_indx) 
+  
+}
 
-data_obs_count_20spp <- 
-  data_obs_sample %>% 
-  count(species_name, species_indx, size_class) %>% 
-  left_join(rls_bin_table, by = join_by(size_class)) %>% 
-  add_count(species_indx, wt = n, name = "totaln_spp") %>% 
-  arrange(species_indx, size_indx) %>%
-  mutate(p = n/totaln_spp) %>% 
-  mutate(row = 1:n()) %>% 
-  mutate(min_row = min(row), 
-         max_row = max(row),
-         .by = species_indx) 
-
-data_obs_count_20spp_byspp <-
-  data_obs_count_20spp %>% 
-  dplyr::select(species_indx, 
-                totaln_spp, 
-                min_row, 
-                max_row) %>% 
-  distinct() %>% 
-  arrange(species_indx)
-
-
-# Population level, not species level 
-gridcells <-
-  data_survs %>% 
-  mutate(lat_grid = round(latitude), 
-         lon_grid = round(longitude), 
-         lat_lon = paste(lat_grid, lon_grid, sep = "_")) %>% 
-  select(survey_id, lat_lon)
-
-
-data_obs_poplvl <- 
-  data_obs %>% 
-  left_join(gridcells) %>% 
-  mutate(species_name = paste(species_name, lat_lon, sep = "__")) %>% 
-  count(species_name, size_class) %>% 
-  add_count(species_name, name = "n_bins") %>% 
-  add_count(species_name, wt = n, name = "n_total") %>% 
-  filter(n_bins >= 4, 
-         n_total >= 200) %>% 
-  filter(str_detect(species_name, "Abudefduf bengalensis"))
-
-species_indx_table_poplvl <- 
-  tibble(
-    species_name = unique(data_obs_poplvl$species_name), 
-    species_indx = 1:length(unique(data_obs_poplvl$species_name))
+# make the stan datalist for models 03 and 04
+make_standata <- function(cleaned_data){
+  
+  poplvl_data <- 
+    cleaned_data %>% 
+    select(population_indx, 
+           population_n, 
+           min_row, 
+           max_row) %>% 
+    distinct() %>% 
+    arrange(population_indx)
+  
+  sizebin_tbl <- 
+    cleaned_data %>% 
+    pull(size_class) %>% 
+    get_bintable()
+  
+  
+  mean_sizes <- 
+    cleaned_data %>% 
+    summarise(mean_size = mean(size_class, wt = n), 
+              .by = population_indx) %>% 
+    arrange(population_indx)
+  
+  list(
+    I = nrow(cleaned_data),
+    S = max(cleaned_data$population_indx),
+    B = max(cleaned_data$size_indx),
+    l = c(sizebin_tbl$size_min, sizebin_tbl$size_max[nrow(sizebin_tbl)]),
+    # N_species = poplvl_data$population_n,
+    i_min     = poplvl_data$min_row,
+    i_max     = poplvl_data$max_row,
+    s = cleaned_data$population_indx,
+    b = cleaned_data$size_indx,
+    n = cleaned_data$n,
+    meansize = mean_sizes$mean_size
   )
-
-data_obs_count_poplvl <- 
-  data_obs_poplvl %>% 
-  left_join(species_indx_table_poplvl, by = join_by(species_name)) %>% 
-  left_join(rls_bin_table, by = join_by(size_class)) %>% 
-  add_count(species_indx, wt = n, name = "totaln_spp") %>% 
-  arrange(species_indx, size_indx) %>%
-  mutate(p = n/totaln_spp) %>% 
-  mutate(row = 1:n()) %>% 
-  mutate(min_row = min(row), 
-         max_row = max(row),
-         .by = species_indx)
-
-data_obs_count_poplvl_byspp <-
-  data_obs_count_poplvl %>% 
-  dplyr::select(species_indx, 
-                totaln_spp, 
-                min_row, 
-                max_row) %>% 
-  distinct() %>% 
-  arrange(species_indx)
-
-
+}
 ```
 
+```{r}
 
-## Data simulation
 
-```{r data-simulation}
+# all data
+data_obs_allspp <-
+  data_obs %>% 
+  count(species_name, size_class) %>% 
+  clean_data(population = "species_name") %>% 
+  make_standata()
 
-# set number of simulated species
-sim_n_spp <- 20
-sim_n_reps <- 1000
-set.seed(1)
+# sample of 20 species
+data_obs_20spp <-
+  data_obs_sample %>% 
+  count(species_name, size_class) %>% 
+  clean_data(population = "species_name") %>% 
+  make_standata()
 
-rls_bin <- function(size) {
-  rls_bin_table$size_class[.bincode(size, breaks = c(0, rls_bin_table$size_max))]
-}
+# population level data (spatially separated) - One species
+data_obs_poplvl <-
+  data_obs %>% 
+  left_join(data_survs) %>% 
+  mutate(species_latlon = paste(species_name, lat_lon, sep = "__")) %>% 
+  count(species_latlon, size_class, wt = n) %>% 
+  add_count(species_latlon, name = "n_sizebins") %>% 
+  add_count(species_latlon, wt = n, name = "population_n") %>% 
+  filter(n_sizebins >= 4, 
+         population_n >= 200) %>% 
+  mutate(species_name = str_extract(species_latlon, ".*(?=__)")) %>% 
+  filter(species_name %in% data_obs_sample$species_name) %>% # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  clean_data(population = "species_latlon") %>% 
+  make_standata()
 
-is_odd <- function(x) ((x/2) %% 1) == 0.5
-
-data_out <- tibble()
-
-for(i in 1:sim_n_spp){
-  
-  # is odd number?
-  if(is_odd(i)) {
-    xx <- 
-      tibble(num = 1:sim_n_reps) %>% 
-      mutate(mean = rlnorm(1, 2.45, 0.78), 
-             sd =  0.09687 + mean*0.33557) %>% 
-      mutate(size_class_raw = rnorm(n = sim_n_reps, 
-                                    mean = mean, 
-                                    sd = sd)) %>% 
-      mutate(species_indx = i) %>% 
-      mutate(species_name = paste0("spp_", species_indx)) %>% 
-      filter(size_class_raw > 1.25) %>% 
-      mutate(size_class = rls_bin(size_class_raw)) %>% 
-      dplyr::select(-num)
-  } else {
-    xx <- 
-      tibble(num = 1:sim_n_reps) %>% 
-      mutate(mean = rlnorm(1, 1.5, 0.1), 
-             sd =  rlnorm(1, 0.5, 0.1)) %>% 
-      mutate(size_class_raw = rlnorm(n = sim_n_reps, 
-                                     meanlog = log(mean), 
-                                     sdlog = log(sd))) %>% 
-      mutate(species_indx = i) %>% 
-      mutate(species_name = paste0("spp_", species_indx)) %>% 
-      filter(size_class_raw > 1.25) %>% 
-      mutate(size_class = rls_bin(size_class_raw)) %>% 
-      dplyr::select(-num)
-  }
-  
-  data_out <- bind_rows(data_out, xx)
-}
-
-data_sim <- 
-  data_out %>% 
-  left_join(rls_bin_table %>% dplyr::select(size_class, size_indx),
-            by = join_by(size_class)) 
-
-# For binned simulated data
-data_sim_count <-
-  data_sim %>% 
-  count(species_indx, 
-        size_class, 
-        size_indx) %>% 
-  left_join(rls_bin_table, 
-            by = join_by(size_class, size_indx)) %>% 
-  add_count(species_indx, wt = n, name = "totaln_spp") %>% 
-  mutate(p = n/totaln_spp) %>% 
-  mutate(row = 1:n()) %>% 
-  mutate(min_row = min(row), 
-         max_row = max(row),
-         .by = species_indx)
-
-data_sim_byspp <-
-  data_sim_count %>% 
-  dplyr::select(species_indx, 
-                totaln_spp, 
-                min_row, 
-                max_row) %>% 
-  distinct()
-
+# simulated data
+data_sim %>%
+  count(species_name, size_class) %>% 
+  clean_data(population = "species_name") %>% 
+  make_standata()
 ```
 
 ## Data visualisation
@@ -295,8 +204,7 @@ data_sim_byspp <-
 
 ```{r datavis-realdata}
 
-
-if(!file.exists("output/data_figs/ssd_obs_20spp.png") | rerun_figures){
+if(!file.exists("output/data_figs/ssd_obs_20spp.png")){
   
   p <-
     data_obs_sample %>% 
@@ -307,15 +215,18 @@ if(!file.exists("output/data_figs/ssd_obs_20spp.png") | rerun_figures){
     facet_wrap( ~ species_name, scales = "free") +
     labs(x = "Fish length (cm)",  
          y = "Fish abundance") +
-    theme_bw() 
+    theme_bw() +
+    ggtitle("Body size distribution of 20 randomly sampled species")
   
   save_plot(plot = p, 
             filename = "output/data_figs/ssd_obs_20spp.png", 
             base_height = 8)
   
+} else {
+    "output/data_figs/ssd_obs_20spp.png" %>% magick::image_read()
 }
 
-if(!file.exists("output/data_figs/ssd_obs_20spp_log.png") | rerun_figures){
+if(!file.exists("output/data_figs/ssd_obs_20spp_log.png")){
   
   p <- 
     data_obs_sample %>% 
@@ -328,12 +239,15 @@ if(!file.exists("output/data_figs/ssd_obs_20spp_log.png") | rerun_figures){
     scale_x_log10() +
     labs(x = "Log Fish length (cm)",  
          y = "Log Fish abundance") +
-    theme_bw()
+    theme_bw() +
+    ggtitle("Log-log body size distribution of 20 randomly sampled species")
   
   save_plot(plot = p, 
             filename = "output/data_figs/ssd_obs_20spp_log.png", 
             base_height = 8)
   
+} else {
+    "output/data_figs/ssd_obs_20spp_log.png" %>% magick::image_read()
 }
 
 ```
@@ -342,7 +256,7 @@ if(!file.exists("output/data_figs/ssd_obs_20spp_log.png") | rerun_figures){
 
 ```{r datavis-simulateddata}
 
-if(!file.exists("output/data_figs/ssd_sim_20spp.png") | rerun_figures){
+if(!file.exists("output/data_figs/ssd_sim_20spp.png")){
   
   p <-
     data_sim %>% 
@@ -353,15 +267,19 @@ if(!file.exists("output/data_figs/ssd_sim_20spp.png") | rerun_figures){
     facet_wrap( ~ species_indx, scales = "free") +
     labs(x = "Fish length (cm)",  
          y = "Fish abundance") +
-    theme_bw() 
+    theme_bw()  +
+    ggtitle("Log-log body size distribution of 20 simulated species", 
+            subtitle = "Odd numbers are normally distributed, even are lognormally distributed")
   
   save_plot(plot = p, 
             filename = "output/data_figs/ssd_sim_20spp.png", 
             base_height = 8)
   
+} else {
+    "output/data_figs/ssd_sim_20spp.png" %>% magick::image_read()
 }
 
-if(!file.exists("output/data_figs/ssd_sim_20spp_log.png") | rerun_figures){
+if(!file.exists("output/data_figs/ssd_sim_20spp_log.png")){
   
   p <- 
     data_sim %>% 
@@ -374,12 +292,16 @@ if(!file.exists("output/data_figs/ssd_sim_20spp_log.png") | rerun_figures){
     scale_x_log10() +
     labs(x = "Log Fish length (cm)",  
          y = "Log Fish abundance") +
-    theme_bw()
+    theme_bw() +
+    ggtitle("Log-log body size distribution of 20 simulated species", 
+            subtitle = "Odd numbers are normally distributed, even are lognormally distributed")
   
   save_plot(plot = p, 
             filename = "output/data_figs/ssd_sim_20spp_log.png", 
             base_height = 8)
   
+} else {
+    "output/data_figs/ssd_sim_20spp_log.png" %>% magick::image_read()
 }
 
 
@@ -390,27 +312,8 @@ if(!file.exists("output/data_figs/ssd_sim_20spp_log.png") | rerun_figures){
 
 ## Outline of models
 
-I want to create the following models:
 
-| Model Name | Stan     | Data | nspp   | Data type | Distribution | Overdispersion? | Bin correction? | par1 (location) | par2 (variance)     |
-|--------|--------|--------|--------|--------|--------|--------|--------|--------|--------|
-| model_01   | model_01 | sim  | 20     | cont      | norm         | No              | No              | per species     | per species         |
-| model_02   | model_02 | sim  | 20     | cont      | lnorm        | No              | No              | per species     | per species         |
-| model_03   | model_03 | sim  | 20     | bin       | norm         | No              | No              | per species     | per species         |
-| model_04   | model_04 | sim  | 20     | bin       | lnorm        | No              | No              | per species     | per species         |
-| model_05   | model_03 | real | 20/774 | bin       | norm         | No              | No              | per species     | per species         |
-| model_06   | model_04 | real | 20/774 | bin       | lnorm        | No              | No              | per species     | per species         |
-| model_07   | model_07 | real | 20/774 | bin       | norm         | No              | No              | per species     | predicted from par1 |
-| model_08   | model_08 | real | 20/774 | bin       | lnorm        | No              | No              | per species     | predicted from par1 |
-| model_09   |          | real |        | bin       | norm         | No              | Yes             | per species     | per species         |
-| model_10   |          | real |        | bin       | lnorm        | No              | Yes             | per species     | per species         |
-| model_11   |          | real |        | bin       | norm         | No              | Yes             | per species     | predicted from par1 |
-| model_12   |          | real |        | bin       | lnorm        | No              | Yes             | per species     | predicted from par1 |
-| model_13   |          | real |        | bin       | norm & lnorm | No              | Yes             | per species     | per species         |
-| model_14   |          | real |        | bin       | norm & lnorm | No              | Yes             | per species     | predicted from par1 |
-
-
-```{r}
+```{r model-table}
 
 mods_summary <-
   tribble(
@@ -444,40 +347,14 @@ mods_summary <-
 ```
 
 
-## Functions
+## Modelling functions
 
 ```{r modelling-functions}
 
-# make the stan datalist for models 03 and 04
-make_datalist <- function(mod_name){
-  
-  count_data_name <- 
-    case_when(mod_name %in% c("mod_01, mod_02") ~ "data_sim", 
-              str_detect(mod_name, "_allspp") ~ "data_obs_count_allspp", 
-              str_detect(mod_name, "_poplvl") ~ "data_obs_count_poplvl", 
-              TRUE ~ "data_obs_count_20spp")
-
-  spplevel_data_name <- paste0(count_data_name, "_byspp") 
-  
-  count_data <- get(count_data_name)
-  spplevel_data <- get(spplevel_data_name)
-  
-  list(
-    I = nrow(count_data),
-    S = max(count_data$species_indx),
-    B = max(count_data$size_indx),
-    l = rls_bin_table$size_min[1:(max(count_data$size_indx)+1)],
-    N_species = spplevel_data$totaln_spp,
-    i_min     = spplevel_data$min_row,
-    i_max     = spplevel_data$max_row,
-    s = count_data$species_indx,
-    b = count_data$size_indx,
-    n = count_data$n
-  )
-}
-
+# run a single stan model
 run_stanmod <- function(mod_name, 
-                        overwrite = FALSE, 
+                        return_model = FALSE,
+                        save_model = FALSE, 
                         iter = 2000, 
                         warmup = 1500, 
                         chains = 3, 
@@ -485,7 +362,7 @@ run_stanmod <- function(mod_name,
   
   mod_fits_filename <- paste0("output/model_fits/", mod_name, ".rds")
   
-  if(!file.exists(mod_fits_filename) | overwrite){
+  if(!file.exists(mod_fits_filename) | save_model){
     
     stanfile <-
       mods_summary %>% 
@@ -509,55 +386,41 @@ run_stanmod <- function(mod_name,
       )
     
     saveRDS(mod_fit, mod_fits_filename)
-  } else {
-    mod_fit <- readRDS(mod_fits_filename)
   }
-  return(mod_fit)
+  if(return_model) return(readRDS(mod_fits_filename))
 }
 
-
-run_multiple_mods <- function(integer_vector, 
-                              all_species = FALSE, 
-                              poplvl = FALSE,
-                              overwrite_model = FALSE, 
-                              init_r = 2){
+# run multiple stan models
+save_models <- function(model_nums, 
+                        all_species = FALSE, 
+                        poplvl = FALSE,
+                        return_model = FALSE,
+                        save_model = FALSE, 
+                        init_r = 2){
   
-  integer_vector %>% 
+  model_nums %>% 
     str_pad(pad = "0", width = 2) %>% 
     paste0("mod_", .) %>% 
     {if(all_species) paste0(., "_allspp") else .} %>% 
-    {if(poplvlv) paste0(., "_poplvl") else .} %>% 
-    map(run_stanmod, overwrite = overwrite_model, init_r = init_r)
+    {if(poplvl) paste0(., "_poplvl") else .} %>% 
+    map(run_stanmod, 
+        return_model = return_model, 
+        save_model = save_model, 
+        init_r = init_r)
 }
 
-
-plot_multiple_mods <- function(integer_vector, 
-                               all_species = FALSE, 
-                               poplvl = FALSE,
-                               overwrite_plot = FALSE,
-                               overwrite_pars = FALSE){
-  
-  
-  integer_vector %>% 
-    str_pad(pad = "0", width = 2) %>% 
-    paste0("mod_", .) %>% 
-    {if(all_species) paste0(., "_allspp") else .} %>% 
-    {if(poplvlv) paste0(., "_poplvl") else .} %>% 
-    map(plot_mod_fit, 
-        overwrite = overwrite_plot, 
-        overwrite_pars = overwrite_pars)
-}
 
 
 # extract parameters from a stan model in a tidy way
-extract_pars <- function(stan_model, overwrite_pars = TRUE){
+extract_pars <- function(stan_model, save_pars = TRUE){
   
   pars_filename <- paste0("output/model_pars/", stan_model, ".csv")
   
-  if(!file.exists(pars_filename) | overwrite_pars){
+  if(!file.exists(pars_filename) | save_pars){
     pars_output <- 
       run_stanmod(stan_model, 
-                  overwrite = FALSE) %>%
+                  save_model = FALSE,
+                  return_model = TRUE) %>%
       summarise_draws() %>% 
       mutate(species_indx = str_extract(variable, "(?<=\\[)\\d*(?=\\])") %>% as.numeric()) %>% 
       mutate(parameter = str_remove(variable, "\\[\\d*\\]")) %>% 
@@ -586,12 +449,37 @@ extract_pars <- function(stan_model, overwrite_pars = TRUE){
 }
 
 
-plot_mod_fit <- function(mod_name, overwrite = FALSE, overwrite_pars = FALSE){
+```
+
+## Plotting functions
+
+```{r plotting-functions}
+
+plot_multiple_mods <- function(model_nums, 
+                               all_species = FALSE, 
+                               poplvl = FALSE,
+                               save_plot = FALSE,
+                               save_pars = FALSE){
+  
+  
+  model_nums %>% 
+    str_pad(pad = "0", width = 2) %>% 
+    paste0("mod_", .) %>% 
+    {if(all_species) paste0(., "_allspp") else .} %>% 
+    {if(poplvl) paste0(., "_poplvl") else .} %>% 
+    map(plot_mod_fit, 
+        save_plot = save_plot, 
+        save_pars = save_pars)
+}
+
+
+
+plot_mod_fit <- function(mod_name, save_plot = FALSE, save_pars = FALSE){
   
   mod_row <- mods_summary %>% filter(model_name == mod_name) 
   
   mod_plots_filename <- paste0("output/model_plots/", mod_name, ".png")
-  mod_pars <- extract_pars(mod_name, overwrite_pars = overwrite_pars)
+  mod_pars <- extract_pars(mod_name, save_pars = save_pars)
   rawdata <- eval(parse(text = mod_row$data_source))
   dist <- mod_row$distribution
   xvar <- mod_row$varname
@@ -620,7 +508,7 @@ plot_mod_fit <- function(mod_name, overwrite = FALSE, overwrite_pars = FALSE){
     if(mod_row$data == "real"){"real data."} else {"simulated data."}
   )
   
-  if(!file.exists(mod_plots_filename) | overwrite){
+  if(!file.exists(mod_plots_filename) | save_plot){
     
     if(data_type == "continuous"){
       mod_plot <- 
@@ -866,25 +754,56 @@ comparison_plot <- function(mod1, mod2, plot_title = ""){
 
 ## Models
 
-
 ### Running models
 
 ```{r}
 
-run_multiple_mods(1:13, 
-                  init_r = 1, 
-                  all_species = FALSE,
-                  overwrite_model = FALSE)
+xx1 <-
+  stan("input/models/mod_13.stan",
+     data = data_obs_poplvl,
+     iter = 2000,
+     warmup = 1500,
+     chains = 3,
+     refresh = 500,
+     init_r = 1,
+     seed = 1,
+     cores = 3,
+     save_dso = FALSE
+)
 
-run_multiple_mods(13, 
-                  init_r = 1, 
-                  all_species = TRUE,
-                  overwrite_model = FALSE)
+xx <- stan("input/models/mod_14.stan",
+     data = data_obs_poplvl,
+     iter = 2000,
+     warmup = 1500,
+     chains = 3,
+     refresh = 500,
+     init_r = 1,
+     seed = 1,
+     cores = 3,
+     save_dso = FALSE
+)
 
-run_stanmod("mod_13_allspp") %>% traceplot("mu")
-run_stanmod("mod_13") %>% traceplot("cv")
-run_stanmod("mod_13") %>% traceplot("meanlog")
-run_stanmod("mod_13") %>% traceplot("sdlog")
+xx %>% traceplot("meanlog")
+xx %>% traceplot("mu")
+xx %>% traceplot("sdlog")
+xx %>% traceplot("sigma")
+xx %>% traceplot("select_s")
+xx %>% traceplot("select_mu")
+summary(xx)$summary[, "n_eff"] %>% sort()
+
+
+
+save_models(model_nums = 1:13, 
+            init_r = 1, 
+            all_species = FALSE,
+            return_model = FALSE,
+            save_model = FALSE)
+
+save_models(model_nums = 13, 
+            init_r = 1, 
+            all_species = TRUE,
+            return_model = FALSE,
+            save_model = FALSE)
 
 ```
 
@@ -892,25 +811,10 @@ run_stanmod("mod_13") %>% traceplot("sdlog")
 
 ```{r}
 
-plot_multiple_mods(integer_vector = 13, 
-                   all_species = TRUE,
-                   overwrite_plot = TRUE, 
-                   overwrite_pars = TRUE)
-
-
-run_multiple_mods()
-
-extract_pars("mod_13_poplvl", overwrite_pars = FALSE) %>% 
-  ggplot(aes(x = cv_N)) +
-  geom_density()
-
-
-run_stanmod("mod_13_allspp") %>% traceplot(pars)
-
-pars <- 
-  1:20 %>% 
-  # str_pad(width = 2, pad = 0) %>% 
-  paste0("mu_N[", ., "]")
+plot_multiple_mods(model_nums = 13, 
+                   all_species = FALSE,
+                   save_plot = FALSE, 
+                   save_pars = FALSE)
 
 ```
 
@@ -942,14 +846,20 @@ comparison_plot("mod_10", "mod_12", "lnorm, variance per species vs estimated (w
 
 ```{r}
 
-xx2 <- run_stanmod("mod_14_poplvl", overwrite = TRUE)
+read_rds("output/model_fits/mod_13_poplvl.rds")
 
-xx2 %>% traceplot("mu")
+xx <- run_stanmod("mod_13_poplvl", 
+                   save_model = FALSE,
+                   return_model = TRUE)
+
+xx2 <- run_stanmod("mod_14_poplvl", iter = 4000, warmup = 3500,
+                   save_model = FALSE,
+                   return_model = TRUE)
+
+xx2 %>% traceplot(paste0("meanlog[", 1:100, "]"))
 xx2 %>% traceplot("sigma")
 xx2 %>% traceplot("meanlog")
 xx2 %>% traceplot("sdlog")
-xx2 %>% traceplot("select_mu")
-xx2 %>% traceplot("select_s")
 
 
 logis <- function(x, mu, s) 1/(1+exp(-(x-mu)/s))
@@ -964,7 +874,7 @@ tibble(x = seq(0, 20, by = 0.1)) %>%
 read_rds("output/model_fits/mod_13_poplvl.rds")
 
 mod_13_poplvl_pars <- 
-  extract_pars("mod_13_poplvl", overwrite_pars = TRUE) %>% 
+  extract_pars("mod_13_poplvl", save_pars = TRUE) %>% 
   left_join(species_indx_table_poplvl) %>% 
   rename(species_lat_lon = species_name) %>% 
   mutate(species_name = str_extract(species_lat_lon, ".*(?=__)"), 
@@ -979,7 +889,7 @@ raw_data <-
   rename(species_lat_lon = species_name)
 
 stan_model_pars <- mod_13_poplvl_pars
-  
+
 
 raw_data %>% 
   left_join(stan_model_pars,
@@ -1470,7 +1380,7 @@ data_obs_count_allspp %>%
 
 ll_plots <- 
   par_table3 %>% 
-  filter(species_name %in% data_obs_count_20spp$species_name) %>% 
+  filter(species_name %in% data_obs_sample$species_name) %>% 
   mutate(dist = case_when(dist == "ll_norm" ~ "Normal", 
                           dist == "ll_lnorm" ~ "Lognormal")) %>% 
   ggplot(aes(x =  dist, 

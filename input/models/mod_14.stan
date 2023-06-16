@@ -3,32 +3,33 @@
 // 31/05/2023
 // Fit normal and log-normal distributions to fish-length distributions
 // Independently estimate population mean and coefficient of variation
- 
+
 data {
   int<lower=1> I;                  // number of observations
-  int<lower=1> S;                  // number of species
+  int<lower=1> S;                  // number of populations
   int<lower=1> B;                  // number of length bins
   real<lower=0.0> l[B+1];          // boundaries of each bin
-  int<lower=1,upper=I> i_min[S];   // min obs index for each species
-  int<lower=1,upper=I> i_max[S];   // max obs index for each species
-  int<lower=1,upper=S> s[I];       // species ID (not used here)
+  int<lower=1,upper=I> i_min[S];   // min obs index for each population
+  int<lower=1,upper=I> i_max[S];   // max obs index for each population
+  int<lower=1,upper=S> s[I];       // population ID (not used here)
   int<lower=1,upper=B> b[I];       // bin
   int<lower=1>         n[I];       // fish in the bin
+  real<lower=0.0> meansize[S];      // mean body size of the population
 }
  
 parameters {
 	// normal parameters
-  vector<lower= -1.0,upper=4.0>[S]  ln_mu;     // log-species mean length
-  vector<lower= -4,upper=4.0>[S]  ln_cv;     // log-species coefficient of variation
-  vector<lower= -8.0,upper=-4.0>[S] logit_eps_N; // logistic-species misclassification
+  vector<lower= -1.0,upper=5.0>[S]  ln_mu;     // log-population mean length
+  vector<lower= -4,upper=4.0>[S]  ln_cv;     // log-population coefficient of variation
+  vector<lower= -8.0,upper=-4.0>[S] logit_eps_N; // logistic-population misclassification
 
 	// log-normal parameters
-  vector<lower= -1.0,upper=4.0>[S]  ln_meanlog;     // log-species mean length
-  vector<lower= -4,upper=4.0>[S]  ln_sdlog;  // log-species sihgma
-  vector<lower= -8.0,upper=-4.0>[S] logit_eps_LN; // logistic-species misclassification
-  
-  real<lower = 0, upper = 20> select_mu;
-  real<lower = 0, upper = 10> select_s;
+  vector<lower= -1.0,upper=2.0>[S]  ln_meanlog;     // log-population mean length
+  vector<lower= -4,upper=4.0>[S]  ln_sdlog;  // log-population sihgma
+  vector<lower= -8.0,upper=-4.0>[S] logit_eps_LN; // logistic-population misclassification
+
+  real<lower = 0, upper = 5.0> select_mu;
+  real<lower = 0, upper = 2.0> select_s;
 }
 
 model {
