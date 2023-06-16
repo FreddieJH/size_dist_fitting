@@ -1062,8 +1062,6 @@ get_ll <- function(mod_data, species_indx, sigma, mu, meanlog, sdlog, eps_LN, ep
 }
 
 
-
-
 ```
 
 ## Log-likelihood comparison
