@@ -174,8 +174,7 @@ data_obs_poplvl <-
   add_count(species_name, name = "n_bins") %>% 
   add_count(species_name, wt = n, name = "n_total") %>% 
   filter(n_bins >= 4, 
-         n_total >= 200) %>% 
-  filter(str_detect(species_name, "Abudefduf bengalensis"))
+         n_total >= 200) 
 
 species_indx_table_poplvl <- 
   tibble(
@@ -943,7 +942,7 @@ comparison_plot("mod_10", "mod_12", "lnorm, variance per species vs estimated (w
 
 ```{r}
 
-xx2 <- run_stanmod("mod_14_poplvl", overwrite = TRUE)
+xx2 <- run_stanmod("mod_14_poplvl", overwrite = TRUE, init_r = 1)
 
 xx2 %>% traceplot("mu")
 xx2 %>% traceplot("sigma")

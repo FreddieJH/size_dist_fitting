@@ -27,8 +27,8 @@ parameters {
   vector<lower= -4,upper=4.0>[S]  ln_sdlog;  // log-species sihgma
   vector<lower= -8.0,upper=-4.0>[S] logit_eps_LN; // logistic-species misclassification
   
-  real<lower = 0, upper = 20> select_mu;
-  real<lower = 0, upper = 10> select_s;
+  real<lower = 0.0, upper = 2.0> select_mu;
+  real<lower = 0.0, upper = 2.0> select_s;
 }
 
 model {
@@ -47,8 +47,6 @@ model {
 	real norm_c_LN;   // normalising constant (less than 1)
 	real p_LN;        // probability of being in observed bin
 	vector[S] eps_LN; // probability randomly allocated for species
-	
-	real selectivity;
 
 	// priors on model parameters
 	ln_mu     ~ normal( 2.0, 1.0); // Log prior for species mean lengths
@@ -59,8 +57,8 @@ model {
 	ln_sdlog  ~ normal(-0.6, 1.0); // Log prior on cv 
 	logit_eps_LN ~ normal(-6.0, 1.0); // Logistic prior on misclassification 
 	
-	select_mu ~ normal(0, 2);
-	select_s ~ normal(0, 2);
+	select_mu ~ normal(1, 1);
+	select_s ~ normal(0, 1);
 	
 
   for (i in 1:B) {
@@ -77,26 +75,29 @@ model {
     // normal
     mu     = exp(ln_mu[i]);
     sigma  = mu * exp(ln_cv[i]);
-   	norm_c_N = 1.0 - normal_cdf(l[1], mu, sigma); // normalising constant
+   	// norm_c_N = 1.0 - normal_cdf(l[1], mu, sigma); // normalising constant
    	// log-normal
    	meanlog     = exp(ln_meanlog[i]);
     sdlog  = exp(ln_sdlog[i]);
-   	norm_c_LN = 1.0 - lognormal_cdf(l[1], meanlog, sdlog); // normalising constant
+   	// norm_c_LN = 1.0 - lognormal_cdf(l[1], meanlog, sdlog); // normalising constant
 
     // selectivity = 1/(1+exp(-((l[1]-select_mu)/select_s)));	 
 
    	for (j in i_min[i]:i_max[i]) { // observation j
    		// probability of being in bin (prior to misclassification)
+   		
       p_N = (normal_cdf(l[b[j]+1], mu, sigma) - 
-        normal_cdf(l[b[j]], mu, sigma))*(1/(1+exp(-((((l[b[j]]+l[b[j]+1])/2)-select_mu)/select_s)))); 
+        normal_cdf(l[b[j]], mu, sigma)); 
       // add misclassification probability (ensures non-zero p)
       p_N = (1.0 - eps_N[i])*p_N + eps_N[i]*f[b[j]]; 
+      p_N = (1/(1+exp(-((p_N-select_mu)/select_s)))); //middle of the bin
       
    		// probability of being in bin (prior to misclassification)
       p_LN = (lognormal_cdf(l[b[j]+1], meanlog, sdlog) - 
-        lognormal_cdf(l[b[j]], meanlog, sdlog))*(1/(1+exp(-((((l[b[j]]+l[b[j]+1])/2)-select_mu)/select_s)))); 
+        lognormal_cdf(l[b[j]], meanlog, sdlog)); 
       // add misclassification probabily (ensures non-zero p)
       p_LN = (1.0 - eps_LN[i])*p_LN + eps_LN[i]*f[b[j]]; 
+      p_LN = (1/(1+exp(-((p_LN-select_mu)/select_s)))); //middle of the bin
       
       target += n[j]*log(p_N) + n[j]*log(p_LN); // add log-likelihood term
    	}
