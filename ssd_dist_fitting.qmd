@@ -187,7 +187,7 @@ data_obs_20spp <-
   make_standata()
 
 # population level data (spatially separated) - One species
-data_obs_poplvl <-
+data_obs_poplvl_raw <-
   data_obs %>% 
   left_join(data_survs) %>% 
   mutate(species_latlon = paste(species_name, lat_lon, sep = "__")) %>% 
@@ -196,8 +196,25 @@ data_obs_poplvl <-
   add_count(species_latlon, wt = n, name = "population_n") %>% 
   filter(n_sizebins >= 4, 
          population_n >= 200) %>% 
-  mutate(species_name = str_extract(species_latlon, ".*(?=__)")) %>%
+  mutate(species_name = str_extract(species_latlon, ".*(?=__)")) 
   # filter(species_name %in% data_obs_sample$species_name) %>% ## !!!
+  
+data_obs_poplvl <- 
+  data_obs_poplvl_raw  %>% 
+  clean_data(population = "species_latlon") %>% 
+  make_standata()
+
+data_obs_poplvl_sample <- 
+  data_obs_poplvl_raw  %>% 
+  filter(species_name %in% data_obs_sample$species_name) %>% 
+  clean_data(population = "species_latlon") %>% 
+  make_standata()
+
+data_obs_poplvl_smallsample <- 
+  data_obs_poplvl_raw  %>% 
+  filter(n_sizebins >= 4, 
+         population_n >= 5000) %>% 
+  filter(species_name %in% data_obs_sample$species_name) %>% 
   clean_data(population = "species_latlon") %>% 
   make_standata()
 
@@ -206,6 +223,12 @@ data_sim %>%
   count(species_name, size_class) %>% 
   clean_data(population = "species_name") %>% 
   make_standata()
+
+
+
+data_obs_poplvl_sample <- 
+
+
 ```
 
 ## Data visualisation
@@ -779,73 +802,9 @@ comparison_plot <- function(mod1, mod2, plot_title = ""){
 
 ```{r}
 
-xx <- read_rds("output/model_fits/mod_15_poplvl.rds")
-
-draw_summary <- 
-  xx %>% 
-  as_draws_df() %>% 
-  summarise_draws()
-
-model_output <-
-draw_summary %>% 
-  mutate(population_indx = str_extract(variable, 
-                                    "(?<=\\[).*(?=\\])") %>% as.numeric(), 
-         param = str_extract(variable, 
-                             ".*(?=\\[)")) %>% 
-  filter(!str_detect(param, "ln"), 
-         !str_detect(param, "lp__")) %>% 
-  select(param, 
-         population_indx,
-         mean, q5, q95) %>% 
-  pivot_wider(names_from = param, values_from = c(mean, q5, q95)) %>% 
-  left_join(data_obs_poplvl %>% 
-              select(species_latlon, species_name, population_indx) %>% distinct()) %>% 
-  filter(species_name == "Abudefduf bengalensis")
-  
-
-data_obs_poplvl %>% 
-  filter(species_name == "Abudefduf bengalensis") %>% 
-  left_join(model_output) %>% 
-  mutate(fit_norm = 
-           pnorm(size_max, mean_mu, mean_sigma) -  
-           pnorm(size_min, mean_mu, mean_sigma),
-         upr_norm = 
-           pnorm(size_max, q95_mu, q95_sigma) -  
-           pnorm(size_min, q95_mu, q95_sigma),
-         lwr_norm = 
-           pnorm(size_max, q5_mu, q5_sigma) -  
-           pnorm(size_min, q5_mu, q5_sigma),
-             fit_lnorm =
-           plnorm(size_max, mean_meanlog, mean_sdlog) - 
-           plnorm(size_min, mean_meanlog, mean_sdlog),
-         upr_lnorm = 
-           plnorm(size_max, q95_meanlog, q95_sdlog) -  
-           plnorm(size_min, q95_meanlog, q95_sdlog),
-         lwr_lnorm = 
-           plnorm(size_max, q5_meanlog, q5_sdlog) -  
-           plnorm(size_min, q5_meanlog, q5_sdlog)) %>% 
-
-  ggplot(aes(x = size_class, y = p)) +
-    geom_line(aes(y = fit_norm), 
-            col = "red") +
-  geom_line(aes(y = fit_lnorm), 
-            col = "blue") +
-  geom_ribbon(aes(ymin = lwr_norm, ymax = upr_norm), fill = "red", alpha = 0.3) +
-  geom_ribbon(aes(ymin = lwr_lnorm, ymax = upr_lnorm), fill = "blue", alpha = 0.3) +
-  geom_point() + 
-  geom_line() +
-
-  facet_wrap(~species_latlon)
-
-
-tibble(x = seq(0, 50, by = 0.1), mu = exp(1.4975), sigma = exp(-0.0475)) %>% 
-  mutate(y = plogis(x, mu, sigma)) %>% 
-  ggplot(aes(x, y)) +
-  geom_line()
-
 xx2 <-
-  stan("input/models/mod_15.stan",
-     data = data_obs_poplvl,
+  stan("input/models/mod_13.stan",
+     data = data_obs_poplvl_20pops,
      iter = 2000,
      warmup = 1500,
      chains = 3,
@@ -855,6 +814,8 @@ xx2 <-
      cores = 3,
      save_dso = FALSE
 )
+
+write_rds(xx2, "output/model_fits/mod_13_allspp.rds")
 
 xx %>% traceplot(paste0("meanlog[", 1:50, "]"))
 xx %>% traceplot(paste0("sdlog[", 101:151, "]"))
