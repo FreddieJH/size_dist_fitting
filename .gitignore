@@ -9,6 +9,7 @@
 output/
 extra/
 docs/
+crypto/
 
 *.png
 *.rds
