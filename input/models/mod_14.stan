@@ -50,6 +50,7 @@ model {
 	vector[S] eps_LN; // probability randomly allocated for species
 	
 	real selectivity;
+	real bin_middle;
 
 	// priors on model parameters
 	ln_mu     ~ normal( 2.0, 1.0); // Log prior for species mean lengths
@@ -87,9 +88,14 @@ model {
     // selectivity = 1/(1+exp(-((l[1]-select_mu)/select_s)));	 
 
    	for (j in i_min[i]:i_max[i]) { // observation j
+   	
+   	 bin_middle = (l[b[j]]+l[b[j]+1])/2;
    		// probability of being in bin (prior to misclassification)
       p_N = (normal_cdf(l[b[j]+1], mu, sigma) - 
-        normal_cdf(l[b[j]], mu, sigma))*(1/(1+exp(-((((l[b[j]]+l[b[j]+1])/2)-select_mu)/select_s)))); 
+        normal_cdf(l[b[j]], mu, sigma))*
+        
+        
+        (1/(1+exp(-(((-select_mu)/select_s)))); 
       // add misclassification probability (ensures non-zero p)
       p_N = (1.0 - eps_N[i])*p_N + eps_N[i]*f[b[j]]; 
       
