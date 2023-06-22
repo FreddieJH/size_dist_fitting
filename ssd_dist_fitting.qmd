@@ -16,6 +16,9 @@ if(!dir.exists("output/model_fits")) dir.create("output/model_fits")
 if(!dir.exists("output/model_plots")) dir.create("output/model_plots")
 if(!dir.exists("output/data_figs")) dir.create("output/data_figs")
 
+
+show_figures <- FALSE
+
 ```
 
 # Setup
@@ -47,14 +50,20 @@ rstan_options(auto_write = TRUE) # avoid recompilation of stan files
 
 ```{r data-import}
 
+# observational data
 data_obs   <- read_parquet("input/data/data_obs_cleaned.parquet")
+
+# survey-level data
 data_survs <- 
   read_parquet("input/data/survey_list_m1_aus.parquet") %>% 
   mutate(lat_grid = round(latitude), 
          lon_grid = round(longitude), 
          lat_lon = paste(lat_grid, lon_grid, sep = "_")) 
+
+# simulated data (from data_simulation.R)
 data_sim <- read_parquet("input/data/data_simulated.parquet")
 
+# Subset of real data
 set.seed(1)
 data_obs_sample <-
   data_obs %>% 
@@ -68,8 +77,7 @@ data_obs_sample <-
 
 ```{r data-wrangling}
 
-
-# output clean body size bin table given a vector of body sizes
+# outputs clean body size bin table given a vector of body sizes
 get_bintable <- function(size_vector){
   
   sizebins <- 
@@ -159,6 +167,8 @@ make_standata <- function(cleaned_data){
 }
 ```
 
+## Creating data tables
+
 ```{r}
 
 
@@ -177,7 +187,7 @@ data_obs_20spp <-
   make_standata()
 
 # population level data (spatially separated) - One species
-data_obs_poplvl <-
+data_obs_poplvl_raw <-
   data_obs %>% 
   left_join(data_survs) %>% 
   mutate(species_latlon = paste(species_name, lat_lon, sep = "__")) %>% 
@@ -186,8 +196,25 @@ data_obs_poplvl <-
   add_count(species_latlon, wt = n, name = "population_n") %>% 
   filter(n_sizebins >= 4, 
          population_n >= 200) %>% 
-  mutate(species_name = str_extract(species_latlon, ".*(?=__)")) %>% 
-  filter(species_name %in% data_obs_sample$species_name) %>% # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  mutate(species_name = str_extract(species_latlon, ".*(?=__)")) 
+  # filter(species_name %in% data_obs_sample$species_name) %>% ## !!!
+  
+data_obs_poplvl <- 
+  data_obs_poplvl_raw  %>% 
+  clean_data(population = "species_latlon") %>% 
+  make_standata()
+
+data_obs_poplvl_sample <- 
+  data_obs_poplvl_raw  %>% 
+  filter(species_name %in% data_obs_sample$species_name) %>% 
+  clean_data(population = "species_latlon") %>% 
+  make_standata()
+
+data_obs_poplvl_smallsample <- 
+  data_obs_poplvl_raw  %>% 
+  filter(n_sizebins >= 4, 
+         population_n >= 5000) %>% 
+  filter(species_name %in% data_obs_sample$species_name) %>% 
   clean_data(population = "species_latlon") %>% 
   make_standata()
 
@@ -196,6 +223,12 @@ data_sim %>%
   count(species_name, size_class) %>% 
   clean_data(population = "species_name") %>% 
   make_standata()
+
+
+
+data_obs_poplvl_sample <- 
+
+
 ```
 
 ## Data visualisation
@@ -203,6 +236,18 @@ data_sim %>%
 ### Real data
 
 ```{r datavis-realdata}
+
+for(s in unique(data_obs_poplvl$species_name)){
+  p <- 
+    data_obs_poplvl %>%
+    filter(species_name  == s) %>% 
+  ggplot(aes(x = size_class, y = p)) +
+    geom_line() + geom_point() + 
+    facet_wrap(~species_latlon,scales = "free") 
+    ggsave(plot = p, filename = paste0("output/data_figs/bypop/",s,".png"), height = 10, width = 16.18)
+}
+
+
 
 if(!file.exists("output/data_figs/ssd_obs_20spp.png")){
   
@@ -223,7 +268,7 @@ if(!file.exists("output/data_figs/ssd_obs_20spp.png")){
             base_height = 8)
   
 } else {
-    "output/data_figs/ssd_obs_20spp.png" %>% magick::image_read()
+    if(show_figures) "output/data_figs/ssd_obs_20spp.png" %>% magick::image_read()
 }
 
 if(!file.exists("output/data_figs/ssd_obs_20spp_log.png")){
@@ -247,7 +292,7 @@ if(!file.exists("output/data_figs/ssd_obs_20spp_log.png")){
             base_height = 8)
   
 } else {
-    "output/data_figs/ssd_obs_20spp_log.png" %>% magick::image_read()
+    if(show_figures) "output/data_figs/ssd_obs_20spp_log.png" %>% magick::image_read()
 }
 
 ```
@@ -276,7 +321,7 @@ if(!file.exists("output/data_figs/ssd_sim_20spp.png")){
             base_height = 8)
   
 } else {
-    "output/data_figs/ssd_sim_20spp.png" %>% magick::image_read()
+    if(show_figures) "output/data_figs/ssd_sim_20spp.png" %>% magick::image_read()
 }
 
 if(!file.exists("output/data_figs/ssd_sim_20spp_log.png")){
@@ -301,7 +346,7 @@ if(!file.exists("output/data_figs/ssd_sim_20spp_log.png")){
             base_height = 8)
   
 } else {
-    "output/data_figs/ssd_sim_20spp_log.png" %>% magick::image_read()
+    if(show_figures) "output/data_figs/ssd_sim_20spp_log.png" %>% magick::image_read()
 }
 
 
@@ -748,7 +793,6 @@ comparison_plot <- function(mod1, mod2, plot_title = ""){
 }
 
 
-
 ```
 
 
@@ -758,10 +802,9 @@ comparison_plot <- function(mod1, mod2, plot_title = ""){
 
 ```{r}
 
-
-xx1 <-
+xx2 <-
   stan("input/models/mod_13.stan",
-     data = data_obs_poplvl,
+     data = data_obs_poplvl_20pops,
      iter = 2000,
      warmup = 1500,
      chains = 3,
@@ -772,39 +815,14 @@ xx1 <-
      save_dso = FALSE
 )
 
-xx <- stan("input/models/mod_14.stan",
-     data = data_obs_poplvl,
-     iter = 2000,
-     warmup = 1500,
-     chains = 3,
-     refresh = 500,
-     init_r = 1,
-     seed = 1,
-     cores = 3,
-     save_dso = FALSE
-)
+write_rds(xx2, "output/model_fits/mod_13_allspp.rds")
 
-xx %>% traceplot("meanlog")
-xx %>% traceplot("mu")
-xx %>% traceplot("sdlog")
-xx %>% traceplot("sigma")
-xx %>% traceplot("select_s")
-xx %>% traceplot("select_mu")
-summary(xx)$summary[, "n_eff"] %>% sort()
-
-
-
-save_models(model_nums = 1:13, 
-            init_r = 1, 
-            all_species = FALSE,
-            return_model = FALSE,
-            save_model = FALSE)
-
-save_models(model_nums = 13, 
-            init_r = 1, 
-            all_species = TRUE,
-            return_model = FALSE,
-            save_model = FALSE)
+xx %>% traceplot(paste0("meanlog[", 1:50, "]"))
+xx %>% traceplot(paste0("sdlog[", 101:151, "]"))
+xx %>% traceplot(paste0("ln_mu[", 1:50, "]"))
+xx %>% traceplot(paste0("sigma[", 101:151, "]"))
+xx %>% traceplot(paste0("logistic_mu"))
+xx %>% traceplot(paste0("logistic_sigma"))
 
 
 
@@ -822,7 +840,6 @@ plot_multiple_mods(model_nums = 13,
 ```
 
 ### Comparing models
-
 
 ```{r}
 
@@ -850,7 +867,35 @@ comparison_plot("mod_10", "mod_12", "lnorm, variance per species vs estimated (w
 
 ```{r}
 
-read_rds("output/model_fits/mod_13_poplvl.rds")
+poplvl_dat <-
+  data_obs %>% 
+  left_join(data_survs) %>% 
+  mutate(species_latlon = paste(species_name, lat_lon, sep = "__")) %>% 
+  count(species_latlon, size_class, wt = n) %>% 
+  add_count(species_latlon, name = "n_sizebins") %>% 
+  add_count(species_latlon, wt = n, name = "population_n") %>% 
+  filter(n_sizebins >= 4, 
+         population_n >= 200) %>% 
+  # mutate(species_name = str_extract(species_latlon, ".*(?=__)")) %>% 
+  # filter(species_name %in% data_obs_sample$species_name) %>% # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  clean_data(population = "species_latlon") %>% 
+   mutate(species_name = str_extract(species_latlon, ".*(?=__)"), 
+         lat = str_extract(species_latlon, "(?<=__).*(?=_)") %>% as.numeric(), 
+         lon = str_extract(species_latlon, "(?<=_)(\\d|-)*$") %>% as.numeric()) %>% 
+   add_count(species_latlon, size_class, wt = n, name = "weighted_size") %>% 
+  mutate(weighted_size/n)
+
+
+poplvl_dat %>% 
+  ggplot(aes(x = size_class, 
+             y = p, 
+             col = species_latlon)) +
+  geom_path() +
+  facet_wrap(lon~lat, scales = "free_x")+
+  theme(legend.position = "none")
+
+
+xx <- read_rds("output/model_fits/mod_13_poplvl.rds")
 
 xx <- run_stanmod("mod_13_poplvl", 
                    save_model = FALSE,
@@ -1006,6 +1051,9 @@ for(sp in unique(mod_13_pars_extra$species_name)){
 }
 
 
+
+
+
 output_table %>% 
   left_join(summarise(data_obs_count_allspp %>% mutate(species_name =str_extract(species_name, ".*(?=__)")), 
                       mean_size = mean(size_class, wt = n), 
@@ -1106,6 +1154,8 @@ get_ll <- function(mod_data, species_indx, sigma, mu, meanlog, sdlog, eps_LN, ep
   }
   return(tibble(ll_norm, ll_lnorm))
 }
+
+
 
 
 ```
