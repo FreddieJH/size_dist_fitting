@@ -20,13 +20,17 @@ data {
 parameters {
 	// normal parameters
   vector<lower= -1.0,upper=6.0>[S]  ln_mu;     // log-population mean length
-  vector<lower= -4.0,upper=1.8>[S]  ln_cv;     // log-population coefficient of variation
+  vector<lower= -4.0,upper=1.0>[S]  ln_cv;     // log-population coefficient of variation
   vector<lower= -8.0,upper=-4.0>[S] logit_eps_N; // logistic-population misclassification
 
 	// log-normal parameters
   vector<lower= -1.0,upper=1.8>[S]  ln_meanlog;     // log-population mean length
-  vector<lower= -4,upper=1.8>[S]  ln_sdlog;  // log-population sihgma
+  vector<lower= -4,upper=1.0>[S]  ln_sdlog;  // log-population sihgma
   vector<lower= -8.0,upper=-4.0>[S] logit_eps_LN; // logistic-population misclassification
+
+  real<lower = 0, upper = 7.0> logistic_mu;
+  real<lower = 0, upper = 2.0> logistic_sigma;
+  // real<lower = 0, upper = 2.0> logistic_x0;
 
 }
 
@@ -46,17 +50,24 @@ model {
 	real norm_c_LN;   // normalising constant (less than 1)
 	real p_LN;        // probability of being in observed bin
 	vector[S] eps_LN; // probability randomly allocated for population
+	
+	// for logistic selectivity
+	// real selectivity;
+	// real bin_middle;
 
 	// priors on model parameters
 	
 	// priors on model parameters
 	ln_mu     ~ normal( 2.0, 1.0); // Log prior for species mean lengths
-	ln_cv     ~ normal(-0.6, 1.0); // Log prior on cv 
+	ln_cv     ~ normal(-0.6, 0.5); // Log prior on cv 
 	logit_eps_N ~ normal(-6.0, 1.0); // Logistic prior on misclassification 
 
-	ln_meanlog ~ normal(1.0, 0.5); // Log prior for species mean lengths
+	ln_meanlog ~ normal(0.8, 0.1); // Log prior for species mean lengths
 	ln_sdlog  ~ normal(-0.6, 1.0); // Log prior on cv 
 	logit_eps_LN ~ normal(-6.0, 1.0); // Logistic prior on misclassification 
+	
+	logistic_mu  ~ normal(5, 1.0); 
+	logistic_sigma ~ normal(1, 1.0); 
 	
 
   for (i in 1:B) {
@@ -74,22 +85,24 @@ model {
     // normal
     mu     = exp(ln_mu[i]);
     sigma  = mu * exp(ln_cv[i]);
-   	norm_c_N = 1.0 - normal_cdf(l[1], mu, sigma); // normalising constant
+   	// norm_c_N = 1.0 - normal_cdf(l[1], mu, sigma); // normalising constant
    	// log-normal
    	meanlog     = exp(ln_meanlog[i]);
     sdlog  = exp(ln_sdlog[i]);
-   	norm_c_LN = 1.0 - lognormal_cdf(l[1], meanlog, sdlog); // normalising constant
+   	// norm_c_LN = 1.0 - lognormal_cdf(l[1], meanlog, sdlog); // normalising constant
 
    	for (j in i_min[i]:i_max[i]) { // observation j
    		// probability of being in bin (prior to misclassification)
       p_N = (normal_cdf(l[b[j]+1], mu, sigma) - 
-        normal_cdf(l[b[j]], mu, sigma)) / norm_c_N; 
+        normal_cdf(l[b[j]], mu, sigma))*(logistic_cdf(l[b[j]+1], logistic_mu, logistic_sigma)-
+        logistic_cdf(l[b[j]], logistic_mu, logistic_sigma)); 
       // add misclassification probability (ensures non-zero p)
       p_N = (1.0 - eps_N[i])*p_N + eps_N[i]*f[b[j]]; 
       
    		// probability of being in bin (prior to misclassification)
       p_LN = (lognormal_cdf(l[b[j]+1], meanlog, sdlog) - 
-        lognormal_cdf(l[b[j]], meanlog, sdlog)) / norm_c_LN; 
+        lognormal_cdf(l[b[j]], meanlog, sdlog))*(logistic_cdf(l[b[j]+1], logistic_mu, logistic_sigma)-
+        logistic_cdf(l[b[j]], logistic_mu, logistic_sigma)); 
       // add misclassification probabily (ensures non-zero p)
       p_LN = (1.0 - eps_LN[i])*p_LN + eps_LN[i]*f[b[j]]; 
       
