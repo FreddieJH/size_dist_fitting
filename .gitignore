@@ -7,11 +7,14 @@
 *.csv
 
 output/
+extra/
+docs/
+crypto/
 
 *.png
-
 *.rds
+*.xlsx
+*.pptx
 
 for_shane.qmd
 
-extra/
