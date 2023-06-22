@@ -20,12 +20,12 @@ data {
 parameters {
 	// normal parameters
   vector<lower= -1.0,upper=6.0>[S]  ln_mu;     // log-population mean length
-  vector<lower= -4.0,upper=1.0>[S]  ln_cv;     // log-population coefficient of variation
+  vector<lower= -4.0,upper=1.8>[S]  ln_cv;     // log-population coefficient of variation
   vector<lower= -8.0,upper=-4.0>[S] logit_eps_N; // logistic-population misclassification
 
 	// log-normal parameters
   vector<lower= -1.0,upper=1.8>[S]  ln_meanlog;     // log-population mean length
-  vector<lower= -4,upper=1.0>[S]  ln_sdlog;  // log-population sihgma
+  vector<lower= -4,upper=1.8>[S]  ln_sdlog;  // log-population sihgma
   vector<lower= -8.0,upper=-4.0>[S] logit_eps_LN; // logistic-population misclassification
 
 }
