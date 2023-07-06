@@ -38,7 +38,6 @@ RLS_data_survs <-
 # simulated data (from data_simulation.R)
 RLS_data_sim <- read_parquet("input/data/data_simulated.parquet")
 
-
 # Subset of real data
 set.seed(1)
 RLS_data_obs_sample <-
@@ -109,7 +108,6 @@ RLS_data_obs_species <-
 RLS_data_obs_20spp <-
   RLS_data_obs_sample %>% 
   count(species_name, size_class)
-
 
 # Ecoregion-level (Marine Ecoregions Of the World)
 RLS_data_obs_ecoregion <-
@@ -285,12 +283,11 @@ for(min_count in c(5000, 1000, 500, 200)){
 ## CBF (binned)
 
 ```{r}
-min_count = 500
-population_level = "species"
+
 # min_count = the minimum allowable individuals per population
 # level = spatial scale of the data (choices: "species", "location")
-for(min_count in c(500, 100, 50, 20,10)){
-  for(population_level in c("species", "location")){
+for(min_count in c(500, 100, 50)){
+  for(population_level in c("location")){
     
     stan_model       <- "CBF_mod13"    # which stan model is being used
     min_bins         <- 4           # the minimum allowable bins per population
@@ -310,9 +307,8 @@ for(min_count in c(500, 100, 50, 20,10)){
     
     population_indx_table <- 
       obs_data %>% 
-      select(population) %>% 
-      distinct() %>% 
-      mutate(population_indx = row_number())
+      select(population, population_indx) %>% 
+      distinct()
     
     mod_data <-
       obs_data %>% 
@@ -330,7 +326,7 @@ for(min_count in c(500, 100, 50, 20,10)){
                           n_populations)
     
     run_model(model_name = model_name, stan_model = stan_model, overwrite = FALSE, iter = stan_iter)
-    extract_pars(model_name = model_name, overwrite = FALSE)
+    extract_pars(model_name = model_name, overwrite = TRUE)
     run_traceplots(model_name = model_name)
     run_ess_check(model_name = model_name)
     run_model_vis(model_name = model_name, obs_data = obs_data)
@@ -349,8 +345,8 @@ for(min_count in c(500, 100, 50, 20,10)){
 
 # min_count = the minimum allowable individuals per population
 # level = spatial scale of the data (choices: "species", "location")
-for(min_count in c(500, 100, 50, 20,10)){
-  for(population_level in c("species", "location")){
+for(min_count in c(500, 100, 50)){
+  for(population_level in c("location")){
     
     stan_model       <- "CBF_mod02"    # which stan model is being used
     stan_iter        <- 1e4         # number of stan iterations
@@ -390,14 +386,14 @@ for(min_count in c(500, 100, 50, 20,10)){
                           n_populations)
     
     run_model(model_name = model_name, stan_model = stan_model, overwrite = FALSE, iter = stan_iter)
-     extract_pars(model_name = model_name, overwrite = TRUE)
+    extract_pars(model_name = model_name, overwrite = TRUE)
     run_traceplots(model_name = model_name)
     run_ess_check(model_name = model_name)
-    run_model_vis(model_name = model_name, obs_data = obs_data)
+    run_model_vis_continuous(model_name = model_name, obs_data = obs_data)
     run_par_regression(model_name = model_name)
-    run_ll(model_name = model_name, overwrite = TRUE)
+    run_ll_continuous(model_name = model_name, overwrite = TRUE)
     run_ll_plot(model_name = model_name, obs_data = obs_data)
-    run_mean_vs_ll(model_name = model_name, obs_data = obs_data)
+    run_mean_vs_ll_continuous(model_name = model_name, obs_data = obs_data)
   }
 }
 

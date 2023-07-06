@@ -180,7 +180,7 @@ run_model_vis <- function(model_name, obs_data){
   
   plot <-
     paste0("output/model_pars/", model_name, ".parquet") %>% 
-    read_parquet() %>% 
+    read_parquet() %>%
     filter(population_indx %in% 1:20) %>% 
     pivot_wider(names_from = param, values_from = value) %>% 
     full_join(obs_data %>% filter(population_indx %in% 1:20), 
@@ -240,14 +240,14 @@ run_model_vis <- function(model_name, obs_data){
 
 run_model_vis_continuous <- function(model_name, obs_data){
   
-  # plot <-
+  plot <-
     paste0("output/model_pars/", model_name, ".parquet") %>% 
     read_parquet() %>% 
     filter(population_indx %in% 1:20) %>% 
     pivot_wider(names_from = param, values_from = value) %>% 
     expand_grid(tibble(size = seq(0, max(obs_data$sl), by = 0.1))) %>% 
     mutate(p_N = dnorm(size, mu, sigma), 
-           p_LN = dlnorm(size, meanlog = meanlog, sdlog = sdlog)) %>% 
+           p_LN = dlnorm(size,meanlog, sdlog)) %>% 
     summarise(mean_p_N = mean(p_N, na.rm = TRUE), 
               median_p_N = median(p_N, na.rm = TRUE),
               mean_p_LN = mean(p_LN, na.rm = TRUE), 
@@ -257,43 +257,24 @@ run_model_vis_continuous <- function(model_name, obs_data){
               q95_p_N = quantile(p_N, probs = 0.95, na.rm = TRUE), 
               q95_p_LN = quantile(p_LN, probs = 0.95, na.rm = TRUE), 
               .by = c("population_indx", "size")) %>% 
-    left_join(population_indx_table) %>% 
-    ggplot(aes(x = size, y = mean_p_LN)) +
-    geom_histogram(data = obs_data, aes(x = sl, y = ..density..)) +
-    geom_line() +
-    facet_wrap(~population, 
-               scales = "free")
-    full_join(obs_data %>% filter(population_indx %in% 1:20), 
-              by = join_by(population_indx),
-              multiple = "all") %>% 
-    expand_gr
-    ggplot() +
-    aes(x = size_class, 
-        y = p) +
-    geom_point() +
-    geom_line() + 
-    geom_point(aes(y = mean_p_N), 
-               col = "blue",
-               alpha = 0.5) +
+    left_join(obs_data %>% select(population, population_indx) %>% distinct(),
+              by = join_by(population_indx)) %>% 
+    filter(population_indx %in% 1:20) %>% 
+    ggplot(aes(x = size)) +
+    geom_histogram(data = obs_data, aes(x = sl, y = ..density..), 
+                   alpha = 0.3) +
+    geom_line(aes(y = mean_p_N), col = "blue") +
+    geom_line(aes(y = mean_p_LN), col = "red") +
     geom_ribbon(aes(ymin = q5_p_N,
                     ymax = q95_p_N),
                 fill = "blue",
                 alpha = 0.5) +
-    geom_line(aes(y = mean_p_N), 
-              col = "blue",
-              alpha = 0.5) +
-    geom_point(aes(y = mean_p_LN), 
-               col = "red",
-               alpha = 0.5) +
     geom_ribbon(aes(ymin = q5_p_LN,
                     ymax = q95_p_LN),
                 fill = "red",
                 alpha = 0.5) +
-    geom_line(aes(y = mean_p_LN), 
-              col = "red",
-              alpha = 0.5) +
     facet_wrap(~population, 
-               scales = "free")  +
+               scales = "free")+
     ggtitle(label = "Normal = blue, Lognormal = red")
   
   ggsave(filename = paste0("output/model_plots/", model_name, ".png"), 
@@ -384,6 +365,35 @@ run_ll <- function(model_name, overwrite){
         ll_N = n*log(p_N_adjust),
         ll_LN = n*log(p_LN_adjust)
       ) %>% 
+      summarise(ll_N = sum(ll_N, na.rm = TRUE), 
+                ll_LN = sum(ll_LN, na.rm = TRUE), 
+                .by = c(.draw, population_indx, population)) %>% 
+      pivot_longer(cols = starts_with("ll_"), names_to = "dist", values_to = "ll", names_prefix = "ll_") 
+    
+    if(!dir.exists("output/likelihood_values/")) dir.create("output/likelihood_values/")
+    
+    write_parquet(likelihood_table, 
+                  paste0("output/likelihood_values/", model_name, ".parquet"))
+  }
+  
+}
+
+
+run_ll_continuous <- function(model_name, overwrite){
+  if(!file.exists(paste0("output/likelihood_values/", model_name, ".parquet")) | overwrite){
+    
+
+    likelihood_table <- 
+      paste0("output/model_pars/", model_name, ".parquet") %>% 
+      read_parquet() %>% 
+      pivot_wider(names_from = param, values_from = value) %>% 
+      full_join(obs_data, 
+                by = join_by(population_indx),
+                multiple = "all") %>% 
+      mutate(P_N = dnorm(x = sl, mu, sigma),
+             P_LN = dlnorm(x = sl, meanlog, sdlog),
+             ll_N = log(P_N),
+             ll_LN = log(P_LN)) %>% 
       summarise(ll_N = sum(ll_N, na.rm = TRUE), 
                 ll_LN = sum(ll_LN, na.rm = TRUE), 
                 .by = c(.draw, population_indx, population)) %>% 
@@ -496,6 +506,113 @@ run_mean_vs_ll <- function(model_name, obs_data){
               .by = population_indx) %>%
     left_join(summarise(obs_data, 
                         mean_size = mean(size_class, wt = n), 
+                        .by = population_indx),
+              by = join_by(population_indx)) 
+  
+  norm_better_n2 <- 
+    p_data2 %>% 
+    mutate(norm_better = prop_norm_better > 0.5) %>% 
+    count(norm_better) %>% 
+    filter(norm_better) %>% 
+    pull(n)
+  
+  p2 <- 
+    p_data2 %>% 
+    ggplot() +
+    aes(
+      x = mean_size,
+      y = prop_norm_better
+    ) + 
+    geom_rect(aes(ymin = -Inf, ymax = 0.5, xmin = -Inf, xmax = Inf), fill = "red", alpha = 0.5) +
+    geom_rect(aes(ymin = 0.5, ymax = Inf, xmin = -Inf, xmax = Inf), fill = "blue", alpha = 0.5) +
+    geom_point(size = 2) +
+    annotate(geom = "text", y = 0.5, x = Inf, label = paste0("n = ", norm_better_n), 
+             hjust = 1.5, vjust = -0.5, col = "white", size = 5) +
+    annotate(geom = "text", y = 0.5, x = Inf, label = paste0("n = ", nrow(p_data)-norm_better_n), 
+             hjust = 1.5, vjust = 1.5, col = "white", size = 5) +
+    stat_smooth(formula = 'y ~ x', col = "orange", method = "lm") +
+    labs(x = "Species mean size", 
+         y = "Normalised loglikelighood ratio (norm_LL_N-norm_LL_LN)") +
+    theme_cowplot(20)
+  
+  ggsave(filename = paste0("output/likelihood_plots/sizeVSll_", model_name, "_method2.png"), 
+         plot = p2,
+         height = 20, 
+         width = 20*1.618, 
+         units = "cm", 
+         dpi = 96)
+  cat(paste(model_name, ": Loglikelihood vs mean body size plots saved.\n"))
+  
+}
+
+run_mean_vs_ll_continuous <- function(model_name, obs_data){
+  
+  popln_count <- 
+    obs_data %>% 
+    select(population_indx, 
+           population_n) %>% 
+    distinct()
+  
+  p_data <-   
+    paste0("output/likelihood_values/", model_name, ".parquet") %>% 
+    read_parquet() %>% 
+    left_join(popln_count,
+              by = join_by(population_indx)) %>% 
+    mutate(ll = ll/population_n) %>% 
+    pivot_wider(names_from = dist, 
+                values_from = ll) %>% 
+    mutate(diff = N - LN) %>% 
+    summarise(diff = median(diff), 
+              ll_norm = median(N), 
+              ll_lnorm = median(LN),
+              .by = population_indx) %>%
+    left_join(summarise(obs_data, 
+                        mean_size = mean(sl, wt = n), 
+                        .by = population_indx),
+              by = join_by(population_indx)) 
+  
+  norm_better_n <- 
+    p_data %>% 
+    mutate(norm_better = diff > 0) %>% 
+    count(norm_better) %>% 
+    filter(norm_better) %>% 
+    pull(n)
+  
+  p <- 
+    p_data %>% 
+    ggplot() +
+    aes(
+      x = mean_size,
+      y = diff
+    ) + 
+    geom_rect(aes(ymin = -Inf, ymax = 0, xmin = -Inf, xmax = Inf), fill = "red", alpha = 0.5) +
+    geom_rect(aes(ymin = 0, ymax = Inf, xmin = -Inf, xmax = Inf), fill = "blue", alpha = 0.5) +
+    geom_point(size = 2) +
+    annotate(geom = "text", y = 0, x = Inf, label = paste0("n = ", norm_better_n), 
+             hjust = 1.5, vjust = -0.5, col = "white", size = 5) +
+    annotate(geom = "text", y = 0, x = Inf, label = paste0("n = ", nrow(p_data)-norm_better_n), 
+             hjust = 1.5, vjust = 1.5, col = "white", size = 5) +
+    stat_smooth(formula = 'y ~ x', col = "orange", method = "lm") +
+    labs(x = "Species mean size", 
+         y = "Normalised loglikelighood ratio (norm_LL_N-norm_LL_LN)") +
+    theme_cowplot(20)
+  
+  ggsave(filename = paste0("output/likelihood_plots/sizeVSll_", model_name, ".png"), 
+         plot = p,
+         height = 20, 
+         width = 20*1.618, 
+         units = "cm", 
+         dpi = 96)
+  p_data2 <-   
+    paste0("output/likelihood_values/", model_name, ".parquet") %>% 
+    read_parquet() %>% 
+    pivot_wider(names_from = dist, 
+                values_from = ll) %>% 
+    mutate(norm_better = N>LN) %>% 
+    summarise(prop_norm_better = mean(norm_better), 
+              .by = population_indx) %>%
+    left_join(summarise(obs_data, 
+                        mean_size = mean(sl, wt = n), 
                         .by = population_indx),
               by = join_by(population_indx)) 
   
