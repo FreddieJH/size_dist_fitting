@@ -39,7 +39,6 @@ model {
       target += n[i]*log(bin_prob); 
     }
 
-    
   }
 
 }
