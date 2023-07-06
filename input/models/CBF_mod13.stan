@@ -111,17 +111,6 @@ generated quantities {
   real sdlog[S]; // population sigma
   real eps_LN[S];   // population misclassification
   
-  vector[B] f;     // probability in bin when randomly allocated
-  real norm_c_N;
-  real norm_c_LN;
-  real p_N[S, B];
-  real p_LN[S, B];
-  real LL_N[S];
-  real LL_LN[S];
-  
-  for (i in 1:B) {
-    f[i] = (l[i+1] - l[i]) / (l[B+1] - l[1]);	// calculate relative bin widths
-  }
   
   for (i in 1:S) { // for each population i
      mu[i]  = exp(ln_mu[i]);
@@ -132,29 +121,6 @@ generated quantities {
      meanlog[i]   = exp(ln_meanlog[i]);
      sdlog[i] = exp(ln_sdlog[i]);
      eps_LN[i]   = exp(logit_eps_LN[i]) / (1.0 + exp(logit_eps_LN[i]));
-     
-     norm_c_N = 1.0 - normal_cdf(l[1], mu, sigma); // normalising constant
-     norm_c_LN = 1.0 - lognormal_cdf(l[1], meanlog, sdlog); // normalising constant
-     
-     for (j in i_min[i]:i_max[i]) { // observation j
-   	
-   	  // Normal
-   		// probability of being in bin (prior to misclassification)
-      p_N[i, j] = (normal_cdf(l[b[j]+1], mu, sigma) - 
-        normal_cdf(l[b[j]], mu, sigma)) / norm_c_N; 
-      // add misclassification probability (ensures non-zero p)
-      p_N[i, j] = (1.0 - eps_N[i])*p_N[i, j] + eps_N[i]*f[b[j]]; 
-      
-      // Lognormal
-   		// probability of being in bin (prior to misclassification)
-      p_LN[i, j] = (lognormal_cdf(l[b[j]+1], meanlog, sdlog) - 
-        lognormal_cdf(l[b[j]], meanlog, sdlog)) / norm_c_LN; 
-      // add misclassification probabily (ensures non-zero p)
-      p_LN[i, j] = (1.0 - eps_LN[i])*p_LN[i, j] + eps_LN[i]*f[b[j]]; 
-      
-      LL_N[S] = LL_N[S] + n[j]*log(p_N[i, j]);
-      LL_LN[S] = LL_LN[S] + n[j]*log(p_LN[i, j]); // add log-likelihood term
-   	}
-     
+
   }
 }

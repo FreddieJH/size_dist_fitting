@@ -40,7 +40,7 @@ model {
     y[i] ~ normal(mu, sigma);
     
     meanlog     = exp(ln_meanlog[population_id[i]]);
-    sdlog  = mu * exp(ln_sdlog[population_id[i]]);
+    sdlog  = exp(ln_sdlog[population_id[i]]);
     y[i] ~ lognormal(meanlog, sdlog);
 
   }

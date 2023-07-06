@@ -107,7 +107,7 @@ run_traceplots <- function(model_name){
     if(model_par_list$n[i] == 1){
       param_name  <- model_par_list$param[i]
     } else {
-      param_name <- paste0(model_par_list$param[i], "[", 1:20, "]")
+      param_name <- paste0(model_par_list$param[i], "[", 1:model_par_list$n[i], "]")
     }
     
     p <-
@@ -197,6 +197,76 @@ run_model_vis <- function(model_name, obs_data){
               q95_p_N = quantile(p_N, probs = 0.95, na.rm = TRUE), 
               q95_p_LN = quantile(p_LN, probs = 0.95, na.rm = TRUE), 
               .by = c("population_indx", "population", "size_class", "p")) %>% 
+    ggplot() +
+    aes(x = size_class, 
+        y = p) +
+    geom_point() +
+    geom_line() + 
+    geom_point(aes(y = mean_p_N), 
+               col = "blue",
+               alpha = 0.5) +
+    geom_ribbon(aes(ymin = q5_p_N,
+                    ymax = q95_p_N),
+                fill = "blue",
+                alpha = 0.5) +
+    geom_line(aes(y = mean_p_N), 
+              col = "blue",
+              alpha = 0.5) +
+    geom_point(aes(y = mean_p_LN), 
+               col = "red",
+               alpha = 0.5) +
+    geom_ribbon(aes(ymin = q5_p_LN,
+                    ymax = q95_p_LN),
+                fill = "red",
+                alpha = 0.5) +
+    geom_line(aes(y = mean_p_LN), 
+              col = "red",
+              alpha = 0.5) +
+    facet_wrap(~population, 
+               scales = "free")  +
+    ggtitle(label = "Normal = blue, Lognormal = red")
+  
+  ggsave(filename = paste0("output/model_plots/", model_name, ".png"), 
+         plot = plot,
+         height = 20, 
+         width = 20*1.618, 
+         units = "cm", 
+         dpi = 96)
+  
+  cat(paste(model_name, ": Model prediction plot saved.\n"))
+  
+}
+
+
+run_model_vis_continuous <- function(model_name, obs_data){
+  
+  # plot <-
+    paste0("output/model_pars/", model_name, ".parquet") %>% 
+    read_parquet() %>% 
+    filter(population_indx %in% 1:20) %>% 
+    pivot_wider(names_from = param, values_from = value) %>% 
+    expand_grid(tibble(size = seq(0, max(obs_data$sl), by = 0.1))) %>% 
+    mutate(p_N = dnorm(size, mu, sigma), 
+           p_LN = dlnorm(size, meanlog = meanlog, sdlog = sdlog)) %>% 
+    summarise(mean_p_N = mean(p_N, na.rm = TRUE), 
+              median_p_N = median(p_N, na.rm = TRUE),
+              mean_p_LN = mean(p_LN, na.rm = TRUE), 
+              median_p_LN = median(p_LN, na.rm = TRUE), 
+              q5_p_N = quantile(p_N, probs = 0.05, na.rm = TRUE), 
+              q5_p_LN = quantile(p_LN, probs = 0.05, na.rm = TRUE), 
+              q95_p_N = quantile(p_N, probs = 0.95, na.rm = TRUE), 
+              q95_p_LN = quantile(p_LN, probs = 0.95, na.rm = TRUE), 
+              .by = c("population_indx", "size")) %>% 
+    left_join(population_indx_table) %>% 
+    ggplot(aes(x = size, y = mean_p_LN)) +
+    geom_histogram(data = obs_data, aes(x = sl, y = ..density..)) +
+    geom_line() +
+    facet_wrap(~population, 
+               scales = "free")
+    full_join(obs_data %>% filter(population_indx %in% 1:20), 
+              by = join_by(population_indx),
+              multiple = "all") %>% 
+    expand_gr
     ggplot() +
     aes(x = size_class, 
         y = p) +
