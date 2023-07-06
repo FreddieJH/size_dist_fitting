@@ -1,9 +1,9 @@
-if(!file.exists("input/data/data_simulated.parquet")){
-  # set number of simulated species
+if(!file.exists("input/RLS/data/data_simulated.parquet")){
+  # set number of simulated species -----------------------------------------
   sim_n_spp <- 20
   sim_n_reps <- 1000
   set.seed(1)
-  
+  ## bin breaks ----
   rls_bin_breaks <- 
     c(2.5, 5.0, 7.5,  10.0, 12.5, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 
       50.0, 62.5, 75.0, 87.5, 100.0, 112.5, 125.0, 137.5, 150.0, 
@@ -67,7 +67,7 @@ if(!file.exists("input/data/data_simulated.parquet")){
     left_join(rls_bin_table %>% dplyr::select(size_class, size_indx),
               by = join_by(size_class)) 
   
-  write_parquet(data_sim, "input/data/data_simulated.parquet")
+  write_parquet(data_sim, "input/RLS/data/data_simulated.parquet")
 } else {
-  data_sim <- read_parquet("input/data/data_simulated.parquet")
+  data_sim <- read_parquet("input/RLS/data/data_simulated.parquet")
 }

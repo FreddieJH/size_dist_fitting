@@ -7,7 +7,7 @@
 *.csv
 
 output/
-extra/
+ignore/
 docs/
 crypto/
 
@@ -15,6 +15,7 @@ crypto/
 *.rds
 *.xlsx
 *.pptx
+*.html
 
 for_shane.qmd
 

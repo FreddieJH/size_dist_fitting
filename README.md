@@ -11,3 +11,17 @@ The file structure must remain the same in order for the code to run (i.e. raw d
 Observed fish body size data can be found in the `input/data/` folder. The stan code for fitting the bayesian models can be found in the `input/models/` folder.
 
 ## Output
+
+# To-do list
+
+-   run the population models for longer, with tighter priors on eps parameters (4000 runs, with mean of eps at -6 and sigma of 0.5, upper limit of -2)
+
+    -   **158pops**
+
+    -   1223pops
+
+-   run for ecoregions
+
+    -   188ecos
+
+    -   822ecos

@@ -1,0 +1,351 @@
+---
+title: "What distribution best describes emperical fish species size distributions?"
+author: "Freddie Heather, Shane Richards, Asta Audzijonyte"
+execute: 
+  comment: false
+  warning: false
+  error: false
+  message: false 
+---
+
+```{r background-setup, include = FALSE}
+
+source("scripts/00_functions_packages.R")
+source("scripts/01_data_simulation.R")
+source("scripts/02_modelling_functions.R")
+
+show_figures <- FALSE
+rerun_models <- FALSE
+
+```
+
+# Raw data import
+
+## RLS
+
+```{r data-import}
+
+# observational data
+RLS_data_obs <- read_parquet("input/data/data_obs_cleaned.parquet")
+
+# survey-level data
+RLS_data_survs <- 
+  read_parquet("input/data/survey_list_m1_aus.parquet") %>% 
+  mutate(lat_grid = round(latitude), 
+         lon_grid = round(longitude), 
+         lat_lon = paste(lat_grid, lon_grid, sep = "_")) 
+
+# simulated data (from data_simulation.R)
+RLS_data_sim <- read_parquet("input/data/data_simulated.parquet")
+
+
+# Subset of real data
+set.seed(1)
+RLS_data_obs_sample <-
+  data_obs %>% 
+  filter(species_name %in% sample(unique(data_obs$species_name), 20))
+
+```
+
+## CBF
+
+```{r}
+
+CBF_raw <- 
+  read_csv("input/data/crypto.size.data.csv", 
+           show_col_types = FALSE) 
+
+CBF_data_obs <- 
+  CBF_raw %>%
+  select(location = Location,
+         species = sciname,
+         sl = SL,
+         tl = TL,
+         wt = W) %>%
+  filter(str_detect(species, "^[A-Z]{1}[a-z]+\\s[a-z]+$")) 
+
+
+CBF_spp_list <- 
+  CBF_raw %>% 
+  select(species = sciname, 
+         genus = Genus, 
+         family = Family) %>% 
+  distinct() %>% 
+  add_count(species, name = "n_byspp")
+
+CBF_loc_list <- 
+  CBF_raw %>% 
+  select(location = Location, 
+         lat = Lat, 
+         lon = Long) %>%
+  summarise(lat = mean(lat, na.rm = TRUE),
+            lon = mean(lon, na.rm = TRUE), 
+            .by = location) %>% 
+  distinct()
+
+rm(CBF_raw)
+
+```
+
+
+# Data wrangling
+
+## RLS
+
+Cleaning data into three spatial scales: species level, gridcell level (1x1 degree cells), and ecoregion level.
+
+```{r wrangling}
+
+# Species-level data
+RLS_data_obs_species <-
+  data_obs %>% 
+  rename(population = species_name) %>% 
+  count(population, size_class) %>% 
+  add_count(population, name = "n_sizebins") %>% 
+  add_count(population, wt = n, name = "population_n") 
+
+
+# sample of 20 species
+RLS_data_obs_20spp <-
+  data_obs_sample %>% 
+  count(species_name, size_class)
+
+
+# Ecoregion-level (Marine Ecoregions Of the World)
+RLS_data_obs_ecoregion <-
+  data_obs %>% 
+  left_join(data_survs, by = join_by(survey_id)) %>% 
+  mutate(population = paste(species_name, ecoregion, sep = "__")) %>% 
+  count(population, ecoregion, species_name, size_class) %>% 
+  add_count(ecoregion, species_name, name = "n_sizebins") %>% 
+  add_count(ecoregion, species_name, wt = n, name = "population_n")
+
+# Gridcell-level data (1x1 lat-lon degree gridcell)
+RLS_data_obs_gridcell <-
+  data_obs %>% 
+  left_join(data_survs, by = join_by(survey_id)) %>% 
+  mutate(population = paste(species_name, lat_lon, sep = "__")) %>% 
+  count(population, species_name, size_class, wt = n) %>% 
+  add_count(population, name = "n_sizebins") %>% 
+  add_count(population, wt = n, name = "population_n") 
+
+```
+
+## CBF
+
+```{r}
+
+# Species-level data
+CBF_data_obs_species <- 
+  CBF_data_obs %>% 
+  mutate(population = paste(species, sep = "_")) %>% 
+  select(population, sl) %>% 
+  add_count(population, name = "population_n")
+
+
+# Location-level data
+CBF_data_obs_location <- 
+  CBF_data_obs %>% 
+  mutate(population = paste(location, species, sep = "_")) %>% 
+  select(population, sl) %>% 
+  add_count(population, name = "population_n")
+
+
+# Species-level data
+CBF_data_obs_species_binned <- 
+  CBF_data_obs %>% 
+  mutate(population = paste(species, sep = "_")) %>% 
+  mutate(size_class = rls_bin(sl)) %>% 
+  count(population, species, size_class) %>% 
+  add_count(population, name = "n_sizebins") %>% 
+  add_count(population, wt = n, name = "population_n")
+
+
+# Location-level data
+CBF_data_obs_location_binned <- 
+  CBF_data_obs %>% 
+  mutate(population = paste(location, species, sep = "_")) %>% 
+  mutate(size_class = rls_bin(sl)) %>% 
+  count(population, species, location, size_class) %>% 
+  add_count(population, name = "n_sizebins") %>% 
+  add_count(population, wt = n, name = "population_n")
+
+
+```
+
+
+# Data Visulation
+
+## RLS
+
+```{r data-vis}
+
+if(!file.exists("output/data_figs/ssd_obs_20spp.png")){
+  
+  p <-
+    RLS_data_obs_sample %>% 
+    count(species_name, size_class) %>% 
+    ggplot() +
+    geom_point(mapping = aes(x = size_class, y = n)) +
+    geom_line(mapping = aes(x = size_class, y = n)) +
+    facet_wrap( ~ species_name, scales = "free") +
+    labs(x = "Fish length (cm)",  
+         y = "Fish abundance") +
+    theme_bw() +
+    ggtitle("Body size distribution of 20 randomly sampled species")
+  
+  save_plot(plot = p, 
+            filename = "output/data_figs/ssd_obs_20spp.png", 
+            base_height = 8)
+  
+} else {
+  if(show_figures) "output/data_figs/ssd_obs_20spp.png" %>% magick::image_read()
+}
+
+if(!file.exists("output/data_figs/ssd_obs_20spp_log.png")){
+  
+  p <- 
+    RLS_data_obs_sample %>% 
+    count(species_name, size_class) %>% 
+    ggplot() +
+    geom_point(mapping = aes(x = size_class, y = n)) +
+    geom_line(mapping = aes(x = size_class, y = n)) +
+    facet_wrap( ~ species_name, scales = "free") +
+    scale_y_log10() +
+    scale_x_log10() +
+    labs(x = "Log Fish length (cm)",  
+         y = "Log Fish abundance") +
+    theme_bw() +
+    ggtitle("Log-log body size distribution of 20 randomly sampled species")
+  
+  save_plot(plot = p, 
+            filename = "output/data_figs/ssd_obs_20spp_log.png", 
+            base_height = 8)
+  
+} else {
+  if(show_figures) "output/data_figs/ssd_obs_20spp_log.png" %>% magick::image_read()
+}
+
+```
+
+## CBF
+
+# Modelling
+
+## RLS
+
+```{r}
+# min_count = the minimum allowable individuals per population
+# level = spatial scale of the data (choices: "species", "gridcell", "ecoregion")
+for(min_count in c(5000, 1000, 500, 200)){
+  for(population_level in c("species", "gridcell", "ecoregion")){
+    
+    stan_model       <- "RLS_mod_13"    # which stan model is being used
+    min_bins         <- 4           # the minimum allowable bins per population
+    stan_iter        <- 1e4         # number of stan iterations
+    
+    obs_data <-
+      paste0("RLS_data_obs_", population_level) %>% 
+      get() %>% 
+      filter(n_sizebins >= min_bins, 
+             population_n >= min_count) %>% 
+      clean_data()
+    
+    n_populations <- 
+      obs_data %>% 
+      pull(population) %>% 
+      n_distinct()
+    
+    stan_data <- 
+      obs_data %>% 
+      make_standata()
+    
+    model_name  <- paste0(stan_model, 
+                          "_nbin", min_bins,  
+                          "_n", min_count, "_", 
+                          population_level, 
+                          n_populations)
+    
+    # run_model(model_name = model_name, stan_model = stan_model, overwrite = FALSE, iter = stan_iter)
+    # extract_pars(model_name = model_name, overwrite = TRUE)
+    # run_traceplots(model_name = model_name)
+    # run_ess_check(model_name = model_name)
+    # run_model_vis(model_name = model_name, obs_data = obs_data)
+    run_par_regression(model_name = model_name)
+    # run_ll(model_name = model_name, overwrite = TRUE)
+    # run_ll_plot(model_name = model_name, obs_data = obs_data)
+    # run_mean_vs_ll(model_name = model_name, obs_data = obs_data)
+    
+  }}
+
+```
+
+## CBF
+
+```{r}
+
+# min_count = the minimum allowable individuals per population
+# level = spatial scale of the data (choices: "species", "location")
+for(min_count in c(500, 100, 50, 20,10)){
+  for(population_level in c("species", "location")){
+    
+    stan_model       <- "CBF_mod13"    # which stan model is being used
+    min_bins         <- 4           # the minimum allowable bins per population
+    stan_iter        <- 1e4         # number of stan iterations
+
+    obs_data <-
+      paste0("CBF_data_obs_", population_level, "_binned") %>% 
+      get() %>% 
+      filter(n_sizebins >= min_bins, 
+             population_n >= min_count) %>% 
+      clean_data()
+    
+    n_populations <- 
+      obs_data %>% 
+      pull(population) %>% 
+      n_distinct()
+    
+    population_indx_table <- 
+      obs_data %>% 
+      select(population) %>% 
+      distinct() %>% 
+      mutate(population_indx = row_number())
+    
+    mod_data <-
+      obs_data %>% 
+      left_join(population_indx_table,
+                by = join_by(population))
+    
+  stan_data <- 
+      obs_data %>% 
+      make_standata()
+  
+    model_name  <- paste0(stan_model, 
+                          "_nbin", min_bins,  
+                          "_n", min_count, "_", 
+                          population_level, 
+                          n_populations)
+    
+    run_model(model_name = model_name, stan_model = stan_model, overwrite = FALSE, iter = stan_iter)
+    
+  }}
+
+
+```
+
+
+```{r}
+p1<-
+  read_rds("cryptic/output/model_fits/mod02_n10_species120.rds") %>% 
+  traceplot(pars = paste0("mu[", 1:20, "]")) 
+
+p2<-
+  read_rds("cryptic/output/model_fits/mod13_nbin4_n10_species101.rds") %>% 
+  traceplot(pars = paste0("mu[", 1:20, "]"))
+
+
+ggsave(plot = p1, filename = "cont.png", height = 8, width = 8*1.618)
+ggsave(plot = p2, filename = "binned.png", height = 8, width = 8*1.618)
+
+```
+
