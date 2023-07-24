@@ -4,7 +4,7 @@ author:
   - name: Freddie J. Heather
     orcid: 0000-0002-1650-2617
     corresponding: true
-    email: freddie.heather@utas.edu.au
+    email: Freddie.Heather@utas.edu.au
     roles:
       - Conception
       - Analysis
@@ -12,10 +12,10 @@ author:
       - Writing
     affiliations:
       - Institute for Marine and Antarctic Studies, University of Tasmania
-  - name: Shane Richards
-    orcid: 0000-0002-1650-2617
+  - name: Shane A. Richards
+    orcid: 0000-0002-9638-5827
     corresponding: false
-    email: freddie.heather@utas.edu.au
+    email: Shane.Richards@utas.edu.au
     roles:
       - Conception
       - Statistics
@@ -23,9 +23,9 @@ author:
     affiliations:
       - School of Natural Sciences, University of Tasmania
   - name: Asta Audzijonyte
-    orcid: 0000-0002-1650-2617
+    orcid: 0000-0002-9919-9376
     corresponding: false
-    email: freddie.heather@utas.edu.au
+    email: Asta.Audzijonyte@utas.edu.au
     roles:
       - Conception
       - Analysis
@@ -51,51 +51,29 @@ citation:
 number-sections: true
 ---
 
+```{r}
+source("analysis/scripts/00_functions_packages.R")
+# source("analysis/scripts/01_data_simulation.R")
+# source("analysis/scripts/02_modelling_functions.R")
+# source("analysis/scripts/03_data_import.R")
+# source("analysis/scripts/04_data_wrangling.R")
+# source("analysis/scripts/05_data_visualisation.R")
+# source("analysis/scripts/06_bayesian_modelling.R")
+# source("analysis/scripts/07_manuscript_figures.R")
+source("analysis/scripts/08_manuscript_values.R")
+```
+
 ## Background {#sec-background}
 
 Body size is a key trait in determining how organisms interact with their environment, this is particularly true for marine organisms, where body size is a strong predictor of trophic position [@jennings_weak_2001], growth rate, and predation mortality[@goatley_body_2016]. Giometto et al. [-@giometto_scaling_2013], using the spherical diameter of unicellular protists, identified that the mean body size of a species, was sufficient to describe the entire body size distribution. The authors conjectured that this may hold for multicellular organisms. Here, we test this conjecture using 15 millon+ inidividuals from 1064 fish species.
 
 ## Results & discussion {#sec-results-discussion}
 
-```{r}
-
-library(readr)
-library(dplyr)
-library(ggplot2)
-
-plot_data <- read_csv("ms_data/parameter_summary.csv", show_col_types = FALSE)
-get_ci <- function(data_type, param, conf_level = 0.95, signif = 1) {
-  
-  vec <-
-    plot_data %>% 
-    filter(type == data_type) %>% 
-    pull(param) %>% 
-    na.omit(vec)
-  sd <- sd(vec)
-  n <- length(vec)
-  se <- sd(vec)/sqrt(length(vec))
-  xx <- qt(1 - ((1 - conf_level) / 2), n - 1) * se
-  xx %>% 
-    signif(signif)
-}
-
-get_mean <- function(data_type, param, signif = 2) {
-  
-  vec <-
-    plot_data %>% 
-    filter(type == data_type) %>% 
-    pull(param) %>% 
-    na.omit(vec)
-  vec %>% 
-    mean() %>% 
-    signif(signif)
-}
-
-```
-
-We found that the variance parameter of the lognormal distribution was constant across the fitted mean parameter of the lognormal distribution (@fig-param-regression A), further we found a consistent relationship between the standard deviation and the mean of the normal distribution fitted to observed body size (@fig-param-regression B). This is to say the mean size of the species is sufficient to describe the overall body size distribution. For both data sources, continuous and binned, we found the patterns between the mean and variance parameters of the lognormal distribution held, with sdlog = `r get_mean("RLS", "mean_sdlog")` $\pm$ `r get_ci("RLS", "mean_sdlog")` (Reef Life Survey, binned data) and `r get_mean("CBF", "mean_sdlog")` $\pm$ `r get_ci("CBF", "mean_sdlog")` (Cryptobenthic fish, continuous). For normal distribution, we found a consistent relationship
+We found that the variance parameter of the lognormal distribution was constant across the fitted mean parameter of the lognormal distribution (@fig-param-regression A), further we found a consistent relationship between the standard deviation and the mean of the normal distribution fitted to observed body size (@fig-param-regression B). This is to say the mean size of the species is sufficient to describe the overall body size distribution. For both data sources, continuous and binned, we found the patterns between the mean and variance parameters of the lognormal distribution held, with sdlog = `r RLS_sdlog_mean` $\pm$ `r RLS_sdlog_ci` (Reef Life Survey, binned data) and `r CBF_sdlog_mean` $\pm$ `r CBF_sdlog_ci` (Cryptobenthic fish, continuous). For normal distribution, we found a consistent relationship
 
 ![Mean size is sufficient to describe overall body size distribution.](ms_figures/param_regression.png){#fig-param-regression}
+
+![Some distributions are better described by Normal, some by lognormal. Blue is the lognormal fit, using the median lognormal parameters, and black is the normal fit with the median parameters.](ms_figures/scaled_bodysize.png)
 
 ## Methods {#sec-methods}
 
@@ -111,11 +89,41 @@ The second data source was from field collections using enclosed clove-oil stati
 
 For binned body size data, we excluded body size distributions that spanned fewer than four body size bins, we did not apply an exclusion for the continuous data based on the range of body sizes. For binned data we set a minimum count of 10 individuals per population to fit a distribution, for the binned data, this minimum count was 100. We performed a sensitivity analysis to these filtering parameters to show that across a range of filters for minimum count, the overall result did not substantially change.
 
+Data were grouped at varying spatial scales to determine the appropriate spatial scale at which these distributions best fit. For the cryptobenthic fish data, populations were defined at two spatial scales; 1) species-level, and 2) location\*species level. At the species level, all individuals belonging to the same species, irrespective of location were grouped in the same distribution. For RLS data, we defined three spatial scales: 1) species-level, 2) marine ecoregion[@spalding_marine_2007] level, and 3) 1x1 degree lat-lon gridcell level.
+
 ### Statistical analysis
 
-All statistical analyses were performed using a combination of the statistical programming language R[@rcoreteam2022], and the statistical modelling language Stan[@standevelopmentteam2023] for all Bayesian analyses.
+All statistical analyses were performed using the statistical programming language R[@rcoreteam2022], and in combination with the statistical modelling language Stan[@standevelopmentteam2023] for Bayesian analyses.
 
-Continuous body size distributions were
+Cryptobenthic fish body size data, on a continuous scale, were fitted to one of two probability distributions, lognormal and normal, firstly at the species level (one distribution per species), and then at the localised reef scale (one distribution per species per reef).
+
+$$
+L_p \sim \mathcal{N}(\mu_p, \sigma_p)
+$$
+
+$$
+L_p \sim \mathcal{LN}(\nu_p, \tau_p)
+$$
+
+Where $L_p$ is the observed body length of population, $p$. Population body length, $L_p$, is assumed to come from either a normal, $\mathcal{N}$, or lognormal distribution, $\mathcal{LN}$. We have used $\nu$ and $\tau$ as the location and scale parameters of the lognormal distribution to avoid confusion with $\mu$ and $\sigma$, of the normal distribution. Each population has its own location ($\mu_p$ and $\nu_p$) and scale ($\sigma_p$ and $\tau_p$) parameter for each of the two distributions, normal and lognormal, respectively.
+
+Reef Life Survey body size data, in body size bins, were also fit using Stan, but using a method to account for the body size binning approach. The probability of being within each RLS body size bin (e.g. 2.5cm) was calculated by integrating the probability density function of the distribution between the upper and lower bounds of the size bin (e.g. between 3.75 and 1.25cm for the 2.5cm size bin).
+
+$$
+Pr(B_b,K_k) = \frac{\int_{B_{bl}}^{B_{bu}}\mathcal{N_{cdf}}(\mu_k, \sigma_k)}{C}
+$$
+
+Where $C$ is a normalising constant, defined by the probability of being less than 1.25cm, that accounts for the body sizes not recorded in the RLS method. $N_{cdf}$ refers to the cumulative density function of the normal distribution.
+
+$$ 
+C = \int_{0}^{1.25}\mathcal{N_{cdf}}(\mu_k, \sigma_k) 
+$$
+
+This method was run for both the normal and lognormal distributions. To account for misclassification error in the binning of body size an additional parameter ($\epsilon_p$) was added that adjusts the bin probability by a small amount, which also has the benefit of avoiding zero probability likelihood estimates.
+
+<!--# loglikelihood calculations -->
+
+The likelihood of the model was defined as the summation of the probability of the data given the model parameters. To compare the log-likelihood values between species, with differing number of body size data per species, we calculated the log-likelihood per datum. This allowed for comparison between species, and a calculation of a log-likelihood per datum ratio (LLDR) between normal and lognormal fits. The posterior distribution of the LLDR could then be used as a measure of the normal vs lognormal fit for each species.
 
 ## Conclusion
 
@@ -123,6 +131,7 @@ Continuous body size distributions were
 :::
 
 ```{r}
+
 tibble(x = seq(0,6,by = 0.1)) %>% 
   mutate(fit1 = dnorm(x, mean = 3, sd = 0.8), 
          fit2 = dnorm(x, mean = 3, sd = 1.2)) %>% 
@@ -130,4 +139,5 @@ tibble(x = seq(0,6,by = 0.1)) %>%
              y = fit1)) +
   geom_line() +
   geom_line(aes(y = fit2), col = "red")
+
 ```
