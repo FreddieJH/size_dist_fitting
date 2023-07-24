@@ -40,6 +40,16 @@ keywords:
 abstract: |
   Abstract goes here
 
+format:
+  pdf:
+    toc: false
+    number-sections: true
+    colorlinks: true
+  html:
+    toc: true
+    html-math-method: katex
+  
+
 key-points:
   - keypoint 1
   - keypoint 2

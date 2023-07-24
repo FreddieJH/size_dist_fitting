@@ -57,15 +57,46 @@ div.csl-indent {
 <link href="manuscript_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="manuscript_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
 
-  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css">
 
 </head>
 
-<body class="fullcontent">
+<body>
 
 <div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
-
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#sec-background" id="toc-sec-background" class="nav-link active" data-scroll-target="#sec-background"><span class="header-section-number">1</span> Background</a></li>
+  <li><a href="#sec-results-discussion" id="toc-sec-results-discussion" class="nav-link" data-scroll-target="#sec-results-discussion"><span class="header-section-number">2</span> Results &amp; discussion</a></li>
+  <li><a href="#sec-methods" id="toc-sec-methods" class="nav-link" data-scroll-target="#sec-methods"><span class="header-section-number">3</span> Methods</a>
+  <ul class="collapse">
+  <li><a href="#body-size-data-sources" id="toc-body-size-data-sources" class="nav-link" data-scroll-target="#body-size-data-sources"><span class="header-section-number">3.1</span> Body size data sources</a></li>
+  <li><a href="#data-filtering" id="toc-data-filtering" class="nav-link" data-scroll-target="#data-filtering"><span class="header-section-number">3.2</span> Data filtering</a></li>
+  <li><a href="#statistical-analysis" id="toc-statistical-analysis" class="nav-link" data-scroll-target="#statistical-analysis"><span class="header-section-number">3.3</span> Statistical analysis</a></li>
+  </ul></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion"><span class="header-section-number">4</span> Conclusion</a></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references"><span class="header-section-number">5</span> References</a></li>
+  </ul>
+<div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="manuscript.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li></ul></div></nav>
+</div>
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
@@ -127,7 +158,7 @@ div.csl-indent {
 </section>
 <section id="sec-results-discussion" class="level2" data-number="2">
 <h2 data-number="2" class="anchored" data-anchor-id="sec-results-discussion"><span class="header-section-number">2</span> Results &amp; discussion</h2>
-<p>We found that the variance parameter of the lognormal distribution was constant across the fitted mean parameter of the lognormal distribution (<a href="#fig-param-regression" class="quarto-xref">Figure&nbsp;1</a> A), further we found a consistent relationship between the standard deviation and the mean of the normal distribution fitted to observed body size (<a href="#fig-param-regression" class="quarto-xref">Figure&nbsp;1</a> B). This is to say the mean size of the species is sufficient to describe the overall body size distribution. For both data sources, continuous and binned, we found the patterns between the mean and variance parameters of the lognormal distribution held, with sdlog = 0.39 <span class="math inline">\(\pm\)</span> 0.007 (Reef Life Survey, binned data) and 0.3 <span class="math inline">\(\pm\)</span> 0.03 (Cryptobenthic fish, continuous). For normal distribution, we found a consistent relationship`</p>
+<p>We found that the variance parameter of the lognormal distribution was constant across the fitted mean parameter of the lognormal distribution (<a href="#fig-param-regression" class="quarto-xref">Figure&nbsp;1</a> A), further we found a consistent relationship between the standard deviation and the mean of the normal distribution fitted to observed body size (<a href="#fig-param-regression" class="quarto-xref">Figure&nbsp;1</a> B). This is to say the mean size of the species is sufficient to describe the overall body size distribution. For both data sources, continuous and binned, we found the patterns between the mean and variance parameters of the lognormal distribution held, with sdlog = 0.39 <span class="math inline">\pm</span> 0.007 (Reef Life Survey, binned data) and 0.3 <span class="math inline">\pm</span> 0.03 (Cryptobenthic fish, continuous). For normal distribution, we found a consistent relationship`</p>
 <div id="fig-param-regression" class="quarto-figure quarto-figure-center anchored">
 <figure class="figure">
 <p><img src="ms_figures/param_regression.png" class="img-fluid figure-img"></p>
@@ -158,22 +189,22 @@ div.csl-indent {
 <h3 data-number="3.3" class="anchored" data-anchor-id="statistical-analysis"><span class="header-section-number">3.3</span> Statistical analysis</h3>
 <p>All statistical analyses were performed using the statistical programming language R<span class="citation" data-cites="rcoreteam2022"><sup><a href="#ref-rcoreteam2022" role="doc-biblioref">7</a></sup></span>, and in combination with the statistical modelling language Stan<span class="citation" data-cites="standevelopmentteam2023"><sup><a href="#ref-standevelopmentteam2023" role="doc-biblioref">8</a></sup></span> for Bayesian analyses.</p>
 <p>Cryptobenthic fish body size data, on a continuous scale, were fitted to one of two probability distributions, lognormal and normal, firstly at the species level (one distribution per species), and then at the localised reef scale (one distribution per species per reef).</p>
-<p><span class="math display">\[
+<p><span class="math display">
 L_p \sim \mathcal{N}(\mu_p, \sigma_p)
-\]</span></p>
-<p><span class="math display">\[
+</span></p>
+<p><span class="math display">
 L_p \sim \mathcal{LN}(\nu_p, \tau_p)
-\]</span></p>
-<p>Where <span class="math inline">\(L_p\)</span> is the observed body length of population, <span class="math inline">\(p\)</span>. Population body length, <span class="math inline">\(L_p\)</span>, is assumed to come from either a normal, <span class="math inline">\(\mathcal{N}\)</span>, or lognormal distribution, <span class="math inline">\(\mathcal{LN}\)</span>. We have used <span class="math inline">\(\nu\)</span> and <span class="math inline">\(\tau\)</span> as the location and scale parameters of the lognormal distribution to avoid confusion with <span class="math inline">\(\mu\)</span> and <span class="math inline">\(\sigma\)</span>, of the normal distribution. Each population has its own location (<span class="math inline">\(\mu_p\)</span> and <span class="math inline">\(\nu_p\)</span>) and scale (<span class="math inline">\(\sigma_p\)</span> and <span class="math inline">\(\tau_p\)</span>) parameter for each of the two distributions, normal and lognormal, respectively.</p>
+</span></p>
+<p>Where <span class="math inline">L_p</span> is the observed body length of population, <span class="math inline">p</span>. Population body length, <span class="math inline">L_p</span>, is assumed to come from either a normal, <span class="math inline">\mathcal{N}</span>, or lognormal distribution, <span class="math inline">\mathcal{LN}</span>. We have used <span class="math inline">\nu</span> and <span class="math inline">\tau</span> as the location and scale parameters of the lognormal distribution to avoid confusion with <span class="math inline">\mu</span> and <span class="math inline">\sigma</span>, of the normal distribution. Each population has its own location (<span class="math inline">\mu_p</span> and <span class="math inline">\nu_p</span>) and scale (<span class="math inline">\sigma_p</span> and <span class="math inline">\tau_p</span>) parameter for each of the two distributions, normal and lognormal, respectively.</p>
 <p>Reef Life Survey body size data, in body size bins, were also fit using Stan, but using a method to account for the body size binning approach. The probability of being within each RLS body size bin (e.g.&nbsp;2.5cm) was calculated by integrating the probability density function of the distribution between the upper and lower bounds of the size bin (e.g.&nbsp;between 3.75 and 1.25cm for the 2.5cm size bin).</p>
-<p><span class="math display">\[
+<p><span class="math display">
 Pr(B_b,K_k) = \frac{\int_{B_{bl}}^{B_{bu}}\mathcal{N_{cdf}}(\mu_k, \sigma_k)}{C}
-\]</span></p>
-<p>Where <span class="math inline">\(C\)</span> is a normalising constant, defined by the probability of being less than 1.25cm, that accounts for the body sizes not recorded in the RLS method. <span class="math inline">\(N_{cdf}\)</span> refers to the cumulative density function of the normal distribution.</p>
-<p><span class="math display">\[
+</span></p>
+<p>Where <span class="math inline">C</span> is a normalising constant, defined by the probability of being less than 1.25cm, that accounts for the body sizes not recorded in the RLS method. <span class="math inline">N_{cdf}</span> refers to the cumulative density function of the normal distribution.</p>
+<p><span class="math display">
 C = \int_{0}^{1.25}\mathcal{N_{cdf}}(\mu_k, \sigma_k)
-\]</span></p>
-<p>This method was run for both the normal and lognormal distributions. To account for misclassification error in the binning of body size an additional parameter (<span class="math inline">\(\epsilon_p\)</span>) was added that adjusts the bin probability by a small amount, which also has the benefit of avoiding zero probability likelihood estimates.</p>
+</span></p>
+<p>This method was run for both the normal and lognormal distributions. To account for misclassification error in the binning of body size an additional parameter (<span class="math inline">\epsilon_p</span>) was added that adjusts the bin probability by a small amount, which also has the benefit of avoiding zero probability likelihood estimates.</p>
 <!--# loglikelihood calculations -->
 <p>The likelihood of the model was defined as the summation of the probability of the data given the model parameters. To compare the log-likelihood values between species, with differing number of body size data per species, we calculated the log-likelihood per datum. This allowed for comparison between species, and a calculation of a log-likelihood per datum ratio (LLDR) between normal and lognormal fits. The posterior distribution of the LLDR could then be used as a measure of the normal vs lognormal fit for each species.</p>
 </section>
