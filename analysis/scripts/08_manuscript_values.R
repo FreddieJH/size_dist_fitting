@@ -29,23 +29,28 @@ get_mean <- function(data_type, param, signif = 2) {
     signif(signif)
 }
 
-CBF_sdlog_mean <- get_mean("CBF", "mean_sdlog")
-CBF_sdlog_ci <- get_ci("CBF", "mean_sdlog")
-CBF_meanlog_mean <- get_mean("CBF", "mean_meanlog")
-CBF_meanlog_ci <- get_ci("CBF", "mean_meanlog")
-CBF_sigma_mean <- get_mean("CBF", "mean_sigma")
-CBF_sigma_ci <- get_ci("CBF", "mean_sigma")
-CBF_mu_mean <- get_mean("CBF", "mean_mu")
-CBF_mu_ci <- get_ci("CBF", "mean_mu")
-RLS_sdlog_mean <- get_mean("RLS", "mean_sdlog")
-RLS_sdlog_ci <- get_ci("RLS", "mean_sdlog")
-RLS_meanlog_mean <- get_mean("RLS", "mean_meanlog")
-RLS_meanlog_ci <- get_ci("RLS", "mean_meanlog")
-RLS_sigma_mean <- get_mean("RLS", "mean_sigma")
-RLS_sigma_ci <- get_ci("RLS", "mean_sigma")
-RLS_mu_mean <- get_mean("RLS", "mean_mu")
-RLS_mu_ci <- get_ci("RLS", "mean_mu")
+param_estimates <-
+tibble(
+  CBF_sdlog_mean = get_mean("CBF", "mean_sdlog"),
+  CBF_sdlog_ci = get_ci("CBF", "mean_sdlog"),
+  CBF_meanlog_mean = get_mean("CBF", "mean_meanlog"),
+  CBF_meanlog_ci = get_ci("CBF", "mean_meanlog"),
+  CBF_sigma_mean = get_mean("CBF", "mean_sigma"),
+  CBF_sigma_ci = get_ci("CBF", "mean_sigma"),
+  CBF_mu_mean = get_mean("CBF", "mean_mu"),
+  CBF_mu_ci = get_ci("CBF", "mean_mu"),
+  RLS_sdlog_mean = get_mean("RLS", "mean_sdlog"),
+  RLS_sdlog_ci = get_ci("RLS", "mean_sdlog"),
+  RLS_meanlog_mean = get_mean("RLS", "mean_meanlog"),
+  RLS_meanlog_ci = get_ci("RLS", "mean_meanlog"),
+  RLS_sigma_mean = get_mean("RLS", "mean_sigma"),
+  RLS_sigma_ci = get_ci("RLS", "mean_sigma"),
+  RLS_mu_mean = get_mean("RLS", "mean_mu"),
+  RLS_mu_ci = get_ci("RLS", "mean_mu"),
+)
 
+write_csv(x = param_estimates, 
+          file = "ms_data/param_estimates.csv")
 
 
 # Table with the count of norm vs lnorm for each spatial scales
@@ -91,7 +96,7 @@ for(min_count in c(5000, 1000, 500, 200)){
         mutate(norm_better = prop_norm_better > 0.5)
       
       xx <- 
-      norm_better_tbl %>% 
+        norm_better_tbl %>% 
         count(norm_better) %>% 
         pivot_wider(names_from = norm_better, 
                     values_from = n) %>% 

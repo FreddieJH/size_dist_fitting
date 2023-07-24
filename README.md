@@ -1,4 +1,3 @@
-## A Quarto Manuscript Template
+## Manuscript
 
-This is a template repo for generating a manuscript from Quarto that accompanies the tutorial at: [Quarto Manuscripts: RStudio](https://quarto.org/docs/manuscripts/authoring/rstudio.html)
-
+This manuscript can be found and run from the manuscript.qmd file. All figures are in the ms_figures folder, and the values used in manuscript are in the ms_data folder.
