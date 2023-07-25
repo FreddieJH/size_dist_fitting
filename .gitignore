@@ -17,3 +17,5 @@
 *.rds
 *.parquet
 analysis/output/
+
+other/

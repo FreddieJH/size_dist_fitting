@@ -63,7 +63,7 @@ execute:
 ---
 
 ```{r}
-library(dplyr)
+# library(dplyr)
 library(readr)
 
 # source("analysis/scripts/00_functions_packages.R")
@@ -79,9 +79,9 @@ library(readr)
 
 ## Background {#sec-background}
 
-Body size is a key trait in determining how organisms interact with their environment, this is particularly true for marine organisms, where body size is a strong predictor of trophic position [@jennings_weak_2001], growth rate, and predation mortality[@goatley_body_2016]. Giometto et al. [-@giometto_scaling_2013], using the spherical diameter of unicellular protists, identified that the mean body size of a species, was sufficient to describe the entire body size distribution. The authors conjectured that this may hold for multicellular organisms. Here, we test this conjecture using 15 millon+ inidividuals from 1064 fish species.
+Body size is a key trait in determining how organisms interact with their environment, this is particularly true for marine organisms, where body size is a strong predictor of trophic position [@jennings_weak_2001], growth rate, and predation mortality[@goatley_body_2016]. Giometto et al. [-@giometto_scaling_2013], using the spherical diameter of unicellular protists under experimental lab conditions, identified that the mean body size of a species, was sufficient to describe the entire body size distribution. The authors conjectured that this may hold for multicellular organisms. Here, we test this conjecture using 15 million+ individuals from 1064 fish species, from reef ecosystems globally.
 
-Body size is often assumed to be lognormally distributed due to the mult
+There is no consensus on what the body size distribution of natural fish population should be. Some evidence suggests log-normally distributed, whilst other normal. Here we test the likelihood of each of these distributions using two global scale body size distributions, spanning millimetre long cryptobenthic species, to metre long shark species. We use a combination of two data collection methods, an underwater survey method which involves body size estimation into pre-defined body size classes, and the second involving a destructive method allowing the continuous body size distribution to be calculated.
 
 ## Results & discussion {#sec-results-discussion}
 
@@ -89,8 +89,7 @@ Body size is often assumed to be lognormally distributed due to the mult
 pe <- read_csv(file = "ms_data/param_estimates.csv")
 ```
 
-
-We found that the variance parameter of the lognormal distribution was constant across the fitted mean parameter of the lognormal distribution (@fig-param-regression A), further we found a consistent relationship between the standard deviation and the mean of the normal distribution fitted to observed body size (@fig-param-regression B). This is to say the mean size of the species is sufficient to describe the overall body size distribution. For both data sources, continuous and binned, we found the patterns between the mean and variance parameters of the lognormal distribution held, with sdlog = `r pe$RLS_sdlog_mean` $\pm$ `r pe$RLS_sdlog_ci` (Reef Life Survey, binned data) and `r pe$CBF_sdlog_mean` $\pm$ `r pe$CBF_sdlog_ci` (Cryptobenthic fish, continuous). For normal distribution, we found a consistent relationship\`
+Our observations from XXX fish species support the conjecture [@giometto_scaling_2013] that a single body size metric (e.g. mean body size) is sufficient to describe the body size distribution of fish species. We show that the variance parameter of the lognormal distribution was constant across the fitted mean parameter of the lognormal distribution (@fig-param-regression A). That is to say, the shape of the lognormal distribution is consistent from the largest to smallest body sizes. Further, we found a consistent coefficient of variation (sigma/mu) across mean body sizes of the fitted normal distributions (@fig-param-regression B). The entire lognormal and normal body size distributions can therefore be constructed with only the mean body size of the species. For both data sources, continuous and binned, we found the patterns between the mean and variance parameters of the lognormal distribution held, with sdlog = `r pe$RLS_sdlog_mean` $\pm$ `r pe$RLS_sdlog_ci` (Reef Life Survey, binned data) and `r pe$CBF_sdlog_mean` $\pm$ `r pe$CBF_sdlog_ci` (Cryptobenthic fish, continuous). For normal distribution, we found a consistent relationship
 
 ![Mean size is sufficient to describe overall body size distribution.](ms_figures/param_regression.png){#fig-param-regression}
 
