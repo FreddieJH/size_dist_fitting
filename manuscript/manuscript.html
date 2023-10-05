@@ -11,7 +11,7 @@
 <meta name="author" content="Asta Audzijonyte">
 <meta name="keywords" content="Fish body size, Temperature size rule, Empirical size distribution, Body size distribution">
 
-<title>How is fish body size really distributed?</title>
+<title>Fish intraspecies body size distributions.</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -101,7 +101,7 @@ div.csl-indent {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">How is fish body size really distributed?</h1>
+<h1 class="title">Fish intraspecies body size distributions.</h1>
 </div>
 
 
@@ -154,21 +154,24 @@ div.csl-indent {
 <section id="sec-background" class="level2" data-number="1">
 <h2 data-number="1" class="anchored" data-anchor-id="sec-background"><span class="header-section-number">1</span> Background</h2>
 <p>Body size is a key trait in determining how organisms interact with their environment, this is particularly true for marine organisms, where body size is a strong predictor of trophic position<span class="citation" data-cites="jennings_weak_2001"><sup><a href="#ref-jennings_weak_2001" role="doc-biblioref">1</a></sup></span>, growth rate, and predation mortality<span class="citation" data-cites="goatley_body_2016"><sup><a href="#ref-goatley_body_2016" role="doc-biblioref">2</a></sup></span>. Giometto et al.<span class="citation" data-cites="giometto_scaling_2013"><sup><a href="#ref-giometto_scaling_2013" role="doc-biblioref">3</a></sup></span>, using the spherical diameter of unicellular protists under experimental lab conditions, identified that the mean body size of a species, was sufficient to describe the entire body size distribution. The authors conjectured that this may hold for multicellular organisms. Here, we test this conjecture using 15 million+ individuals from 1064 fish species, from reef ecosystems globally.</p>
-<p>There is no consensus on what the body size distribution of natural fish population should be. Some evidence suggests log-normally distributed, whilst other normal. Here we test the likelihood of each of these distributions using two global scale body size distributions, spanning millimetre long cryptobenthic species, to metre long shark species. We use a combination of two data collection methods, an underwater survey method which involves body size estimation into pre-defined body size classes, and the second involving a destructive method allowing the continuous body size distribution to be calculated.</p>
+<p>Estimations of unexpoited biomass are necessary for the stock-assessments, yet these are often based on expert advice, which may lead to subjective or biased estimates of exploitation levels<span class="citation" data-cites="mangel2013 froese2018"><sup><a href="#ref-mangel2013" role="doc-biblioref">4</a>,<a href="#ref-froese2018" role="doc-biblioref">5</a></sup></span>. Among fisheries scientists, there appears to consensus on the body size distribution of an unexploited fish population, partly due to the majority of body size data coming from fishery-dependant sources with size selective biases (e.g., fishing net mesh size). Many modelling approaches assume the abundance of unexploited fish populations to monotonically decline with body size (e.g., exponential distribution)<span class="citation" data-cites="hordyk2015a froese2018a"><sup><a href="#ref-hordyk2015a" role="doc-biblioref">6</a>,<a href="#ref-froese2018a" role="doc-biblioref">7</a></sup></span>, whilst others</p>
+<!--# Froese et al 2018 fig 1 is a good schematic showing that the unexploited biomass at the smaller size classes is unknown. In the paper they assume it to be monotonically decreasing with body size. -->
+<!--#  Across species body size distribution with a peak at a small body with a long right tail [@clauset2008]. -->
+<p>Here we test the likelihood of each of these distributions using two global scale body size distributions, spanning millimetre long cryptobenthic species, to metre long shark species. We use a combination of two data collection methods, an underwater survey method which involves body size estimation into pre-defined body size classes, and the second involving a destructive method allowing the continuous body size distribution to be calculated.</p>
 </section>
 <section id="sec-results-discussion" class="level2" data-number="2">
 <h2 data-number="2" class="anchored" data-anchor-id="sec-results-discussion"><span class="header-section-number">2</span> Results &amp; discussion</h2>
-<p>Our observations from XXX fish species support the conjecture<span class="citation" data-cites="giometto_scaling_2013"><sup><a href="#ref-giometto_scaling_2013" role="doc-biblioref">3</a></sup></span> that a single body size metric (e.g.&nbsp;mean body size) is sufficient to describe the body size distribution of fish species. We show that the variance parameter of the lognormal distribution was constant across the fitted mean parameter of the lognormal distribution (<a href="#fig-param-regression" class="quarto-xref">Figure&nbsp;1</a> A). That is to say, the shape of the lognormal distribution is consistent from the largest to smallest body sizes. Further, we found a consistent coefficient of variation (sigma/mu) across mean body sizes of the fitted normal distributions (<a href="#fig-param-regression" class="quarto-xref">Figure&nbsp;1</a> B). The entire lognormal and normal body size distributions can therefore be constructed with only the mean body size of the species. For both data sources, continuous and binned, we found the patterns between the mean and variance parameters of the lognormal distribution held, with sdlog = 0.39 <span class="math inline">\pm</span> 0.007 (Reef Life Survey, binned data) and 0.3 <span class="math inline">\pm</span> 0.03 (Cryptobenthic fish, continuous). For normal distribution, we found a consistent relationship</p>
+<p>Our observations from 607 unique fish species support the conjecture<span class="citation" data-cites="giometto_scaling_2013"><sup><a href="#ref-giometto_scaling_2013" role="doc-biblioref">3</a></sup></span> that a single body size metric (e.g.&nbsp;mean body size) is sufficient to appoximate the body size distribution of fish species. We show that for the coefficient of variation of both the normal and lognormal distributions, 95% of estimates fell within the range of 0.16 to 1.57, with a median coefficient of variation of 0.45 (<a href="#fig-param-regression" class="quarto-xref">Figure&nbsp;1</a>). Only one of the 139 cryptobenthic population body size distrbutions (continuous data) was better described by a normal distribution than a lognormal distribution (triangles in <a href="#fig-param-regression" class="quarto-xref">Figure&nbsp;1</a> A), this population had also the smallest mean size of any population. On the other hand, 36% (n = 1100 populations) of the 3089 binned body size distributions from Reef Life Survey populations were better described by a lognormal distribution, over a normal distribution (64%, n = 2989 populations). The coefficient of variation of body size distributions that were better described by lognormal distributions were higher (median cov = 0.61) than the those better described by a normal distribution ((median cov = 0.32, <a href="#fig-param-regression" class="quarto-xref">Figure&nbsp;1</a> B).</p>
 <div id="fig-param-regression" class="quarto-figure quarto-figure-center anchored">
 <figure class="figure">
-<p><img src="ms_figures/param_regression.png" class="img-fluid figure-img"></p>
+<p><img src="ms_figures/parameter_regression.png" class="img-fluid figure-img"></p>
 <figcaption class="figure-caption">Figure&nbsp;1: Mean size is sufficient to describe overall body size distribution.</figcaption>
 </figure>
 </div>
-<div class="quarto-figure quarto-figure-center">
+<div id="scaling-bodysize" class="quarto-figure quarto-figure-center anchored">
 <figure class="figure">
-<p><img src="ms_figures/scaled_bodysize.png" class="img-fluid figure-img"></p>
-<figcaption class="figure-caption">Some distributions are better described by Normal, some by lognormal. Blue is the lognormal fit, using the median lognormal parameters, and black is the normal fit with the median parameters.</figcaption>
+<p><img src="ms_figures/comparing_distributions.png" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Observed body size distributions</figcaption>
 </figure>
 </div>
 </section>
@@ -176,35 +179,36 @@ div.csl-indent {
 <h2 data-number="3" class="anchored" data-anchor-id="sec-methods"><span class="header-section-number">3</span> Methods</h2>
 <section id="body-size-data-sources" class="level3" data-number="3.1">
 <h3 data-number="3.1" class="anchored" data-anchor-id="body-size-data-sources"><span class="header-section-number">3.1</span> Body size data sources</h3>
-<p>Fish body size data were obtained through two sources: Reef Life Survey (RLS; 15M+ individuals, binned body size)<span class="citation" data-cites="edgar_systematic_2014"><sup><a href="#ref-edgar_systematic_2014" role="doc-biblioref">4</a></sup></span>, and Cryptobenthic reef fish (CBF; 8K+ individuals, continuous body size)<span class="citation" data-cites="brandl_demographic_2019"><sup><a href="#ref-brandl_demographic_2019" role="doc-biblioref">5</a></sup></span>.</p>
+<p>Fish body size data were obtained through two sources: 1) visual census data from Reef Life Survey (RLS; filtered to Australian populations only, 12M+ individuals, 497 species, binned body size estimates)<span class="citation" data-cites="edgar_systematic_2014"><sup><a href="#ref-edgar_systematic_2014" role="doc-biblioref">8</a></sup></span>, and 2) lethal sampling of Cryptobenthic reef fishes (CBF; global spatial coverage, 8K+ individuals, 127 species, continuous body size measurements to the nearest 0.1mm)<span class="citation" data-cites="brandl_demographic_2019"><sup><a href="#ref-brandl_demographic_2019" role="doc-biblioref">9</a></sup></span>.</p>
 <p>RLS surveys involve an underwater visual census method along 50m transect line, with a diver searching 5m either side of the transect line, the body size of the fish is estimated to the nearest body size bin (2.5, 5, 7.5, 10, 15, 20, 25, 30, …, 400cm).</p>
-<p>The second data source was from field collections using enclosed clove-oil stations at six reefs; Moorea, GoO, AG, Lizard Island, Panama, and Belize. Reef outcrops are selected, measured, and covered with a bell-shaped fine mesh and tarpaulin, before being sprayed with a clove-oil:ethanol solution (1:5). Fish are collected with tweezers and placed in ziplock bags. See Brandl et al.<span class="citation" data-cites="brandl_demographic_2019"><sup><a href="#ref-brandl_demographic_2019" role="doc-biblioref">5</a></sup></span> for full methods.</p>
+<p>The second data source was from field collections using enclosed clove-oil stations at six reefs; Moorea, GoO, AG, Lizard Island, Panama, and Belize. Reef outcrops are selected, measured, and covered with a bell-shaped fine mesh and tarpaulin, before being sprayed with a clove-oil:ethanol solution (1:5). Fish are collected with tweezers and placed in ziplock bags. See Brandl et al.<span class="citation" data-cites="brandl_demographic_2019"><sup><a href="#ref-brandl_demographic_2019" role="doc-biblioref">9</a></sup></span> for full methods.</p>
 </section>
 <section id="data-filtering" class="level3" data-number="3.2">
 <h3 data-number="3.2" class="anchored" data-anchor-id="data-filtering"><span class="header-section-number">3.2</span> Data filtering</h3>
-<p>For binned body size data, we excluded body size distributions that spanned fewer than four body size bins, we did not apply an exclusion for the continuous data based on the range of body sizes. For binned data we set a minimum count of 10 individuals per population to fit a distribution, for the binned data, this minimum count was 100. We performed a sensitivity analysis to these filtering parameters to show that across a range of filters for minimum count, the overall result did not substantially change.</p>
-<p>Data were grouped at varying spatial scales to determine the appropriate spatial scale at which these distributions best fit. For the cryptobenthic fish data, populations were defined at two spatial scales; 1) species-level, and 2) location*species level. At the species level, all individuals belonging to the same species, irrespective of location were grouped in the same distribution. For RLS data, we defined three spatial scales: 1) species-level, 2) marine ecoregion<span class="citation" data-cites="spalding_marine_2007"><sup><a href="#ref-spalding_marine_2007" role="doc-biblioref">6</a></sup></span> level, and 3) 1x1 degree lat-lon gridcell level.</p>
+<p>For binned body size data (visual census, Reef Life Survey), we excluded body size distributions that spanned fewer than four body size bins (e.g.&nbsp;2.5cm, 5cm, and 7.5cm size bins only), we did not apply an exclusion for the continuous data (lethal sampling, crytobenthic fishes) based on the range of body sizes. For the continuous data we set a minimum count of 10 individuals per population to fit a distribution, for the binned data, this minimum count was 100. We performed a sensitivity analysis to these filtering parameters to show that across a range of filters for minimum count, the overall result did not substantially change.</p>
+<p>A population was defined as a species within a location. For the Reef Life Survey dataset, to avoid biases accociated with clumped the we determined a ‘location’ to be all surveys within a 1°x1° latitude-longitude gridcell (n = 3089 populations, ). For the cryptobenthic fish data, a location was defined at the reef outcrop that was netted (n = 139 populations).</p>
+<p>XX body size distributions were excluded from the final analysis due to model-fitting issues as a result of either a large proporation of individuals in a single body size bin (n = XX populations) or due to bimodal body size distributions (n = XX populations). See Supplementary Material XX for these distributions.</p>
 </section>
 <section id="statistical-analysis" class="level3" data-number="3.3">
 <h3 data-number="3.3" class="anchored" data-anchor-id="statistical-analysis"><span class="header-section-number">3.3</span> Statistical analysis</h3>
-<p>All statistical analyses were performed using the statistical programming language R<span class="citation" data-cites="rcoreteam2022"><sup><a href="#ref-rcoreteam2022" role="doc-biblioref">7</a></sup></span>, and in combination with the statistical modelling language Stan<span class="citation" data-cites="standevelopmentteam2023"><sup><a href="#ref-standevelopmentteam2023" role="doc-biblioref">8</a></sup></span> for Bayesian analyses.</p>
-<p>Cryptobenthic fish body size data, on a continuous scale, were fitted to one of two probability distributions, lognormal and normal, firstly at the species level (one distribution per species), and then at the localised reef scale (one distribution per species per reef).</p>
+<p>All statistical analyses were performed using the statistical programming language R<span class="citation" data-cites="rcoreteam2022"><sup><a href="#ref-rcoreteam2022" role="doc-biblioref">10</a></sup></span>, and in combination with the bayesian statistical modelling language Stan<span class="citation" data-cites="standevelopmentteam2023"><sup><a href="#ref-standevelopmentteam2023" role="doc-biblioref">11</a></sup></span>.</p>
+<p>A lognormal and normal distribution were fitted to each of the cryptobenthic population’s continous body size distributions.</p>
 <p><span class="math display">
-L_p \sim \mathcal{N}(\mu_p, \sigma_p)
+L_i \sim \mathcal{N}(\mu_i, \sigma_i)
 </span></p>
 <p><span class="math display">
-L_p \sim \mathcal{LN}(\nu_p, \tau_p)
+L_i \sim \mathcal{LN}(\nu_i, \tau_i)
 </span></p>
-<p>Where <span class="math inline">L_p</span> is the observed body length of population, <span class="math inline">p</span>. Population body length, <span class="math inline">L_p</span>, is assumed to come from either a normal, <span class="math inline">\mathcal{N}</span>, or lognormal distribution, <span class="math inline">\mathcal{LN}</span>. We have used <span class="math inline">\nu</span> and <span class="math inline">\tau</span> as the location and scale parameters of the lognormal distribution to avoid confusion with <span class="math inline">\mu</span> and <span class="math inline">\sigma</span>, of the normal distribution. Each population has its own location (<span class="math inline">\mu_p</span> and <span class="math inline">\nu_p</span>) and scale (<span class="math inline">\sigma_p</span> and <span class="math inline">\tau_p</span>) parameter for each of the two distributions, normal and lognormal, respectively.</p>
-<p>Reef Life Survey body size data, in body size bins, were also fit using Stan, but using a method to account for the body size binning approach. The probability of being within each RLS body size bin (e.g.&nbsp;2.5cm) was calculated by integrating the probability density function of the distribution between the upper and lower bounds of the size bin (e.g.&nbsp;between 3.75 and 1.25cm for the 2.5cm size bin).</p>
+<p>Where <span class="math inline">L_i</span> is the observed body length of population, <span class="math inline">i</span>. Population body length, <span class="math inline">L_i</span>, is fitted to either a normal, <span class="math inline">\mathcal{N}</span>, or lognormal distribution, <span class="math inline">\mathcal{LN}</span>. We have used <span class="math inline">\nu</span> and <span class="math inline">\tau</span> as the location and scale parameters of the lognormal distribution to avoid confusion with <span class="math inline">\mu</span> and <span class="math inline">\sigma</span>, of the normal distribution. Each population has its own location (<span class="math inline">\mu_i</span> and <span class="math inline">\nu_i</span>) and scale (<span class="math inline">\sigma_i</span> and <span class="math inline">\tau_i</span>) parameter for each of the two distributions, normal and lognormal, respectively.</p>
+<p>Reef Life Survey body size data, in body size bins, were also fit using Stan, but using a method to account for the body size binning approach. The probability of being within each RLS body size bin (e.g.&nbsp;5cm) was calculated by integrating the probability density function of the distribution between the upper (<span class="math inline">b_u</span>) and lower (<span class="math inline">b_l</span>) bounds of the size bin, <span class="math inline">b</span> (e.g.&nbsp;between 3.75cm and 6.25cm for the 5cm size bin). For example, the probability of an individual within the population <span class="math inline">i</span>, being in size bin <span class="math inline">b</span>, given body size is normally distributed is:</p>
 <p><span class="math display">
-Pr(B_b,K_k) = \frac{\int_{B_{bl}}^{B_{bu}}\mathcal{N_{cdf}}(\mu_k, \sigma_k)}{C}
+Pr(b,i) = \frac{\int_{b_{l}}^{b_{u}}\mathcal{N_{cdf}}(\mu_i, \sigma_i)}{C}
 </span></p>
 <p>Where <span class="math inline">C</span> is a normalising constant, defined by the probability of being less than 1.25cm, that accounts for the body sizes not recorded in the RLS method. <span class="math inline">N_{cdf}</span> refers to the cumulative density function of the normal distribution.</p>
 <p><span class="math display">
-C = \int_{0}^{1.25}\mathcal{N_{cdf}}(\mu_k, \sigma_k)
+C = \int_{0}^{1.25}\mathcal{N_{cdf}}(\mu_i, \sigma_i)
 </span></p>
-<p>This method was run for both the normal and lognormal distributions. To account for misclassification error in the binning of body size an additional parameter (<span class="math inline">\epsilon_p</span>) was added that adjusts the bin probability by a small amount, which also has the benefit of avoiding zero probability likelihood estimates.</p>
+<p>This method was run for both the normal and lognormal distributions. Reasonable starting values were used in the MCMC process of fitting normal distributions to avoid numerical computational limits (i.e., floating point errors) of the integration of unreasonable distribution parameters.</p>
 <!--# loglikelihood calculations -->
 <p>The likelihood of the model was defined as the summation of the probability of the data given the model parameters. To compare the log-likelihood values between species, with differing number of body size data per species, we calculated the log-likelihood per datum. This allowed for comparison between species, and a calculation of a log-likelihood per datum ratio (LLDR) between normal and lognormal fits. The posterior distribution of the LLDR could then be used as a measure of the normal vs lognormal fit for each species.</p>
 </section>
@@ -224,20 +228,29 @@ C = \int_{0}^{1.25}\mathcal{N_{cdf}}(\mu_k, \sigma_k)
 <div id="ref-giometto_scaling_2013" class="csl-entry" role="listitem">
 <div class="csl-left-margin">3. </div><div class="csl-right-inline">Giometto, A., Altermatt, F., Carrara, F., Maritan, A. &amp; Rinaldo, A. <a href="https://doi.org/10.1073/pnas.1301552110">Scaling body size fluctuations</a>. <em>Proceedings of the National Academy of Sciences</em> <strong>110</strong>, 4646–4650 (2013).</div>
 </div>
+<div id="ref-mangel2013" class="csl-entry" role="listitem">
+<div class="csl-left-margin">4. </div><div class="csl-right-inline">Mangel, M. <em>et al.</em> <a href="https://doi.org/10.1139/cjfas-2012-0372">A perspective on steepness, reference points, and stock assessment</a>. <em>Canadian Journal of Fisheries and Aquatic Sciences</em> <strong>70</strong>, 930–940 (2013).</div>
+</div>
+<div id="ref-froese2018" class="csl-entry" role="listitem">
+<div class="csl-left-margin">5. </div><div class="csl-right-inline">Froese, R. <em>et al.</em> <a href="https://doi.org/10.1093/icesjms/fsy078">A new approach for estimating stock status from length frequency data</a>. <em>ICES Journal of Marine Science</em> <strong>75</strong>, 2004–2015 (2018).</div>
+</div>
+<div id="ref-hordyk2015a" class="csl-entry" role="listitem">
+<div class="csl-left-margin">6. </div><div class="csl-right-inline">Hordyk, A., Ono, K., Valencia, S., Loneragan, N. &amp; Prince, J. <a href="https://doi.org/10.1093/icesjms/fsu004">A novel length-based empirical estimation method of spawning potential ratio (SPR), and tests of its performance, for small-scale, data-poor fisheries</a>. <em>ICES Journal of Marine Science</em> <strong>72</strong>, 217–231 (2015).</div>
+</div>
+<div id="ref-froese2018a" class="csl-entry" role="listitem">
+<div class="csl-left-margin">7. </div><div class="csl-right-inline">Froese, R. <em>et al.</em> <a href="https://doi.org/10.1093/icesjms/fsy078">A new approach for estimating stock status from length frequency data</a>. <em>ICES Journal of Marine Science</em> <strong>75</strong>, 2004–2015 (2018).</div>
+</div>
 <div id="ref-edgar_systematic_2014" class="csl-entry" role="listitem">
-<div class="csl-left-margin">4. </div><div class="csl-right-inline">Edgar, G. J. &amp; Stuart-Smith, R. D. <a href="https://doi.org/10.1038/sdata.2014.7">Systematic global assessment of reef fish communities by the <span>Reef</span> <span>Life</span> <span>Survey</span> program</a>. <em>Scientific Data</em> <strong>1</strong>, 140007 (2014).</div>
+<div class="csl-left-margin">8. </div><div class="csl-right-inline">Edgar, G. J. &amp; Stuart-Smith, R. D. <a href="https://doi.org/10.1038/sdata.2014.7">Systematic global assessment of reef fish communities by the <span>Reef</span> <span>Life</span> <span>Survey</span> program</a>. <em>Scientific Data</em> <strong>1</strong>, 140007 (2014).</div>
 </div>
 <div id="ref-brandl_demographic_2019" class="csl-entry" role="listitem">
-<div class="csl-left-margin">5. </div><div class="csl-right-inline">Brandl, S. J. <em>et al.</em> <a href="https://doi.org/10.1126/science.aav3384">Demographic dynamics of the smallest marine vertebrates fuel coral reef ecosystem functioning</a>. <em>Science</em> <strong>364</strong>, 1189–1192 (2019).</div>
-</div>
-<div id="ref-spalding_marine_2007" class="csl-entry" role="listitem">
-<div class="csl-left-margin">6. </div><div class="csl-right-inline">Spalding, M. D. <em>et al.</em> <a href="https://doi.org/10.1641/B570707">Marine <span>Ecoregions</span> of the <span>World</span>: <span>A</span> <span>Bioregionalization</span> of <span>Coastal</span> and <span>Shelf</span> <span>Areas</span></a>. <em>BioScience</em> <strong>57</strong>, 573–583 (2007).</div>
+<div class="csl-left-margin">9. </div><div class="csl-right-inline">Brandl, S. J. <em>et al.</em> <a href="https://doi.org/10.1126/science.aav3384">Demographic dynamics of the smallest marine vertebrates fuel coral reef ecosystem functioning</a>. <em>Science</em> <strong>364</strong>, 1189–1192 (2019).</div>
 </div>
 <div id="ref-rcoreteam2022" class="csl-entry" role="listitem">
-<div class="csl-left-margin">7. </div><div class="csl-right-inline">R Core Team. <em><a href="https://www.R-project.org/">R: A language and environment for statistical computing</a></em>. (R Foundation for Statistical Computing, 2022).</div>
+<div class="csl-left-margin">10. </div><div class="csl-right-inline">R Core Team. <em><a href="https://www.R-project.org/">R: A language and environment for statistical computing</a></em>. (R Foundation for Statistical Computing, 2022).</div>
 </div>
 <div id="ref-standevelopmentteam2023" class="csl-entry" role="listitem">
-<div class="csl-left-margin">8. </div><div class="csl-right-inline">Stan Development Team. <em><a href="https://mc-stan.org">Stan modeling language users guide and reference manual, v2.21.0</a></em>. (2023).</div>
+<div class="csl-left-margin">11. </div><div class="csl-right-inline">Stan Development Team. <em><a href="https://mc-stan.org">Stan modeling language users guide and reference manual, v2.21.0</a></em>. (2023).</div>
 </div>
 </div>
 </section>
