@@ -3,11 +3,12 @@ data {
   real<lower = 0.0>   b_upr[B];
   real<lower = 0.0>   b_lwr[B];
   int<lower=1>         n[B];    // number of fish in the bin
+  real<lower = 0.0> 
 }
 
 parameters {
-  real             meanlog;    // population meanlog
-  real<lower=0.0>  sdlog;     // population sdlog
+  real             mu;    // population meanlog
+  real<lower=0.0>  sigma;     // population sdlog
 }
 
 model {
@@ -17,12 +18,12 @@ model {
   real p;     // probability of being in bin
   
   // RLS census data assumed nothing below 1.25cm (bottom of 2.5cm bin)
-  nconst = 1.0 - lognormal_cdf(1.25, meanlog, sdlog); 
+  nconst = 1.0 - normal_cdf(1.25, mu, sigma); 
   
   // for each size bin i
   for (i in 1:B) { 
-    p_upr = lognormal_cdf(b_upr[i], meanlog, sdlog);
-    p_lwr = lognormal_cdf(b_lwr[i], meanlog, sdlog);
+    p_upr = normal_cdf(b_upr[i], mu, sigma);
+    p_lwr = normal_cdf(b_lwr[i], mu, sigma);
     p = (p_upr - p_lwr)/ nconst;
     target += n[i]*log(p); 
   }

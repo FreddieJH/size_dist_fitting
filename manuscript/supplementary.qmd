@@ -1,0 +1,143 @@
+---
+title: Supplementary material for the paper - Fish intraspecies body size distributions.
+author:
+  - name: Freddie J. Heather
+    orcid: 0000-0002-1650-2617
+    corresponding: true
+    email: Freddie.Heather@utas.edu.au
+    roles:
+      - Conception
+      - Analysis
+      - Visualisation
+      - Writing
+    affiliations:
+      - Institute for Marine and Antarctic Studies, University of Tasmania
+  - name: Shane A. Richards
+    orcid: 0000-0002-9638-5827
+    corresponding: false
+    email: Shane.Richards@utas.edu.au
+    roles:
+      - Conception
+      - Statistics
+      - Writing
+    affiliations:
+      - School of Natural Sciences, University of Tasmania
+  - name: Simon Brandl
+    orcid: 
+    corresponding: false
+    email: 
+    roles:
+      - Data collection
+    affiliations:
+      - Marine Science Institute, University of Texas at Austin
+  - name: Asta Audzijonyte
+    orcid: 0000-0002-9919-9376
+    corresponding: false
+    email: Asta.Audzijonyte@utas.edu.au
+    roles:
+      - Conception
+      - Analysis
+      - Writing
+    affiliations:
+      - Institute for Marine and Antarctic Studies, University of Tasmania
+keywords:
+  - Fish body size
+  - Temperature size rule
+  - Empirical size distribution
+  - Body size distribution
+abstract: |
+  Abstract goes here
+
+format:
+  pdf:
+    toc: false
+    number-sections: false
+    colorlinks: true
+  html:
+    toc: true
+    number-sections: false
+    html-math-method: katex
+  docx:
+    toc: false
+    number-sections: false
+
+key-points:
+  - keypoint 1
+  - keypoint 2
+csl: nature.csl
+bibliography: references.bib
+execute:
+  echo: false
+  warning: false
+  error: false
+---
+
+# S1 - Calculating the coefficient of variation of a lognormal distribution
+
+If body length, $L$, is log-normally distributed as:
+
+$$
+L \sim \mathcal{LN}(\nu, \tau)
+$$
+
+Then the variance of body length is:
+
+$$
+Var(L) = e^{\tau^2 -1}\cdot e^{2\nu + \tau^2}
+$$
+
+and the mean size is:
+
+$$
+Mean(L) = e^{\nu + \frac{\tau^2}{2}}
+$$
+
+then coefficient of variation is:
+
+$$
+\frac{\sqrt{Var(L)}}{Mean(L)} = \frac{\sqrt(e^{\tau^2 -1}\cdot e^{2\nu + \tau^2})}{e^{\nu + \frac{\tau^2}{2}}} = \sqrt(e^{\tau^2}-1)
+$$
+
+# S2 - 
+
+Estimating the variation in the observed abundance within a size bin as a function of the estimated probability based on either the normal or lognormal distribution.
+
+
+# S3 - Liklihood of distribution as a function of body size
+
+```{r}
+
+
+```
+
+# S4 - Populations with a very high CV
+
+```{r}
+
+high_cov <- 
+  plot_data %>% 
+  filter(cov > 2) %>% 
+  pull(population)
+
+rls_obs_data %>% 
+  filter(population %in% pp) %>% 
+  ggplot() +
+  aes(x = size_class, 
+      y = p) +
+  geom_point() + 
+  geom_path() +
+  facet_wrap(~population, scales = "free")
+
+pp <- 
+  plot_data %>% 
+  filter(mu < 1.25 & data == "rls") %>% 
+  pull(population) %>% 
+  unique()
+
+```
+# S5 - Nonconvergent models
+
+## Nonconvergent lognormal
+
+
+
