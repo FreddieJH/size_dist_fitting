@@ -42,7 +42,8 @@ select <- dplyr::select
 # rerun part of the analysis?
 rerun_msfigures  <- TRUE
 rerun_models     <- FALSE # many hours
-rerun_visfigures <- TRUE
+rerun_visfigures <- FALSE
+rerun_tables <- TRUE
 
 ```
 
@@ -136,25 +137,10 @@ clean_data <- function(count_table,
 
 ```
 
-## Unfished species
 
-```{r}
+# Data import/wrangling
 
-# https://www.fish.gov.au/reports/species
-frdc <- read_csv("input/data_cleaning/frdc_fished.csv", 
-                 show_col_types = FALSE) 
-targeted <- 
-  read_csv("input/data_cleaning/fishing_intensity.csv", 
-                 show_col_types = FALSE) %>% 
-  filter(fishing_intensity > 1)
-
-```
-
-
-
-## Data import
-
-### Import binned
+## Import RLS
 
 ```{r}
 
@@ -165,16 +151,40 @@ obsdata_filename <- function(datasource, population_level){
          get(paste0(datasource, "_min_count")), ".csv")
 }
 
+
+# Info on fishing pressure -----------------------------------------------------
+
+# https://www.fish.gov.au/reports/species
+frdc <- read_csv("input/data_cleaning/frdc_fished.csv", 
+                 show_col_types = FALSE) 
+targeted <- 
+  read_csv("input/data_cleaning/fishing_intensity.csv", 
+           show_col_types = FALSE) %>% 
+  filter(fishing_intensity > 1)
+
+# ------------------------------------------------------------------------------
+
 for(pop in c("species", "ecoregion", "gridcell")){
   
-  read_parquet("input/data/raw/data_obs_cleaned.parquet") %>% 
+  raw <- 
+    read_parquet("input/data/raw/data_obs_cleaned.parquet") %>% 
     left_join(read_parquet("input/data/raw/survey_list_m1_aus.parquet"), 
               by = join_by(survey_id)) %>% 
     rename(species = species_name) %>% 
     mutate(lat_grid = round(latitude), 
            lon_grid = round(longitude), 
            gridcell = paste(lat_grid, lon_grid, sep = "_"), 
-           population = paste(species, !!sym(pop), sep = "__")) %>% 
+           population = paste(species, !!sym(pop), sep = "__")) 
+  
+  
+  n_transects <- 
+    raw %>% 
+    select(population, survey_date) %>% 
+    distinct() %>% 
+    count(population, name = "n_transects")
+  
+  
+  raw %>% 
     count(population, species, size_class, wt = n) %>% 
     add_count(population, name = "n_sizebins") %>% 
     add_count(population, wt = n, name = "population_n") %>%
@@ -188,6 +198,7 @@ for(pop in c("species", "ecoregion", "gridcell")){
                                 (genus %!in% frdc$genus)&
                                 (species %!in% targeted$species) ~ FALSE,
                               TRUE ~ TRUE)) %>%
+    left_join(n_transects, by = join_by(population)) %>% 
     assign(paste0("obsdata_rls_", pop), value = ., envir = .GlobalEnv)
   
   write_csv(get(paste0("obsdata_rls_", pop)), obsdata_filename("rls", pop))
@@ -202,53 +213,45 @@ for(pop in c("species", "ecoregion", "gridcell")){
   rm(pop)
 }
 
-rls_fished_species <- 
-  obsdata_rls_species %>% 
-  mutate(genus = str_extract(species, ".*(?=\\s)")) %>% 
-  filter((species %in% frdc$species)| 
-           (genus %in% frdc$genus)|
-           (species %in% targeted$species)) %>% 
-  pull(species) %>% 
-  unique()
-
 ```
 
-### Import continuous
+## Import CBF
 
 ```{r}
 
 for(pop in c("species", "location")){
   
-  # if(!file.exists(obsdata_filename("cbf", pop))){
-  
-  read_csv("other/analysis/input/data/crypto.size.data.csv", 
-           show_col_types = FALSE) %>%
-    mutate(sl_cm = SL/10,
-           tl_cm = TL/10) %>% # now in cm, not mm
-    select(location = Location,
-           species = sciname,
-           # sl,
-           tl_cm,
-           # wt = W
-    ) %>%
-    mutate(size_class = tl_cm %>% round(1), 
-                   size_min = size_class - 0.05, 
-                   size_max = size_class + 0.05) %>% 
-            count(location, species, size_class, size_min, size_max) %>% 
-    filter(str_detect(species, "^[A-Z]{1}[a-z]+\\s[a-z]+$")) %>% 
-    mutate(genus = str_extract(species, ".*(?=\\s)")) %>% 
-    filter(species %!in% frdc$species, 
-           genus %!in% frdc$genus, 
-           species %!in% targeted$species) %>% 
-    mutate(population = paste(species, !!sym(pop), sep = "__")) %>% 
-    add_count(population, wt = n,  name = "population_n") %>%
-    filter(population_n >= cbf_min_count) %>%
-    arrange(desc(population_n)) %>% 
-    assign(paste0("obsdata_cbf_", pop), value = ., envir = .GlobalEnv)
-  
-  write_csv(get(paste0("obsdata_cbf_", pop)), obsdata_filename("cbf", pop))
-  
-  # } 
+  if(!file.exists(obsdata_filename("cbf", pop))){
+    
+    read_csv("input/data/raw/cbf_raw.csv", 
+             show_col_types = FALSE) %>%
+      mutate(sl_cm = SL/10,
+             tl_cm = TL/10) %>% # now in cm, not mm
+      select(location = Location,
+             species = sciname,
+             tl_cm
+      ) %>%
+      mutate(size_class = tl_cm %>% round(1), 
+             size_min = size_class - 0.05, 
+             size_max = size_class + 0.05) %>% 
+      filter(str_detect(species, "^[A-Z]{1}[a-z]+\\s[a-z]+$")) %>% 
+      mutate(genus = str_extract(species, ".*(?=\\s)")) %>% 
+      mutate(fished = (species %in% frdc$species)| 
+               (genus %in% frdc$genus)|
+               (species %in% targeted$species)) %>% 
+      mutate(population = paste(species, !!sym(pop), sep = "__")) %>% 
+      count(population, species, size_class, size_min, size_max) %>% 
+      add_count(population, wt = n,  name = "population_n") %>%
+      filter(population_n >= cbf_min_count) %>%
+      arrange(desc(population_n)) %>% 
+      assign(paste0("obsdata_cbf_", pop), value = ., envir = .GlobalEnv)
+    
+    write_csv(get(paste0("obsdata_cbf_", pop)), obsdata_filename("cbf", pop))
+    
+  } else {
+    read_csv(obsdata_filename("cbf", pop), show_col_types = FALSE) %>% 
+      assign(paste0("obsdata_cbf_", pop), value = ., envir = .GlobalEnv)
+  }
   
   assign(
     paste0("cbf_npops_", pop),
@@ -284,102 +287,83 @@ for(pop in c("species", "ecoregion", "gridcell")){
         mutate(data = "cbf")) %>% 
     mutate(species = str_extract(population, ".*(?=__)")) %>% 
     assign(x = paste0("meansizes_", pop), value = ., envir = .GlobalEnv)
+  
+  rm(pop, cbf_pop)
 }
 
 ```
 
-
-## Data visualisation
+## Fished species
 
 ```{r}
 
-for(pop in c("species", "ecoregion", "gridcell")){
-  
-  rls_obsdata_current <- 
-    get(paste0("obsdata_rls_", pop)) %>% 
-    arrange(population)
-  
-  dists <- rls_obsdata_current$population %>% unique()
-  plots_per_page <- 100
-  
-  for(page in 1:ceiling(length(dists)/plots_per_page)){
+fished_species <- 
+  tibble(species = c(obsdata_cbf_species$species, obsdata_rls_species$species)) %>% 
+  mutate(genus = str_extract(species, ".*(?=\\s)")) %>% 
+  filter((species %in% frdc$species)| 
+           (genus %in% frdc$genus)|
+           (species %in% targeted$species)) %>% 
+  pull(species) %>% 
+  unique()
+
+rm(frdc, targeted)
+
+```
+
+
+
+# Data visualisation
+
+## Empirical distributions
+
+```{r}
+
+for(src in c("rls", "cbf")){
+  for(pop in c("species", "ecoregion", "gridcell")){
     
-    first_dist <- ((page-1)*plots_per_page)+1
-    second_dist <- first_dist + (plots_per_page-1)
+    if(src == "cbf" & pop == "ecoregion") next
+    pop <- ifelse(src == "cbf" & pop == "gridcell", "location", pop)
     
-    if(second_dist > length(dists)) {
-      second_dist <- length(dists)
-    }
+    current_obsdata <- 
+      get(paste0("obsdata_", src, "_", pop)) %>% 
+      arrange(population)
     
-    if(!file.exists(paste0("output/ssd/",  pop, "/", first_dist, "_", second_dist, ".png"))){
+    dists <- current_obsdata$population %>% unique()
+    plots_per_page <- ifelse(src == "cbf", 50, 100)
+    
+    for(page in 1:ceiling(length(dists)/plots_per_page)){
       
-      p <- 
-        rls_obsdata_current %>% 
-        filter(population %in% dists[first_dist:second_dist]) %>% 
-        ggplot() +
-        aes(
-          x = size_class, 
-          y = n
-        ) +
-        geom_point() +
-        geom_path() +
-        facet_wrap(~population, scales = "free") +
-        scale_y_continuous(labels = scales::label_number(scale_cut = cut_short_scale()))
+      first_dist <- ((page-1)*plots_per_page)+1
+      second_dist <- first_dist + (plots_per_page-1)
       
-      ggsave(paste0("output/ssd/", pop, "/", first_dist, "_", second_dist, ".png"), 
-             p, 
-             height = 15, 
-             width = 25)
-      rm(p)
+      if(second_dist > length(dists)) {
+        second_dist <- length(dists)
+      }
+      
+      if(!file.exists(paste0("output/empirical_dists/", src, "/",  pop, "/", first_dist, "_", second_dist, ".png")) | rerun_visfigures){
+        
+        p <- 
+          current_obsdata %>% 
+          filter(population %in% dists[first_dist:second_dist]) %>% 
+          ggplot() +
+          aes(
+            x = size_class, 
+            y = n
+          ) +
+          geom_point() +
+          geom_path() +
+          facet_wrap(~population, scales = "free") +
+          scale_y_continuous(labels = scales::label_number(scale_cut = cut_short_scale()))
+        
+        ggsave(paste0("output/empirical_dists/", src, "/", pop, "/", first_dist, "_", second_dist, ".png"), 
+               p, 
+               height = 15, 
+               width = 25)
+        rm(p)
+      }
     }
+    rm(current_obsdata)
   }
-  rm(rls_obsdata_current)
-}
-
-
-
-
-for(pop in c("species", "location")){
-  
-  cbf_obsdata_current <- 
-    get(paste0("obsdata_cbf_", pop)) %>% 
-    arrange(population)
-  
-  dists <- cbf_obsdata_current$population %>% unique()
-  plots_per_page <- 50
-  
-  for(page in 1:ceiling(length(dists)/plots_per_page)){
-    
-    first_dist <- ((page-1)*plots_per_page)+1
-    second_dist <- first_dist + (plots_per_page-1)
-    
-    if(second_dist > length(dists)) {
-      second_dist <- length(dists)
-    }
-    
-    if(!file.exists(paste0("output/ssd/cbf/",  pop, "/", first_dist, "_", second_dist, ".png"))){
-      
-      p <- 
-        cbf_obsdata_current %>% 
-        filter(population %in% dists[first_dist:second_dist]) %>% 
-        uncount(n) %>% 
-        ggplot() +
-        aes(
-          x = size_class
-        ) +
-        geom_histogram(aes(y = after_stat(density))) +
-        geom_density(col = "red") +
-        facet_wrap(~population, scales = "free") +
-        scale_y_continuous(labels = scales::label_number(scale_cut = cut_short_scale()))
-      
-      ggsave(paste0("output/ssd/cbf/", pop, "/", first_dist, "_", second_dist, ".png"), 
-             p, 
-             height = 15, 
-             width = 25)
-      rm(p)
-    }
-  }
-  rm(cbf_obsdata_current)
 }
 
 ```
@@ -391,133 +375,155 @@ Using visual inspection of the body size distributions, the following were regar
 
 ```{r}
 
-for(pop in c("species", "ecoregion", "gridcell")){
-  
-  read_csv(file = paste0("input/data_cleaning/bimodal_", pop, ".csv"), 
-           show_col_types = FALSE) %>% 
-    pull(population) %>% 
-    assign(paste0("bimodal_pops_", pop), value = ., envir = .GlobalEnv)
-  
-  if(!file.exists(paste0("output/ssd/bimodal/bimodal_", pop, ".png"))){
+for(src in c("rls", "cbf")){
+  for(pop in c("species", "ecoregion", "gridcell")){
     
-    p <- 
-      get(paste0("obsdata_rls_", pop)) %>% 
-      filter(population %in% get(paste0("bimodal_pops_", pop))) %>% 
-      ggplot() +
-      aes(
-        x = size_class, 
-        y = n
-      ) +
-      geom_point() +
-      geom_path() +
-      facet_wrap(~population, scales = "free") +
-      theme_cowplot() +
-      scale_y_continuous(labels = scales::label_number(scale_cut = cut_short_scale()))
+    if(src == "cbf" & pop == "ecoregion") next
+    pop <- ifelse(src == "cbf" & pop == "gridcell", "location", pop)
     
-    ggsave(filename = paste0("output/ssd/bimodal/bimodal_", pop, ".png"), 
-           plot = p, 
-           height = 15, 
-           width = 25)
+    read_csv(file = paste0("input/data_cleaning/bimodal_", src, "_", pop, ".csv"), 
+             show_col_types = FALSE) %>% 
+      pull(population) %>% 
+      assign(paste0("bimodal_pops_", src, "_", pop), value = ., envir = .GlobalEnv)
     
-    rm(p, bimodal_pops)
+    if(!file.exists(paste0("output/empirical_dists/bimodal/", src, "_", pop, ".png")) | rerun_visfigures){
+      
+      p <- 
+        get(paste0("obsdata_", src, "_", pop)) %>% 
+        filter(population %in% get(paste0("bimodal_pops_", src, "_", pop))) %>% 
+        ggplot() +
+        aes(
+          x = size_class, 
+          y = n
+        ) +
+        geom_point() +
+        geom_path() +
+        facet_wrap(~population, scales = "free") +
+        theme_cowplot() +
+        scale_y_continuous(labels = scales::label_number(scale_cut = cut_short_scale()))
+      
+      ggsave(filename = paste0("output/empirical_dists/bimodal/", src, "_", pop, ".png"), 
+             plot = p, 
+             height = 15, 
+             width = 25)
+      
+      rm(p)
+    }
+    rm(pop)
   }
+  rm(src)
 }
 
-
-
-
-p <- 
-  obsdata_cbf_location %>% 
-  filter(population %in% c("Eviota afelei__Moorea",
-                           "Eviota albolineata__Moorea", 
-                           "Trimma capostriatum__Lizard")) %>% 
-  uncount(n) %>% 
-  ggplot() +
-  aes(
-    x = size_class, 
-    y = after_stat(density)
-  ) +
-  geom_histogram() + 
-  geom_density(col = "red", linewidth = 2) +
-  facet_wrap(~population, scales = "free") +
-  theme_cowplot() +
-  scale_y_continuous(labels = scales::label_number(scale_cut = cut_short_scale()))
-
-ggsave(filename = paste0("output/ssd/bimodal/bimodal_", pop, "_cbf.png"), 
-       plot = p, 
-       height = 10, 
-       width = 15)
-
-rm(p)
 
 ```
 
 
 # Modelling
 
-## Model fitting
-
-### Fitting RLS
+## Functions
 
 ```{r}
 
-mod_out_filename <- function(datasource, population_level, modelname, output_type, inc_fished){
+mod_out_filename <- function(datasource, population_level, modelname, output_type){
   paste0("output/model_fits/", 
          datasource, "_", 
          output_type, "_", 
          modelname, "_", 
          population_level, 
          {if(datasource == "rls" & output_type == "pars"){
-           if(inc_fished){"_incfished.parquet"} else {"_unfished.parquet"}
+           ".parquet"
          } else {
-           if(inc_fished){"_incfished.csv"} else {"_unfished.csv"}
-         }
-         })
+           ".csv"
+         }})
+}
+
+# Removing the estimates of models that did not converge
+nonconverge_pops <- function(src, mod, pop){
+  
+  errors <- 
+    if(file.exists(mod_out_filename(src, pop, mod, "errors"))){
+      read_csv(mod_out_filename(src, pop, mod, "errors"), show_col_types = FALSE) %>% 
+        pull(population) %>% 
+        unique()
+      
+    } else {
+      c()
+    }
+  
+  issues <- 
+    if(file.exists(mod_out_filename("rls", pop, mod, "convergence"))){
+      read_csv(mod_out_filename("rls", pop, mod, "convergence"), show_col_types = FALSE) %>% 
+        filter(rhat > 1.1) %>% 
+        pull(population) %>% 
+        unique()
+      
+    } else {
+      c()
+    }
+  
+  c(errors, issues) %>% unique()
+  
 }
 
 
-for(pop in c("species", "ecoregion", "gridcell")){
-  for(mod in c("lognormal", "normal")){
-    for(inc_fishing in c(TRUE)){
+```
+
+
+## Model fit
+
+```{r}
+
+for(src in c("rls", "cbf")){
+  for(pop in c("species", "ecoregion", "gridcell")){
+    for(mod in c("lognormal", "normal")){
       
-      if(!file.exists(mod_out_filename("rls", pop, mod, "pars", inc_fishing)) | rerun_models){
-        rls_model_pars <- tibble(population = character())
-      } else {
-        rls_model_pars <- 
-          mod_out_filename("rls", pop, mod, "pars", inc_fishing) %>% 
-          read_parquet()
-      }
+      if(src == "cbf" & pop == "ecoregion") next
+      pop <- ifelse(src == "cbf" & pop == "gridcell", "location", pop)
       
-      if(!file.exists(mod_out_filename("rls", pop, mod, "convergence", inc_fishing)) | rerun_models){
-        rls_model_convergence <- tibble(population = character())
-      } else {
-        rls_model_convergence <- 
-          mod_out_filename("rls", pop, mod, "convergence", inc_fishing) %>% 
-          read_csv(show_col_types = FALSE)
-      }
+      model_pars <- 
+        if(!file.exists(mod_out_filename(src, pop, mod, "pars")) | rerun_models){
+          tibble(population = character())
+        } else {
+          
+          if(src == "cbf"){
+            mod_out_filename(src, pop, mod, "pars") %>% 
+              read_csv(show_col_types = FALSE)
+          } else {
+            mod_out_filename(src, pop, mod, "pars") %>% 
+              read_parquet()
+          }
+        }
       
-      if(!file.exists(mod_out_filename("rls", pop, mod, "errors", inc_fishing)) | rerun_models){
-        rls_model_errors <- tibble(population = character())
-      } else {
-        rls_model_errors <- 
-          mod_out_filename("rls", pop, mod, "errors", inc_fishing) %>% 
-          read_csv(show_col_types = FALSE)
-      }
+      model_convergence <- 
+        if(!file.exists(mod_out_filename(src, pop, mod, "convergence")) | rerun_models){
+          tibble(population = character())
+        } else {
+          mod_out_filename(src, pop, mod, "convergence") %>% 
+            read_csv(show_col_types = FALSE)
+        }
       
-      rls_n_done <- 
-        rls_model_pars %>% 
+      model_errors <- 
+        if(!file.exists(mod_out_filename(src, pop, mod, "errors")) | rerun_models){
+          tibble(population = character())
+        } else {
+          mod_out_filename(src, pop, mod, "errors") %>% 
+            read_csv(show_col_types = FALSE)
+        }
+      
+      npops_done <- 
+        model_pars %>% 
         drop_na() %>% 
         pull(population) %>% 
-        c(rls_model_errors$population) %>% 
+        c(model_errors$population) %>% 
         unique() %>% 
         length()
       
-      if((rls_n_done) < get(paste0("rls_npops_", pop))){
+      if((npops_done) < get(paste0(src, "_npops_", pop))){
         
-        for(i in 1:get(paste0("rls_npops_", pop))){
+        for(i in 1:get(paste0(src, "_npops_", pop))){
           
           current_data <-
-            get(paste0("obsdata_rls_", pop)) %>% 
+            get(paste0("obsdata_", src, "_", pop)) %>% 
             filter(population_indx == i) 
           
           current_pop <- 
@@ -525,8 +531,8 @@ for(pop in c("species", "ecoregion", "gridcell")){
             pull(population) %>% 
             unique()
           
-          if(!(current_pop %in% c(rls_model_pars$population, 
-                                  rls_model_errors$population))){
+          if(!(current_pop %in% c(model_pars$population, 
+                                  model_errors$population))){
             
             
             inits <-
@@ -548,7 +554,7 @@ for(pop in c("species", "ecoregion", "gridcell")){
             if(mod == "normal"){
               # inits to prevent log(0) probability errors with the normal dist
               fit <- 
-                stan(file = paste0("input/stan_models/", mod, "_binned.stan"),
+                stan(file = paste0("input/stan_models/", mod, ".stan"),
                      data = stan_data,
                      iter = 10000,
                      warmup = 5000,
@@ -561,7 +567,7 @@ for(pop in c("species", "ecoregion", "gridcell")){
             } else {
               
               fit <- 
-                stan(file = paste0("input/stan_models/", mod, "_binned.stan"),
+                stan(file = paste0("input/stan_models/", mod, ".stan"),
                      data = stan_data,
                      iter = 10000,
                      warmup = 5000,
@@ -603,322 +609,86 @@ for(pop in c("species", "ecoregion", "gridcell")){
               
               rm(current_pop)
               
-              # current_preds <- 
-              #   current_pars %>% 
-              #   expand_grid(current_data) %>% 
-              #   {if(mod == "normal") mutate(., p = pnorm(size_max, mu, sigma) - pnorm(size_min, mu, sigma)) else .} %>%
-              #   {if(mod == "lognormal") mutate(., plnorm(size_max, meanlog, sdlog) - pnorm(size_min, meanlog, sdlog)) else .} %>%
-              #   summarise(
-              #     p_mean = mean(p), 
-              #     p_median = median(p), 
-              #     p_q5 = quantile(p, probs = 0.05),
-              #     p_q95 = quantile(p, probs = 0.95), 
-              #     .by = c(population, size_class, n, population_n)
-              #   ) %>% 
-              #   mutate(p_obs = n/population_n)
-              
-              rls_model_pars <- 
+              model_pars <- 
                 bind_rows(
-                  rls_model_pars,
+                  model_pars,
                   current_pars
                 )
               cat(paste(i, "done."))
               
             } else  {
               
-              rls_model_errors <- 
+              model_errors <- 
                 bind_rows(
-                  rls_model_errors, 
+                  model_errors, 
                   tibble(population = unique(current_data$population))
                 )
               
             }
             
           } else {
-            cat(paste0("Population ", i, " at the ", pop," level already done.\n"))
+            cat(paste(src, "population", i, "at the", pop, "level already done.\n"))
           }
           
           rm(current_data)
         }
-        
         rm(i)
       } else {
-        cat(paste0("All ", get(paste0("rls_npops_", pop)), ifelse(inc_fishing, " fished+unfished ", " unfished "), pop, " populations have already run for ", mod, ".\n"))
+        cat(paste("All", get(paste0(src, "_npops_", pop)), ifelse(src == "rls", "RLS", "CBF"), pop, "populations have already run for", mod, "\n"))
       }
+      
+      rm(mod)
     }
-    rm(mod)
+    rm(pop)
+  }
+  rm(src)
+}
+
+```
+
+## Model summary
+
+```{r}
+
+for(pop in c("species", "ecoregion", "gridcell")){
+  for(src in c("rls", "cbf")){
+    
+    if(src == "cbf" & pop == "ecoregion") next
+    pop <- ifelse(src == "cbf" & pop == "gridcell", "location", pop)
+    
+    paste0("output/model_fits/", src, "_pars_lognormal_", pop, ifelse(src == "rls", ".parquet", ".csv")) %>% 
+      {if(src == "rls") read_parquet(.) else read_csv(., show_col_types = FALSE)} %>%
+      drop_na() %>% 
+      summarise(
+        meanlog = median(meanlog), 
+        sdlog = median(sdlog), 
+        lp_lognormal = median(lp__),
+        .by = population
+      ) %>% 
+      mutate(data = src) %>% 
+      filter(!(population %in% nonconverge_pops(src, "lognormal", pop) )) %>% 
+      assign(x = paste0(src, "_pars_lognormal_", pop), value = ., envir = .GlobalEnv)
+    
+    paste0("output/model_fits/", src, "_pars_normal_", pop, ifelse(src == "rls", ".parquet", ".csv")) %>% 
+      {if(src == "rls") read_parquet(.) else read_csv(., show_col_types = FALSE)} %>%
+      drop_na() %>% 
+      summarise(
+        mu = mean(mu), 
+        sigma = median(sigma), 
+        lp_normal = median(lp__),
+        .by = population
+      ) %>% 
+      mutate(data = src) %>% 
+      filter(!(population %in% nonconverge_pops(src, "normal", pop) )) %>% 
+      assign(x = paste0(src, "_pars_normal_", pop), value = ., envir = .GlobalEnv)
+    
+    rm(src)
   }
   rm(pop)
 }
-rm(rls_model_errors, rls_model_convergence, rls_model_pars)
-
-# 
-# 
-# for(pop in c("species", "ecoregion", "gridcell")){
-#   for(mod in c("lognormal", "normal")){
-#     
-#     paste0("output/model_fits/rls_pars_", mod, "_", pop, ".parquet") %>% 
-#       read_parquet() %>% 
-#       write_parquet(paste0("output/model_fits/rls_pars_", mod, "_", pop, "_unfished.parquet"))
-#     
-#     rls_model_convergence <- 
-#       paste0("output/model_fits/rls_convergence_", mod, "_", pop, ".csv") %>% 
-#       read_csv(show_col_types = FALSE) %>% 
-#       write_csv(paste0("output/model_fits/rls_convergence_", mod, "_", pop, "_unfished.csv"))
-#     
-#     rls_model_errors <- 
-#       paste0("output/model_fits/rls_errors_", mod, "_", pop, ".csv") %>% 
-#       read_csv(show_col_types = FALSE) %>% 
-#       write_csv(paste0("output/model_fits/rls_errors_", mod, "_", pop, "_unfished.csv"))
-#   }
-# }
-# 
-# for(pop in c("species", "ecoregion", "gridcell")){
-#   for(mod in c("lognormal", "normal")){
-#     
-#     paste0("output/model_fits/rls_pars_", mod, "_", pop, "_incfished.parquet") %>% 
-#       read_parquet() %>% 
-#       mutate(species = str_extract(population, ".*(?=__)")) %>% 
-#       mutate(genus = str_extract(species, ".*(?=\\s)")) %>% 
-#       filter(species %!in% frdc$species, 
-#              genus %!in% frdc$genus, 
-#              species %!in% targeted$species) %>% 
-#       write_parquet(paste0("output/model_fits/rls_pars_", mod, "_", pop, "_unfished.parquet"))
-#     
-#     rls_model_convergence <- 
-#       paste0("output/model_fits/rls_convergence_", mod, "_", pop, "_incfished.csv") %>% 
-#       read_csv(show_col_types = FALSE) %>% 
-#       mutate(species = str_extract(population, ".*(?=__)")) %>% 
-#       mutate(genus = str_extract(species, ".*(?=\\s)")) %>% 
-#       filter(species %!in% frdc$species, 
-#              genus %!in% frdc$genus, 
-#              species %!in% targeted$species) %>% 
-#       write_csv(paste0("output/model_fits/rls_convergence_", mod, "_", pop, "_unfished.csv"))
-#     
-#     rls_model_errors <- 
-#       paste0("output/model_fits/rls_errors_", mod, "_", pop, "_incfished.csv") %>% 
-#       read_csv(show_col_types = FALSE) %>% 
-#       mutate(species = str_extract(population, ".*(?=__)")) %>% 
-#       mutate(genus = str_extract(species, ".*(?=\\s)")) %>% 
-#       filter(species %!in% frdc$species, 
-#              genus %!in% frdc$genus, 
-#              species %!in% targeted$species) %>% 
-#       write_csv(paste0("output/model_fits/rls_errors_", mod, "_", pop, "_unfished.csv"))
-#   }
-# }
-
-```
-
-### Modelling continuous
-
-```{r}
-
-for(pop in c("species", "location")){
-  
-  cbf_obsdata_current <- get(paste0("obsdata_cbf_", pop))
-  
-  for(mod in c("lognormal", "normal")){
-    
-    if(file.exists(mod_out_filename("cbf", pop, mod, "pars", TRUE))){
-      
-      cbf_model_pars <- 
-        mod_out_filename("cbf", pop, mod, "pars", TRUE) %>% 
-        read_csv(show_col_types = FALSE)
-      
-      cbf_n_done <- 
-        cbf_model_pars %>% 
-        drop_na() %>% 
-        pull(population) %>% 
-        unique() %>% 
-        length()
-      
-    } else {
-      
-      cbf_model_pars <- tibble(population = character())
-      cbf_n_done <- 0
-      
-    }
-    
-    if(cbf_n_done < get(paste0("cbf_npops_", pop))){
-      
-      if(!file.exists(mod_out_filename("cbf", pop, mod, "pars", TRUE))){
-        cbf_model_pars <- tibble(population = character())
-        cbf_model_convergence <- tibble(population = character())
-        cbf_model_errors <- tibble(population = character())
-        
-        for(i in unique(cbf_obsdata_current$population)){
-          
-          cbf_current_data <-
-            cbf_obsdata_current %>% 
-            filter(population == i) 
-          
-          
-          
-          cbf_stan_data <- 
-            list(
-              B = length(unique(cbf_current_data$size_class)),
-              b_upr = cbf_current_data$size_max,
-              b_lwr = cbf_current_data$size_min,
-              n = cbf_current_data$n, 
-              low_bound = 0.05
-            )
-          
-          cbf_fit <- 
-            stan(file = paste0("input/stan_models/", mod, ".stan"),
-                 data = cbf_stan_data,
-                 iter = 10000,
-                 warmup = 5000,
-                 chains = 3,
-                 refresh = 5000,
-                 cores = 1)
-          
-          if(!is.null(summary(cbf_fit)$summary)){
-            
-            rhat <- 
-              summary(cbf_fit)$summary[,"Rhat"] %>% 
-              as_tibble(rownames = "pars") %>% 
-              mutate(population = unique(cbf_current_data$population)) %>% 
-              rename(rhat = value)
-            
-            n_eff <- 
-              summary(cbf_fit)$summary[,"n_eff"] %>% 
-              as_tibble(rownames = "pars") %>% 
-              mutate(population = unique(cbf_current_data$population)) %>% 
-              rename(n_eff = value)
-            
-            cbf_model_convergence <- 
-              bind_rows(
-                cbf_model_convergence,
-                left_join(rhat, n_eff, 
-                          by = join_by(pars, population)))
-            
-            current_cbf_model_pars <- 
-              cbf_fit %>% 
-              as_draws_df() %>% 
-              as_tibble() %>% 
-              mutate(population = i)
-            
-            cbf_model_pars <- 
-              bind_rows(
-                cbf_model_pars,
-                current_cbf_model_pars
-              )
-            
-            cat(paste(i, "done."))
-            
-          } else  {
-            
-            cbf_model_errors <- 
-              bind_rows(
-                cbf_model_errors, 
-                tibble(population = i)
-              )
-            
-            
-          }
-        }
-      }
-      
-      write_csv(cbf_model_pars, mod_out_filename("cbf", pop, mod, "pars", TRUE))
-      write_csv(cbf_model_convergence, mod_out_filename("cbf", pop, mod, "convergence", TRUE))
-      write_csv(cbf_model_errors, mod_out_filename("cbf", pop, mod, "errors", TRUE))
-      
-    } else {
-      cat(paste0("All ", get(paste0("cbf_npops_", pop)), " populations already ran for ", mod, " at the ", pop, " level.\n"))
-      
-    } 
-    
-  }
-  
-}
-
-
-```
-
-
-## Model summarising 
-
-```{r}
-
-# Removing the estimates of models that did not converge
-nonconverge_pops <- function(mod, pop){
-  
-  errors <- 
-    if(file.exists(mod_out_filename("rls", pop, mod, "errors", TRUE))){
-      read_csv(mod_out_filename("rls", pop, mod, "errors", TRUE), show_col_types = FALSE) %>% 
-        pull(population) %>% 
-        unique()
-      
-    } else {
-      c()
-    }
-
-  issues  <- 
-    if(file.exists(mod_out_filename("rls", pop, mod, "convergence", TRUE))){
-      read_csv(mod_out_filename("rls", pop, mod, "convergence", TRUE), show_col_types = FALSE) %>% 
-        filter(rhat > 1.1) %>% 
-        pull(population) %>% 
-        unique()
-      
-    } else {
-      c()
-    }
-  
-  c(errors, issues) %>% unique()
-  
-}
 
 for(pop in c("species", "ecoregion", "gridcell")){
-  
   cbf_pop <- ifelse(pop %in% c("ecoregion", "gridcell"), "location", pop)
-  
-  paste0("output/model_fits/rls_pars_lognormal_", pop, "_incfished.parquet") %>% 
-    read_parquet() %>%
-    drop_na() %>% 
-    summarise(
-      meanlog = median(meanlog), 
-      sdlog = median(sdlog), 
-      lp_lognormal = median(lp__),
-      .by = population
-    ) %>% 
-    mutate(data = "rls") %>% 
-    filter(!(population %in% nonconverge_pops("lognormal", pop) )) %>% 
-    assign(x = paste0("rls_pars_lognormal_", pop), value = ., envir = .GlobalEnv)
-  
-  paste0("output/model_fits/rls_pars_normal_", pop, "_incfished.parquet") %>% 
-    read_parquet() %>%
-    drop_na() %>% 
-    summarise(
-      mu = mean(mu), 
-      sigma = median(sigma), 
-      lp_normal = median(lp__),
-      .by = population
-    ) %>% 
-    mutate(data = "rls") %>% 
-    filter(!(population %in% nonconverge_pops("normal", pop) )) %>% 
-    assign(x = paste0("rls_pars_normal_", pop), value = ., envir = .GlobalEnv)
-  
-  paste0("output/model_fits/cbf_pars_lognormal_", cbf_pop, "_incfished.csv") %>% 
-    read_csv(show_col_types = FALSE) %>%
-    summarise(
-      meanlog = median(meanlog), 
-      sdlog = median(sdlog), 
-      lp_lognormal = median(lp__),
-      .by = population
-    ) %>% 
-    mutate(data = "cbf") %>% 
-    assign(x = paste0("cbf_pars_lognormal_", cbf_pop), value = ., envir = .GlobalEnv)
-  
-  paste0("output/model_fits/cbf_pars_normal_", cbf_pop, "_incfished.csv") %>% 
-    read_csv(show_col_types = FALSE) %>%
-    summarise(
-      mu = mean(mu), 
-      sigma = median(sigma), 
-      lp_normal = median(lp__),
-      .by = population
-    ) %>% 
-    mutate(data = "cbf") %>% 
-    assign(x = paste0("cbf_pars_normal_", cbf_pop), value = ., envir = .GlobalEnv)
   
   get(paste0("obsdata_rls_", pop)) %>% 
     select(population, size_class, n) %>% 
@@ -929,9 +699,9 @@ for(pop in c("species", "ecoregion", "gridcell")){
     bind_rows(
       get(paste0("obsdata_cbf_", cbf_pop)) %>% 
         mutate(data = "cbf") %>% 
-     uncount(n) %>% 
-    summarise(mean_size = mean(size_class),
-              .by = c(population, data))
+        uncount(n) %>% 
+        summarise(mean_size = mean(size_class),
+                  .by = c(population, data))
     ) %>% 
     assign(x = paste0("meansizes_", pop), value = ., envir = .GlobalEnv)
   
@@ -966,29 +736,196 @@ for(pop in c("species", "ecoregion", "gridcell")){
     left_join(get(paste0("meansizes_", pop)),
               by = join_by(population, data)) %>% 
     mutate(lowmean = (data == "rls" & mu < 2.5)|(data == "rls" & lognormal_mean < 2.5) |(data == "cbf" & mu < 0)|(data == "cbf" & lognormal_mean < 0)) %>% 
-    filter(!lowmean) %>%
+    # filter(!lowmean) %>%
     mutate(species = str_extract(population, ".*(?=__)")) %>% 
-    mutate(fished = species %in% rls_fished_species) %>% 
-    mutate(bimodal = population %in% get(paste0("bimodal_pops_", pop))) %>% 
+    mutate(fished = species %in% fished_species) %>% 
+    mutate(bimodal = population %in% c(get(paste0("bimodal_pops_rls_", pop)), get(paste0("bimodal_pops_cbf_", cbf_pop)))) %>% 
     assign(x = paste0("plotdata_", pop), value = ., envir = .GlobalEnv)
-  
 }
 
 ```
 
 # Figures
 
+## Scaling body size
+
+```{r}
+
+if(!file.exists( paste0("manuscript/ms_figures/comparing_distributions.png"))| rerun_msfigures){
+  
+  rls_sample_populations <- 
+    obsdata_rls_gridcell %>% 
+    filter(population_indx < 10)
+  
+  p_scaling_size_1 <- 
+    rls_sample_populations %>% 
+    left_join(meansizes_gridcell, by = join_by(population)) %>% 
+    mutate(scaled_size = size_class/mean_size) %>% 
+    mutate(scaled_n = n/population_n) %>%
+    ggplot(aes(x = size_class, y = n, color = population)) +
+    scale_color_simpsons() +
+    scale_x_continuous(labels = label_number(suffix="cm")) +
+    geom_line(aes(y = n)) +
+    theme(legend.position = "none") +
+    theme_cowplot(20) +
+    labs(
+      x = "Body size",
+      y = "N"
+    ) +
+    theme(legend.position = "none")
+  
+  p_scaling_size_2 <- 
+    rls_sample_populations %>% 
+    left_join(meansizes_gridcell, by = join_by(population)) %>% 
+    mutate(scaled_size = size_class/mean_size) %>% 
+    mutate(scaled_n = n/population_n) %>%
+    ggplot(aes(x = size_class, y = scaled_n, col = population)) +
+    geom_line(aes(y = scaled_n)) +
+    scale_color_simpsons() +
+    scale_x_continuous(labels = label_number(suffix="cm")) +
+    theme(legend.position = "none") +
+    theme_cowplot(20) +
+    labs(
+      x = "Body size",
+      y = "Relative N"
+    ) +
+    theme(legend.position = "none")
+  
+  p_scaling_size_3 <- 
+    rls_sample_populations %>% 
+    left_join(meansizes_gridcell, by = join_by(population)) %>% 
+    mutate(scaled_size = size_class/mean_size) %>% 
+    mutate(scaled_n = n/population_n) %>%
+    ggplot(aes(x = scaled_size, y = scaled_n, col = population)) +
+    geom_line(aes(y = scaled_n)) +
+    scale_color_simpsons() +
+    scale_x_continuous(label = label_number(suffix = "x")) +
+    theme(legend.position = "none") +
+    theme_cowplot(20) +
+    labs(
+      x = "Relative body size",
+      y = "Relative N"
+    )+
+    theme(legend.position = "none")
+  
+  p_scaling_size_4 <-
+    rls_sample_populations %>% 
+    left_join(meansizes_gridcell, by = join_by(population)) %>% 
+    mutate(scaled_size = size_class/mean_size) %>% 
+    mutate(scaled_n = n/population_n) %>%
+    ggplot(aes(x = scaled_size, y = scaled_n, col = population)) +
+    geom_line(aes(y = scaled_n)) +
+    scale_x_log10(label = label_number(suffix = "x")) +
+    scale_y_log10() +
+    scale_color_simpsons() +
+    theme(legend.position = "none") +
+    theme_cowplot(20) +
+    labs(
+      x = "Relative body size (log)",
+      y = "Relative N (log)"
+    ) +
+    theme(legend.position = "none")
+  
+  all_pars_median <- 
+    plotdata_gridcell %>% 
+    filter(!lowmean, 
+           !bimodal) %>% 
+    drop_na() %>% 
+    summarise(
+      mu = median(mu),
+      sigma = median(sigma),
+      meanlog = median(meanlog),
+      sdlog = median(sdlog)
+    ) 
+  
+  scale_size_vec <- function(size_vector, lower_limit = 1.25) {
+    tibble(size = size_vector) %>% 
+      filter(size > lower_limit) %>% 
+      mutate(size = rls_bin(size)) %>%
+      mutate(mean_size = mean(size)) %>% 
+      mutate(scaled_size = size/mean_size) %>% 
+      count(scaled_size) %>% 
+      mutate(scaled_n = n/sum(n)) %>% 
+      select(scaled_size, scaled_n)
+  }
+  
+  plot_lines <- 
+    scale_size_vec(rnorm(1e6, all_pars_median$mu, all_pars_median$sigma)) %>% 
+    mutate(dist = "normal") %>% 
+    bind_rows(
+      scale_size_vec(rlnorm(1e6, all_pars_median$meanlog, all_pars_median$sdlog)) %>% 
+        mutate(dist = "lognormal") 
+    )
+  
+  
+  p_scaling_size_5 <- 
+    obsdata_rls_gridcell %>% 
+    bind_rows(get(paste0("obsdata_cbf_", "location"))) %>% 
+    left_join(meansizes_gridcell, by = join_by(population)) %>% 
+    left_join(plotdata_gridcell %>% 
+                filter(!lowmean) %>% 
+                select(population, normal_better), 
+              by = join_by(population)) %>% 
+    mutate(scaled_size = size_class/mean_size) %>% 
+    mutate(scaled_n = n/population_n) %>%
+    ggplot(aes(x = scaled_size, y = scaled_n)) +
+    geom_line(aes(y = scaled_n, group = population), col = "grey70", alpha = 0.1) +
+    geom_line(aes(col = dist), linewidth = 2, data = plot_lines) +
+    scale_x_log10(label = label_number(suffix = "x")) +
+    scale_y_log10() +
+    scale_color_manual(values = c("normal" = rgb(181, 144, 19, maxColorValue=255),
+                                  "lognormal" = rgb(29, 84, 128, maxColorValue=255))) +
+    theme_cowplot(20) +
+    theme(legend.position = c(0.1,0.1), 
+          legend.justification = c(0,0),
+          legend.title = element_blank()) +
+    labs(
+      x = "Relative body size (log)",
+      y = "Relative abundance (log)"
+    )
+  
+  p_scaling_size_all <- 
+    p_scaling_size_1 + 
+    p_scaling_size_2 + 
+    p_scaling_size_3 + 
+    p_scaling_size_4 - 
+    p_scaling_size_5 + 
+    plot_layout(ncol=1)  + 
+    plot_annotation(tag_levels = 'A')
+  
+  ggsave(filename = paste0("manuscript/ms_figures/comparing_distributions.png"),
+         plot = p_scaling_size_all,
+         height = 35,
+         width = 25,
+         units = "cm")
+  
+  rm(
+    rls_sample_populations,
+    plot_lines,
+    all_pars_median,
+    p_scaling_size_1, 
+    p_scaling_size_2,
+    p_scaling_size_3, 
+    p_scaling_size_4, 
+    p_scaling_size_5)
+  
+}
+
+```
+
+
 ## CV-meansize regression
 
 ```{r}
 
-if(!file.exists(paste0("manuscript/ms_figures/parameter_regression.png")) | rerun_msfigures == TRUE){
+if(!file.exists(paste0("manuscript/ms_figures/parameter_regression.png")) | rerun_msfigures){
   for(inc_fished in c(TRUE, FALSE)){
     for(inc_bimodal in c(TRUE, FALSE)){
       for(pop in c("species", "ecoregion", "gridcell")){
         
         plotdata_current <- 
           get(paste0("plotdata_", pop)) %>% 
+          filter(!lowmean) %>% 
           {if(inc_fished) . else filter(., !fished)} %>% 
           {if(inc_bimodal) . else filter(., !bimodal)}
         
@@ -1050,7 +987,7 @@ if(!file.exists(paste0("manuscript/ms_figures/parameter_regression.png")) | reru
           theme_cowplot(20) +
           theme(legend.position = "none")
         
-        assign(x = paste0("p1_", pop), value = p1, envir = .GlobalEnv)
+        assign(x = paste("p1", pop, ifelse(inc_fished, "incfished", "unfished"), sep = "_"), value = p1, envir = .GlobalEnv)
         
         p2 <- 
           plotdata_current %>% 
@@ -1067,225 +1004,57 @@ if(!file.exists(paste0("manuscript/ms_figures/parameter_regression.png")) | reru
           theme(legend.position = "none") 
         
         
-        assign(x = paste0("p2_", pop), value = p2, envir = .GlobalEnv)
+        assign(x = paste("p2", pop, ifelse(inc_fished, "incfished", "unfished"), sep = "_"), value = p2, envir = .GlobalEnv)
         
-        ggsave(filename = paste0("output/figs/param_regression_", pop, {if(inc_fished) "_incfished" else "_unfished"}, {if(inc_bimodal) "_incbimodal" else "_nobimodal"}, ".png"),
+        ggsave(filename = paste0("output/figs/param_regression/", pop, {if(inc_fished) "_incfished" else "_unfished"}, {if(inc_bimodal) "_incbimodal" else "_nobimodal"}, ".png"),
                plot = p1 + p2 + plot_layout(widths = c(6,1)),
                height = 15,
-               width = 40,
+               width = 15*1.618,
                units = "cm")
         
-        rm(p1, p2)
-        
+        rm(p1, p2, pop, q_cov, plotdata_current)
       }
       
       legend_only <- get_legend(
-        p1_gridcell + theme(legend.position = "bottom",
-                            legend.justification = c(0.5,0.5),
-                            legend.background = element_rect(color = "black"),
-                            legend.margin=margin(10,10,10,10),
-                            legend.title = element_blank()))
+        get(paste0("p1_gridcell_", ifelse(inc_fished, "incfished", "unfished"))) + 
+          theme(legend.position = "bottom",
+                legend.justification = c(0.5,0.5),
+                legend.background = element_rect(color = "black"),
+                legend.margin=margin(10,10,10,10),
+                legend.title = element_blank()))
       
-      plot_ylim <- max(layer_scales(p1_gridcell)$y$range$range, layer_scales(p1_species)$y$range$range)
+      plot_ylim <- max(layer_scales(get(paste0("p1_gridcell_", ifelse(inc_fished, "incfished", "unfished"))))$y$range$range,
+                       layer_scales(get(paste0("p1_species_", ifelse(inc_fished, "incfished", "unfished"))))$y$range$range)
       
+      fig_design <- {"AAAAAABCCCCCCD
+      AAAAAABCCCCCCD
+      AAAAAABCCCCCCD
+      AAAAAABCCCCCCD
+      AAAAAABCCCCCCD
+      ####EEEEEE####"}
       
-      
-      fig1 <-
-        p1_gridcell + annotate("text", x = 10, y = plot_ylim, label = "Population-level", size = 12) + ylim(0, plot_ylim) +
-        p2_gridcell + xlim(0, plot_ylim) +
-        p1_species + annotate("text", x = 10, y = plot_ylim, label = "Species-level", size = 12) + ylim(0, plot_ylim) + theme(axis.title.y = element_blank()) +
-        p2_species + xlim(0, plot_ylim) + 
+      p_cv_meansize <-
+        get(paste0("p1_gridcell_", ifelse(inc_fished, "incfished", "unfished"))) + annotate("text", x = 10, y = plot_ylim, label = "Population-level", size = 12) + ylim(0, plot_ylim) +
+        get(paste0("p2_gridcell_", ifelse(inc_fished, "incfished", "unfished"))) + xlim(0, plot_ylim) +
+        get(paste0("p1_species_", ifelse(inc_fished, "incfished", "unfished"))) + annotate("text", x = 10, y = plot_ylim, label = "Species-level", size = 12) + ylim(0, plot_ylim) + theme(axis.title.y = element_blank()) +
+        get(paste0("p2_species_", ifelse(inc_fished, "incfished", "unfished"))) + xlim(0, plot_ylim) + 
         ggpubr::as_ggplot(legend_only) +
-        plot_layout(design = "
-  AAAAAABCCCCCCD
-  AAAAAABCCCCCCD
-  AAAAAABCCCCCCD
-  AAAAAABCCCCCCD
-  AAAAAABCCCCCCD
-  ####EEEEEE####")
+        plot_layout(design = fig_design)
       
       ggsave(filename = paste0("manuscript/ms_figures/parameter_regression", {if(inc_fished) "_incfished" else "_unfished"}, {if(inc_bimodal) "_incbimodal" else "_nobimodal"}, ".png"),
-             plot = fig1,
+             plot = p_cv_meansize,
              height = 15,
              width = 40,
              units = "cm")
+      
+      rm(inc_bimodal, p_cv_meansize, fig_design, plot_ylim, legend_only)
     }
-    
-    
+    rm(inc_fished)
   }
 }
 
 
 ```
-
-## Scaling body size
-
-```{r}
-
-if(!file.exists( paste0("manuscript/ms_figures/comparing_distributions.png"))| rerun_msfigures == TRUE){
-  
-  rls_sample_populations <- 
-    get(paste0("obsdata_rls_", "gridcell")) %>% 
-    filter(population_indx < 10)
-  
-  p_scaling_size_1 <- 
-    rls_sample_populations %>% 
-    left_join(meansizes_gridcell, by = join_by(population)) %>% 
-    mutate(scaled_size = size_class/mean_size) %>% 
-    mutate(scaled_n = n/population_n) %>%
-    ggplot(aes(x = size_class, y = n, color = population)) +
-    scale_color_simpsons() +
-    scale_x_continuous(labels = label_number(suffix="cm")) +
-    geom_line(aes(y = n)) +
-    theme(legend.position = "none") +
-    theme_cowplot(20) +
-    labs(
-      x = "Body size",
-      y = "N"
-    ) +
-    theme(legend.position = "none")
-  
-  
-  p_scaling_size_2 <- 
-    rls_sample_populations %>% 
-    left_join(meansizes_gridcell, by = join_by(population)) %>% 
-    mutate(scaled_size = size_class/mean_size) %>% 
-    mutate(scaled_n = n/population_n) %>%
-    ggplot(aes(x = size_class, y = scaled_n, col = population)) +
-    geom_line(aes(y = scaled_n)) +
-    scale_color_simpsons() +
-    scale_x_continuous(labels = label_number(suffix="cm")) +
-    theme(legend.position = "none") +
-    theme_cowplot(20) +
-    labs(
-      x = "Body size",
-      y = "Relative N"
-    ) +
-    theme(legend.position = "none")
-  
-  p_scaling_size_3 <- 
-    rls_sample_populations %>% 
-    left_join(meansizes_gridcell, by = join_by(population)) %>% 
-    mutate(scaled_size = size_class/mean_size) %>% 
-    mutate(scaled_n = n/population_n) %>%
-    ggplot(aes(x = scaled_size, y = scaled_n, col = population)) +
-    geom_line(aes(y = scaled_n)) +
-    scale_color_simpsons() +
-    scale_x_continuous(label = label_number(suffix = "x")) +
-    theme(legend.position = "none") +
-    theme_cowplot(20) +
-    labs(
-      x = "Relative body size",
-      y = "Relative N"
-    )+
-    theme(legend.position = "none")
-  
-  p_scaling_size_4 <-
-    rls_sample_populations %>% 
-    left_join(meansizes_gridcell, by = join_by(population)) %>% 
-    mutate(scaled_size = size_class/mean_size) %>% 
-    mutate(scaled_n = n/population_n) %>%
-    ggplot(aes(x = scaled_size, y = scaled_n, col = population)) +
-    # geom_point() +
-    geom_line(aes(y = scaled_n)) +
-    # annotate(geom = "text", label = "15 populations", y = 1e-5, x = 0.3, size = 5) +
-    scale_x_log10(label = label_number(suffix = "x")) +
-    scale_y_log10() +
-    scale_color_simpsons() +
-    theme(legend.position = "none") +
-    theme_cowplot(20) +
-    labs(
-      x = "Relative body size (log)",
-      y = "Relative N (log)"
-    ) +
-    theme(legend.position = "none")
-  
-  all_pars_median <- 
-    plotdata_gridcell %>% 
-    drop_na() %>% 
-    summarise(
-      mu = median(mu),
-      sigma = median(sigma),
-      meanlog = median(meanlog),
-      sdlog = median(sdlog)
-    ) 
-  
-  scale_size_vec <- function(size_vector, lower_limit = 1.25) {
-    tibble(size = size_vector) %>% 
-      filter(size > lower_limit) %>% 
-      mutate(size = rls_bin(size)) %>%
-      mutate(mean_size = mean(size)) %>% 
-      mutate(scaled_size = size/mean_size) %>% 
-      count(scaled_size) %>% 
-      mutate(scaled_n = n/sum(n)) %>% 
-      select(scaled_size, scaled_n)
-  }
-  
-  plot_lines <- 
-    scale_size_vec(rnorm(1e6, all_pars_median$mu, all_pars_median$sigma)) %>% 
-    mutate(dist = "normal") %>% 
-    bind_rows(
-      scale_size_vec(rlnorm(1e6, all_pars_median$meanlog, all_pars_median$sdlog)) %>% 
-        mutate(dist = "lognormal") 
-    )
-  
-  
-  p_scaling_size_5 <- 
-    get(paste0("obsdata_rls_", "gridcell")) %>% 
-    bind_rows(get(paste0("obsdata_cbf_", "location"))) %>% 
-    left_join(meansizes_gridcell, by = join_by(population)) %>% 
-    left_join(plotdata_gridcell %>% select(population, normal_better), 
-              by = join_by(population)) %>% 
-    mutate(scaled_size = size_class/mean_size) %>% 
-    mutate(scaled_n = n/population_n) %>%
-    ggplot(aes(x = scaled_size, y = scaled_n)) +
-    # geom_line(aes(y = scaled_n, group = population, col = normal_better), alpha = 0.1) +
-    geom_line(aes(y = scaled_n, group = population), col = "grey70", alpha = 0.1) +
-    geom_line(aes(col = dist), linewidth = 2, data = plot_lines) +
-    # annotate(geom = "text", label = "3230 populations", y = 1e-1, x = 5, size = 5) +
-    scale_x_log10(label = label_number(suffix = "x")) +
-    scale_y_log10() +
-    # scale_linetype_manual(values = c("lognormal" = "solid", "normal" = "21")) +
-    scale_color_manual(values = c("normal" = rgb(181, 144, 19, maxColorValue=255),
-                                  "lognormal" = rgb(29, 84, 128, maxColorValue=255))) +
-    theme_cowplot(20) +
-    theme(legend.position = c(0.1,0.1), 
-          legend.justification = c(0,0),
-          legend.title = element_blank()) +
-    labs(
-      x = "Relative body size (log)",
-      y = "Relative abundance (log)"
-    )
-  
-  p_scaling_size_all <- 
-    p_scaling_size_1 + 
-    p_scaling_size_2 + 
-    p_scaling_size_3 + 
-    p_scaling_size_4 - 
-    p_scaling_size_5 + 
-    plot_layout(ncol=1)  + 
-    plot_annotation(tag_levels = 'A')
-  
-  ggsave(filename = paste0("manuscript/ms_figures/comparing_distributions.png"),
-         plot = p_scaling_size_all,
-         height = 35,
-         width = 25,
-         units = "cm")
-  
-  rm(
-    rls_sample_populations,
-    plot_lines,
-    all_pars_median,
-    p_scaling_size_1, 
-    p_scaling_size_2,
-    p_scaling_size_3, 
-    p_scaling_size_4, 
-    p_scaling_size_5)
-  
-}
-
-```
-
 
 ## Estimated vs predicted size
 
@@ -1295,64 +1064,73 @@ Estimating body size from mean size
 
 for(inc_fished in c(TRUE, FALSE)){
   
-  if(!file.exists(paste0("manuscript/ms_figures/variation_explained", {if(inc_fished) "_incfished" else "_unfished"}, ".png"))| rerun_msfigures == TRUE){
+  if(!file.exists(paste0("manuscript/ms_figures/variation_explained",  ifelse(inc_fished, "_incfished", "_unfished"), ".png")) | rerun_msfigures){
     
-    d1 <- 
-      obsdata_rls_gridcell %>% 
-      select(population, size_class, size_min, size_max, n, p)
     
-   d2 <- 
-      obsdata_cbf_location %>% 
-     mutate(p = n/population_n) %>% 
-      select(population, size_class, size_min, size_max, n, p)
-    
-    joined_data <-  
-      meansizes_gridcell %>% 
-      right_join(bind_rows(d1, d2), 
-                 by = join_by(population)) %>% 
-      left_join(plotdata_gridcell) %>% 
-      filter(!lowmean) %>% 
-      filter(!bimodal) %>% 
-      {if(inc_fished) . else filter(., !fished)} %>% 
-      select(population, species, size_class, mean_size, size_min, size_max, n, p, mu, sigma, meanlog, sdlog, better_dist)
-    
-    out <- tibble()
-    for(c in seq(0, 1.5, by = 0.01)){
+    if(!file.exists(paste0("output/tables/var_explained_bycv",  ifelse(inc_fished, "_incfished", "_unfished"), ".csv")) | rerun_models){
       
-      estimated_prob <- 
-        joined_data %>% 
-        mutate(mu = mean_size,
-               sd = mu*c,
-               sdlog = sqrt(log((c^2)+1)),
-               meanlog = log(mean_size) - ((sdlog^2)/2)) %>%
-        mutate(p_norm = pnorm(size_max, mean = mu, sd = sd) -  pnorm(size_min, mean = mu, sd = sd),
-               p_lnorm = plnorm(size_max, meanlog = meanlog, sdlog = sdlog) -  plnorm(size_min, meanlog = meanlog, sdlog = sdlog), 
-               p_pref = ifelse(better_dist == "normal", p_norm, p_lnorm)) %>% 
-        select(population, species,
-               size_class, better_dist, 
-               p, p_norm, p_lnorm, p_pref)
+      d1 <- 
+        obsdata_rls_gridcell %>% 
+        select(population, size_class, size_min, size_max, n, p)
       
-      lmer_norm <- lmerTest::lmer(p ~ p_norm + (1|species), data = estimated_prob) 
-      lmer_lnorm <-  lmerTest::lmer(p ~ p_lnorm + (1|species), data = estimated_prob) 
-      lmer_pref <-  lmerTest::lmer(p ~ p_pref + (1|species), data = estimated_prob) 
+      d2 <- 
+        obsdata_cbf_location %>% 
+        mutate(p = n/population_n) %>% 
+        select(population, size_class, size_min, size_max, n, p)
       
-      out <- 
-        out %>% 
-        bind_rows(
-          tibble(cv = c, 
-                 marginal_r2_normal = MuMIn::r.squaredGLMM(lmer_norm)[1], 
-                 conditional_r2_normal = MuMIn::r.squaredGLMM(lmer_norm)[2], 
-                 marginal_r2_lognormal = MuMIn::r.squaredGLMM(lmer_lnorm)[1], 
-                 conditional_r2_lognormal = MuMIn::r.squaredGLMM(lmer_lnorm)[2], 
-                 marginal_r2_pref = MuMIn::r.squaredGLMM(lmer_pref)[1], 
-                 conditional_r2_pref = MuMIn::r.squaredGLMM(lmer_pref)[2])
+      joined_data <-  
+        meansizes_gridcell %>% 
+        right_join(bind_rows(d1, d2), 
+                   by = join_by(population)) %>% 
+        left_join(plotdata_gridcell) %>% 
+        filter(!lowmean) %>% 
+        filter(!bimodal) %>% 
+        {if(inc_fished) . else filter(., !fished)} %>% 
+        select(population, species, size_class, mean_size, size_min, size_max, n, p, mu, sigma, meanlog, sdlog, better_dist)
+      
+      out <- tibble()
+      for(c in seq(0, 1.5, by = 0.01)){
+        
+        estimated_prob <- 
+          joined_data %>% 
+          mutate(mu = mean_size,
+                 sd = mu*c,
+                 sdlog = sqrt(log((c^2)+1)),
+                 meanlog = log(mean_size) - ((sdlog^2)/2)) %>%
+          mutate(p_norm = pnorm(size_max, mean = mu, sd = sd) -  pnorm(size_min, mean = mu, sd = sd),
+                 p_lnorm = plnorm(size_max, meanlog = meanlog, sdlog = sdlog) -  plnorm(size_min, meanlog = meanlog, sdlog = sdlog), 
+                 p_pref = ifelse(better_dist == "normal", p_norm, p_lnorm)) %>% 
+          select(population, species,
+                 size_class, better_dist, 
+                 p, p_norm, p_lnorm, p_pref)
+        
+        lmer_norm <- lmerTest::lmer(p ~ p_norm + (1|species), data = estimated_prob) 
+        lmer_lnorm <-  lmerTest::lmer(p ~ p_lnorm + (1|species), data = estimated_prob) 
+        lmer_pref <-  lmerTest::lmer(p ~ p_pref + (1|species), data = estimated_prob) 
+        
+        out <- 
+          out %>% 
+          bind_rows(
+            tibble(cv = c, 
+                   marginal_r2_normal = MuMIn::r.squaredGLMM(lmer_norm)[1], 
+                   conditional_r2_normal = MuMIn::r.squaredGLMM(lmer_norm)[2], 
+                   marginal_r2_lognormal = MuMIn::r.squaredGLMM(lmer_lnorm)[1], 
+                   conditional_r2_lognormal = MuMIn::r.squaredGLMM(lmer_lnorm)[2], 
+                   marginal_r2_pref = MuMIn::r.squaredGLMM(lmer_pref)[1], 
+                   conditional_r2_pref = MuMIn::r.squaredGLMM(lmer_pref)[2])
           )
+        
+        cat(c, "\n")
+      }
       
-      cat(c, "\n")
+      write_csv(out, paste0("output/tables/var_explained_bycv",  ifelse(inc_fished, "_incfished", "_unfished"), ".csv"))
+      rm(c, out, estimated_prob, lmer_norm, lmer_lnorm, lmer_pref, joined_data, d1, d2)
     }
     
+    
     p <- 
-      out %>% 
+      paste0("output/tables/var_explained_bycv",  ifelse(inc_fished, "_incfished", "_unfished"), ".csv") %>% 
+      read_csv(show_col_types = FALSE) %>% 
       pivot_longer(cols = contains("r2"), values_to = "r2") %>% 
       mutate(dist = str_extract(name, "(?<=r2_)[a-z]+"),
              r2_type = str_extract(name, "[a-z]+(?=_)")) %>% 
@@ -1360,12 +1138,10 @@ for(inc_fished in c(TRUE, FALSE)){
       ggplot(aes(x = cv, 
                  y = r2, 
                  color = dist)) +
-      # geom_vline(xintercept = median(cv_ests_gridcell %>% filter(data == "rls") %>% pull(cov_normal)), col = rgb(181, 144, 19, maxColorValue=255), lty = 2) +
-      # geom_vline(xintercept = median(cv_ests_gridcell %>% filter(data == "rls") %>% pull(cov_lognormal)), col = rgb(29, 84, 128, maxColorValue=255), lty = 2) +
       geom_line(linewidth = 2, alpha = 0.8) +
       scale_color_manual(values = c("normal" = rgb(181, 144, 19, maxColorValue=255),
                                     "lognormal" = rgb(29, 84, 128, maxColorValue=255), 
-                                    "pref" = "black"),
+                                    "pref" = "pink"),
                          labels = c("normal" = "Normal",
                                     "lognormal" = "Lognormal", 
                                     "pref" = "Preferred")) +
@@ -1381,6 +1157,7 @@ for(inc_fished in c(TRUE, FALSE)){
     
     all_median_cov <- 
       plotdata_gridcell %>% 
+      filter(!lowmean) %>% 
       {if(inc_fished) . else filter(., !fished)} %>%
       pull(cov_pref) %>% 
       median() %>% 
@@ -1403,12 +1180,6 @@ for(inc_fished in c(TRUE, FALSE)){
     
     lmer_norm <- lmerTest::lmer(p ~ p_norm + (1|species), data = estimated_prob) 
     lmer_lnorm <-  lmerTest::lmer(p ~ p_lnorm + (1|species), data = estimated_prob) 
-    
-    # lmer_norm %>% summary()
-    # lmer_lnorm %>% summary()
-    # 
-    # MuMIn::r.squaredGLMM(lmer_norm)
-    # MuMIn::r.squaredGLMM(lmer_lnorm)
     
     p_obs_vs_exp <-
       estimated_prob %>% 
@@ -1448,74 +1219,85 @@ for(inc_fished in c(TRUE, FALSE)){
            height = 25,
            width = 35,
            units = "cm")
+    
+    ggsave(filename = "fig3_main.png",
+           plot = p_obs_vs_exp,
+           height = 25,
+           width = 35,
+           units = "cm")
+    
+    ggsave(filename = "fig3_inset.png",
+           plot = p,
+           height = 25,
+           width = 35,
+           units = "cm")
   }
 }
 
 ```
 
-
 # Supplementary material 
 
-### Variation within species
+## Intraspecies CV variation
 
 ```{r}
 
-if(!file.exists("manuscript/ms_figures/supplementary/intraspecies_cv_variation.png") | rerun_msfigures == TRUE){
-
-species_highpops <- 
-  plotdata_gridcell %>% 
-  filter(!lowmean, 
-         !bimodal) %>% 
-  count(species, data) %>% 
-  arrange(desc(n)) %>% 
-  head(20) %>% 
-  pull(species) 
-
-
-p <-
-  plotdata_gridcell %>% 
-  filter(data == "rls") %>% 
-  filter(species %in% species_highpops) %>% 
-  left_join(meansizes_species %>% 
-              mutate(species = str_extract(population, ".*(?=__)")) %>% 
-              select(species, data, species_mean_size = mean_size)) %>% 
-  ggplot(aes(x = species_mean_size, 
-             col = fct_reorder(species, species_mean_size),
-             y = cov_pref)) +
-  geom_point(pch = 21) +
-  scale_x_continuous(label = label_number(suffix = "cm")) +
-  theme_cowplot() +
-  theme(legend.title = element_blank(), 
-        legend.text = element_text(size = 12)) +
-  labs(x = "Species mean size", 
-       y = "Coefficient of Variation") 
-
-ggsave(filename = "manuscript/ms_figures/supplementary/intraspecies_cv_variation.png",
-       plot = p,
-       height = 15,
-       width = 15*1.618,
-       units = "cm")
-
+if(!file.exists("manuscript/ms_figures/supplementary/intraspecies_cv_variation.png") | rerun_msfigures){
+  
+  species_highpops <- 
+    plotdata_gridcell %>% 
+    filter(!lowmean, 
+           !bimodal) %>% 
+    count(species, data) %>% 
+    arrange(desc(n)) %>% 
+    head(20) %>% 
+    pull(species) 
+  
+  
+  p <-
+    plotdata_gridcell %>% 
+    filter(!lowmean) %>% 
+    filter(data == "rls") %>% 
+    filter(species %in% species_highpops) %>% 
+    left_join(meansizes_species %>% 
+                mutate(species = str_extract(population, ".*(?=__)")) %>% 
+                select(species, data, species_mean_size = mean_size)) %>% 
+    ggplot(aes(x = species_mean_size, 
+               col = fct_reorder(species, species_mean_size),
+               y = cov_pref)) +
+    geom_point(pch = 21) +
+    scale_x_continuous(label = label_number(suffix = "cm")) +
+    theme_cowplot() +
+    theme(legend.title = element_blank(), 
+          legend.text = element_text(size = 12)) +
+    labs(x = "Species mean size", 
+         y = "Coefficient of Variation") 
+  
+  ggsave(filename = "manuscript/ms_figures/supplementary/intraspecies_cv_variation.png",
+         plot = p,
+         height = 15,
+         width = 15*1.618,
+         units = "cm")
+  rm(p, species_highpops)
 }
 
 ```
 
-
-
-## CV-meansize regression (unfiltered)
-
-Body size distributions with CV values greater than 99th percentile. 
+## Empirical distributions with high CV values
 
 ```{r}
 
-if(!file.exists(paste0("manuscript/ms_figures/supplementary/highcov_SSDs.png"))| rerun_msfigures == TRUE){
+if(!file.exists(paste0("manuscript/ms_figures/supplementary/highcov_SSDs.png")) | rerun_msfigures){
   
+  current_plotdata <- 
+    plotdata_gridcell %>% 
+    filter(!bimodal, 
+           !lowmean)
   
   high_cov <- 
-    plotdata_gridcell %>% 
-    filter(cov > quantile(plotdata_gridcell$cov, 0.99)) %>% 
+    current_plotdata %>% 
+    filter(cov_pref > quantile(current_plotdata$cov_pref, 0.99)) %>% 
     pull(population)
-  
   
   s_highcov_ssd <- 
     get(paste0("obsdata_rls_", "gridcell")) %>% 
@@ -1531,7 +1313,7 @@ if(!file.exists(paste0("manuscript/ms_figures/supplementary/highcov_SSDs.png"))|
     geom_path() +
     geom_point() +
     facet_wrap(~population_name, scales = "free") +
-    theme_cowplot(20) +
+    theme_cowplot(10) +
     labs(
       x = "Body size (cm)", 
       y = "Total abundance"
@@ -1547,7 +1329,6 @@ if(!file.exists(paste0("manuscript/ms_figures/supplementary/highcov_SSDs.png"))|
   
 }
 
-
 ```
 
 ## Distribution preference with meansize
@@ -1556,15 +1337,20 @@ Distribution preference as a function of mean size. Larger species are more like
 
 ```{r}
 
-if(!file.exists(paste0("manuscript/ms_figures/supplementary/preference_meansize.png"))| rerun_msfigures == TRUE){
+if(!file.exists(paste0("manuscript/ms_figures/supplementary/preference_meansize.png")) | rerun_msfigures){
+  
+  current_plotdata <- 
+    plotdata_gridcell %>% 
+    filter(!bimodal, 
+           !lowmean)
   
   logit_mod <-
-    plotdata_gridcell %>% 
+    current_plotdata %>% 
     mutate(normal_better = as.numeric(normal_better)) %>% 
     glm(normal_better ~ mean_size, data = ., family = "binomial")
   
   logit_plot <- 
-    plotdata_gridcell %>% 
+    current_plotdata %>% 
     ggplot(aes(
       x = mean_size,
       y = normal_better %>% as.numeric)) +
@@ -1574,7 +1360,7 @@ if(!file.exists(paste0("manuscript/ms_figures/supplementary/preference_meansize.
                 col = "darkblue", fill = "darkblue") +
     # geom_line(aes(y = predict(logit_mod, type = "response"))) +
     scale_x_continuous(label = label_number(suffix = "cm")) +
-     # scale_x_log10(label = label_number(suffix = "cm")) +
+    # scale_x_log10(label = label_number(suffix = "cm")) +
     theme_cowplot(20) +
     labs(
       x = "Mean size", 
@@ -1589,167 +1375,13 @@ if(!file.exists(paste0("manuscript/ms_figures/supplementary/preference_meansize.
   
 }
 
-
-```
-
-## Taxonomic scale CV estimates
-
-Species-level and ecoregion-level CV-meansize
-
-```{r}
-
-
-plotdata_ecoregion %>% 
-  filter(!bimodal) %>% 
-  pull(cov_pref)
-
-
-
-for(pop in c("species", "ecoregion")){
-  if(!file.exists(paste0("manuscript/ms_figures/supplementary/parameter_regression_", 
-                         pop,
-                         ".png"))| rerun_msfigures == TRUE){
-    
-    
-    
-    cbf_pop <- ifelse(pop %in% c("ecoregion", "gridcell"), "location", pop)
-    
-    s_plot_data <- 
-      bind_rows(
-        full_join(
-          get(paste0("rls_pars_normal_", pop)), 
-          get(paste0("rls_pars_lognormal_", pop)),
-          by = join_by(population, data)
-        ) %>% 
-          mutate(ll_diff = lp_normal - lp_lognormal) %>% 
-          mutate(normal_better = lp_normal>lp_lognormal), 
-        full_join(
-          get(paste0("cbf_pars_normal_", cbf_pop)), 
-          get(paste0("cbf_pars_lognormal_", cbf_pop)),
-          by = join_by(population, data)
-        ) %>% 
-          mutate(ll_diff = lp_normal - lp_lognormal) %>% 
-          mutate(normal_better = lp_normal>lp_lognormal)
-      ) %>% 
-      mutate(
-        normal_better = case_when(
-          is.na(mu) ~ FALSE, 
-          is.na(meanlog) ~ TRUE, 
-          TRUE ~ normal_better), 
-        cov_normal = sigma/mu,
-        cov_lognormal = sqrt(exp(sdlog^2)-1), 
-        cov_pref = case_when(normal_better ~ cov_normal, 
-                             TRUE ~ cov_lognormal),
-        better_dist = ifelse(normal_better, "normal", "lognormal"), 
-        lognormal_mean = exp(meanlog  + ((sdlog^2)/2))
-      ) %>% 
-      left_join(get(paste0("meansizes_", pop)), 
-                by = join_by(population, data)) %>% 
-      filter(!(data == "rls" & mu < 2.5),
-             !(data == "rls" & lognormal_mean < 2.5)) %>% 
-      left_join(get(paste0("plotdata_", pop)) %>% select(population, bimodal, lowmean)) %>% 
-      filter(!bimodal, !lowmean)
-    
-    s_param_regress_1 <-
-      s_plot_data %>% 
-      ggplot() + 
-      aes(
-        x = mean_size, 
-        y = cov_pref, 
-        pch = data,
-        col = better_dist
-      ) +
-      annotate(geom = "rect",
-               xmin = min(s_plot_data$mean_size), 
-               xmax = max(s_plot_data$mean_size), 
-               ymin = quantile(s_plot_data$cov_pref, 0.975),
-               ymax = quantile(s_plot_data$cov_pref, 0.025), 
-               fill = "grey90", 
-               col = "transparent") +
-      annotate(geom = "rect",
-               xmin = min(s_plot_data$mean_size), 
-               xmax = max(s_plot_data$mean_size), 
-               ymin = quantile(s_plot_data$cov_pref, 0.05),
-               ymax = quantile(s_plot_data$cov_pref, 0.95), 
-               fill = "grey70", 
-               col = "transparent") +
-      annotate(geom = "rect",
-               xmin = min(s_plot_data$mean_size), 
-               xmax = max(s_plot_data$mean_size), 
-               ymin = quantile(s_plot_data$cov_pref, 0.1),
-               ymax = quantile(s_plot_data$cov_pref, 0.9), 
-               fill = "grey50", 
-               col = "transparent") +
-      annotate(geom = "text", 
-               x = 100, y = quantile(s_plot_data$cov_pref, 0.9) - ((quantile(s_plot_data$cov_pref, 0.9) - quantile(s_plot_data$cov_pref, 0.1))/2),
-               label = "80%") +
-      annotate(geom = "text", 
-               x = 100, y = quantile(s_plot_data$cov_pref, 0.95) - ((quantile(s_plot_data$cov_pref, 0.95) - quantile(s_plot_data$cov_pref, 0.9))/2), 
-               label = "90%") +
-      annotate(geom = "text", 
-               x = 100, y = quantile(s_plot_data$cov_pref, 0.975) - ((quantile(s_plot_data$cov_pref, 0.975) - quantile(s_plot_data$cov_pref, 0.95))/2), 
-               label = "95%") +
-      geom_point(alpha = 1) +
-      scale_x_continuous(trans = "log10", labels = label_number(suffix="cm"), 
-                         limits = range(s_plot_data$mean_size)) +
-      scale_shape_manual(values = c("rls" = 21, "cbf" = 24), 
-                         labels = c("rls" = "Reef Life Survey (binned)",
-                                    "cbf" = "Cryptobenthic (continuous)")) +
-      scale_color_manual(values = c("normal" = rgb(181, 144, 19, maxColorValue=255),
-                                    "lognormal" = rgb(29, 84, 128, maxColorValue=255)),
-                         labels = c("normal" = "Normal preferred",
-                                    "lognormal" = "Lognormal preferred")) +
-      labs(x = "Log mean size", 
-           y = "Coefficient of variation") +
-      theme_cowplot(20) +
-      theme(legend.position = c(0.01, 1),
-            legend.justification = c(0,1), 
-            legend.background = element_rect(color = "black"),
-            legend.margin=margin(0,10,10,10), 
-            legend.title = element_blank())
-    
-    s_param_regress_2 <- 
-      s_plot_data %>% 
-      ggplot() +
-      aes(
-        x = cov_pref, 
-        fill = better_dist
-      ) +
-      scale_fill_manual(values = c("normal" = rgb(181, 144, 19, maxColorValue=255),
-                                   "lognormal" = rgb(29, 84, 128, maxColorValue=255))) +
-      geom_density(alpha = 0.3, col = "black") +
-      coord_flip() +
-      theme_void(20) +
-      theme(legend.position = "none")
-    
-    
-    s_param_regress_all <- 
-      s_param_regress_1 + s_param_regress_2 + 
-      plot_layout(ncol=2, widths=c(6,1)) + 
-      plot_annotation(tag_levels = 'A')
-    
-    ggsave(filename = paste0("manuscript/ms_figures/supplementary/parameter_regression_", 
-                             pop,
-                             ".png"),
-           plot = s_param_regress_all,
-           height = 20,
-           width = 32,
-           units = "cm")
-    
-    rm(s_param_regress_1, s_param_regress_2)
-    
-  }
-  
-  
-}
-
 ```
 
 ## Does binning influence distribution preference?
 
 ```{r}
 
-if(!file.exists(paste0("manuscript/ms_figures/supplementary/binning_influence_preference.png"))| rerun_msfigures == TRUE){
+if(!file.exists(paste0("manuscript/ms_figures/supplementary/binning_influence_preference.png")) | rerun_msfigures){
   
   mod_out_filename_sup <- function(population_level, modelname, output_type, binning){
     paste0("output/model_fits/supplementary/cbf_", 
@@ -1778,9 +1410,8 @@ if(!file.exists(paste0("manuscript/ms_figures/supplementary/binning_influence_pr
     
     for(mod in c("normal", "lognormal")){
       
-# 
-#       if(!((file.exists(paste("output/model_fits/supplementary/cbf_pars", mod, pop, "cont.csv", sep = "_"))) &
-#            (file.exists(paste("output/model_fits/supplementary/cbf_pars", mod, pop, "binned.csv", sep = "_"))))){
+      if(!(file.exists(paste0("output/model_fits/supplementary/cbf_pars_", mod, "_", pop, "_binned.csv")) &
+           file.exists(paste0("output/model_fits/supplementary/cbf_pars_", mod, "_", pop, "_cont.csv")))){
         
         cbf_model_pars <- tibble(population = character())
         cbf_model_convergence <- tibble(population = character())
@@ -1959,13 +1590,13 @@ if(!file.exists(paste0("manuscript/ms_figures/supplementary/binning_influence_pr
         cbf_model_convergence %>% write_csv(mod_out_filename_sup(pop, mod, "convergence", "cont"))
         cbf_model_errors %>% write_csv(mod_out_filename_sup(pop, mod, "errors", "cont"))
         
-        cbf_model_pars_binned %>% write_csv(mod_out_filename_sup(pop, mod, "errors", "binned"))
-        cbf_model_convergence_binned %>% write_csv(mod_out_filename_sup(pop, mod, "errors", "binned"))
+        cbf_model_pars_binned %>% write_csv(mod_out_filename_sup(pop, mod, "pars", "binned"))
+        cbf_model_convergence_binned %>% write_csv(mod_out_filename_sup(pop, mod, "convergence", "binned"))
         cbf_model_errors_binned %>% write_csv(mod_out_filename_sup(pop, mod, "errors", "binned"))
         
-      # } else {
-      #   cat(paste("Already ran", mod, "at the", pop, "level (binned and continuous)\n"))
-      # }
+      } else {
+        cat(paste("Already ran", mod, "at the", pop, "level (binned and continuous)\n"))
+      }
     }
   }
   
@@ -2018,17 +1649,17 @@ if(!file.exists(paste0("manuscript/ms_figures/supplementary/binning_influence_pr
     select(population, type, normal_better) %>% 
     left_join(meansizes_ecoregion %>% filter(data == "cbf"))     ###### WHY IS THIS NOT GRIDCELL LEVEL
   
-  # p <- 
-  pdat %>% 
+  p <-
+    pdat %>% 
     ggplot(aes(x = mean_size, y = as.numeric(normal_better))) +
     geom_point(alpha = 0.6, pch = 21, size = 3) +
     geom_smooth(method = "glm",
                 method.args = list(family = "binomial"),
                 col = "darkblue", 
                 fill = "darkblue", 
-                data = filter(pdat, type == "binned")) +
+                data = pdat) +
     theme_cowplot(20) +
-    theme(plot.background = element_rect(col ="red"))+
+    # theme(plot.background = element_rect(col ="red"))+
     labs(
       x = "Species mean size (cm)", 
       y = "Normal preferred"
@@ -2047,157 +1678,195 @@ if(!file.exists(paste0("manuscript/ms_figures/supplementary/binning_influence_pr
 
 ```
 
-
-
-# Other plots/data
-
-## Models
+## CV vs Meansize model
 
 ```{r}
 
-mod_data <- 
-  plotdata_gridcell %>% 
-  filter(!lowmean,
-         !bimodal)
 
-m1 <- lmerTest::lmer(log(cov_pref) ~ mean_size*data + (1|species), data = mod_data) 
-summary(m1)
-m1_pred <- effects::effect(term= "mean_size", mod= m1) %>% as_tibble()
 
-mod_data %>% 
-  mutate(fit = predict(m1)) %>% 
-  ggplot() + 
-  aes(
-    x = mean_size
-  ) +
-  geom_point(aes( y = cov_pref, pch = data,
-                  col = better_dist)) +
-  geom_ribbon(aes(ymin = exp(lower), ymax = exp(upper)), data = m1_pred, alpha = 0.5) +
-  geom_line(aes(y = exp(fit)), data = m1_pred) +
-  scale_x_log10()
+if(!file.exists("manuscript/ms_figures/supplementary/cv_meansize_modelled.png") | rerun_msfigures){
+  mod_data <- 
+    plotdata_gridcell %>% 
+    filter(!lowmean,
+           !bimodal)
+  
+  cv_mod <- lmerTest::lmer(log(cov_pref) ~ mean_size*data + (1|species), data = mod_data) 
+  
+  summary(cv_mod)
+  m1_pred <- effects::effect(term = "mean_size", 
+                             mod = cv_mod, 
+                             xlevels = list(mean_size = seq(1, 100, 1))) %>% 
+    as_tibble()
+  
+  p <- 
+    mod_data %>% 
+    ggplot() + 
+    aes(x = mean_size) +
+    geom_point(aes( y = cov_pref,
+                    pch = data,
+                    col = better_dist)) +
+    geom_ribbon(aes(ymin = exp(lower), 
+                    ymax = exp(upper)), 
+                data = m1_pred, alpha = 0.5) +
+    geom_line(aes(y = exp(fit)), 
+              data = m1_pred) +
+    scale_x_log10(label = label_number(suffix = "cm")) +
+    scale_shape_manual(values = c("rls" = 21, "cbf" = 24), 
+                       labels = c("rls" = "Reef Life Survey (binned)",
+                                  "cbf" = "Cryptobenthic (continuous)")) +
+    scale_color_manual(values = c("normal" = rgb(181, 144, 19, maxColorValue=255),
+                                  "lognormal" = rgb(29, 84, 128, maxColorValue=255)),
+                       labels = c("normal" = "Normal preferred",
+                                  "lognormal" = "Lognormal preferred")) +
+    labs(x = "Log mean size", 
+         y = "Coefficient of variation") +
+    theme_cowplot(20) +
+    theme(legend.position = "bottom", legend.title = element_blank())
+  
+  ggsave(filename = "manuscript/ms_figures/supplementary/cv_meansize_modelled.png",
+         plot = p,
+         height = 15,
+         width = 32,
+         units = "cm")
+  rm(p)
+}
+
+```
+
+## Population sizes
+
+```{r}
+
+get_npops <- Vectorize(function(src, pop, has_cv, rm_bimodal, rm_lowmean){
+  
+  temp_pop <- ifelse(pop == "location", "gridcell", pop)
+  cbf_pop  <- ifelse(pop %in% c("ecoregion", "gridcell"), "location", pop)
+  
+  if(src == "all"){
+    
+    {if(!has_cv) bind_rows(get(paste("obsdata", "rls", pop, sep = "_")), 
+                           get(paste("obsdata", "cbf", cbf_pop, sep = "_"))) else get(paste("plotdata", pop, sep = "_"))} %>% 
+      {if(rm_bimodal) filter(., !bimodal) else .} %>% 
+      {if(rm_lowmean) filter(., !lowmean) else .} %>% 
+      pull(population) %>% 
+      unique() %>% 
+      length()
+  } else {
+    
+    {if(!has_cv) get(paste("obsdata", src, pop, sep = "_")) else get(paste("plotdata", temp_pop, sep = "_")) %>% filter(data == src)} %>% 
+      {if(rm_bimodal) filter(., !bimodal) else .} %>% 
+      {if(rm_lowmean) filter(., !lowmean) else .} %>% 
+      pull(population) %>% 
+      unique() %>% 
+      length()
+    
+  }
+})
+
+
+if(!file.exists("output/tables/population_sizes.csv") | rerun_tables){
+  tibble(src = c("rls", "all")) %>%
+    expand_grid(pop = c("species", "ecoregion", "gridcell")) %>% 
+    bind_rows(tibble(src = "cbf", 
+                     pop = c("species", "location"))) %>% 
+    expand_grid(has_cv = c(TRUE, FALSE), 
+                rm_bimodal = c(TRUE, FALSE),
+                rm_lowmean = c(TRUE, FALSE)) %>% 
+    filter(!(!has_cv & rm_bimodal)) %>% 
+    filter(!(!has_cv & rm_lowmean)) %>% 
+    mutate(popsize = get_npops(src, pop, has_cv, rm_bimodal, rm_lowmean)) %>% 
+    write_csv("output/tables/population_sizes.csv")
+}
+
+```
+
+## CV estimates
+
+```{r}
+
+
+get_cv <- Vectorize(function(src, pop, rm_bimodal, rm_fished, mod, quant){
+  
+  pop <- ifelse(pop == "location", "gridcell", pop)
+  
+  get(paste0("plotdata_", pop)) %>% 
+    filter(!lowmean) %>% 
+    {if(src != "all") filter(., data == src) else .} %>% 
+    {if(rm_bimodal) filter(., !bimodal) else .} %>% 
+    {if(rm_fished) filter(., !fished) else .} %>% 
+    pull(sym(paste0("cov_", mod))) %>% 
+    quantile(quant)
+  
+})
+
+if(!file.exists("output/tables/cv_quantiles.csv") | rerun_tables){
+  
+  tibble(src = c("rls", "all")) %>%
+    expand_grid(pop = c("species", "ecoregion", "gridcell")) %>% 
+    bind_rows(tibble(src = "cbf", 
+                     pop = c("species", "location"))) %>% 
+    expand_grid(rm_bimodal = c(TRUE, FALSE), 
+                rm_fished = c(TRUE, FALSE), 
+                mod = c("normal", "lognormal", "pref"), 
+                quant = c(0.025, 0.05, 0.1, 0.5, 0.9, 0.95, 0.975)) %>% 
+    mutate(cv = get_cv(src, pop, rm_bimodal, rm_fished, mod, quant)) %>% 
+    pivot_wider(values_from = cv, 
+                names_from = quant) %>% 
+    write_csv("output/tables/cv_quantiles.csv")
+}
+
+
+# all populations
+wilcox.test(
+  plotdata_gridcell %>% filter(better_dist == "normal") %>% pull(cov_pref), 
+  plotdata_gridcell %>% filter(better_dist == "lognormal") %>% pull(cov_pref)
+)
+
+# unimodal populations
+wilcox.test(
+  get(paste0("plotdata_", "gridcell"))  %>% 
+    filter(!lowmean,
+           !bimodal,
+           better_dist == "normal") %>% 
+    pull(cov_pref), 
+  get(paste0("plotdata_", "gridcell"))  %>% 
+    filter(!lowmean,
+           !bimodal,
+           better_dist == "lognormal") %>% 
+    pull(cov_pref))
+
+wilcox.test(normal_cov, conf.int = TRUE, conf.level = 0.95)
+wilcox.test(lognormal_cov, conf.int = TRUE, conf.level = 0.95)
+
+# species-level
+wilcox.test(normal_cov_species, conf.int = TRUE, conf.level = 0.95)
+wilcox.test(lognormal_cov_species, conf.int = TRUE, conf.level = 0.95)
+
+wilcox.test(normal_cov, lognormal_cov)
 
 
 ```
 
-
-## Useful numbers
+## Convergence issues
 
 ```{r}
-# how many populations total?
-length(unique(obsdata_cbf_location$population)) + length(unique(obsdata_rls_gridcell$population))
-length(unique(plotdata_gridcell$population))
-
-# how many species total?
-plotdata_gridcell %>% 
-  mutate(species = str_extract(population, ".*(?=__)")) %>% 
-  pull(species) %>% 
-  unique() %>% 
-  length()
-
-# all cov values together, 80% bounds
-c(plotdata_gridcell$cov_normal, plotdata_gridcell$cov_lognormal) %>% 
-  quantile(c(0.025, 0.1, 0.5, 0.9, 0.975))
-
-# preference cov values, 80% bounds
-plotdata_gridcell$cov_pref %>% 
-  quantile(c(0.025, 0.1, 0.5, 0.9, 0.975))
-
-# normal cov values together, 80% bounds
-plotdata_gridcell$cov_normal %>% 
-  quantile(c(0.025, 0.1, 0.5, 0.9, 0.975))
-
-# lognormal cov values together, 80% bounds
-plotdata_gridcell$cov_lognormal %>% 
-  quantile(c(0.025, 0.1, 0.5, 0.9, 0.975))
-
-# what proportion of RLS data are bimodal?
-n_bimodal_rls_gridcell <- 
-  read_csv("input/data_cleaning/bimodal_gridcell.csv")$population %>% 
-  length()
-
-1 - n_bimodal_rls_gridcell/length(unique(obsdata_rls_gridcell$population))
-
 
 # how many RLS had convergence issues?
 not_run <- 
-  nonconverge_pops("lognormal", "gridcell") %>% 
-  c(nonconverge_pops("normal", "gridcell")) %>% 
+  nonconverge_pops("rls", "lognormal", "gridcell") %>% 
+  c(nonconverge_pops("rls", "normal", "gridcell")) %>% 
   unique()
 
-plotdata_gridcell %>% 
-  filter(data == "rls") %>% 
-  filter(population %!in% nonconverge_pops("lognormal", "gridcell")) %>% 
-  filter(population %!in% nonconverge_pops("normal", "gridcell"))
-
-# how many populations were removed?
-lowmean_gridecell <- plotdata_gridcell %>% filter(lowmean) %>% pull(population)
-bimodal_gridcell <- read_csv("input/data_cleaning/bimodal_gridcell.csv")$population
-notrun_gridell <- c(nonconverge_pops("lognormal", "gridcell"), nonconverge_pops("normal", "gridcell")) %>% unique()
-
-obsdata_rls_gridcell %>% 
-  select(population) %>% 
-  distinct() %>% 
-  mutate(low_mean = population %in% lowmean_gridecell, 
-         bimodal = population %in% bimodal_gridcell,
-         model_error = population %in% notrun_gridell) %>% 
-  filter((low_mean+
-            bimodal+
-            model_error)>0)
-
-obsdata_rls_gridcell %>% 
-  filter(population %in% notrun_gridell) %>% 
-  filter(population %!in% lowmean_gridecell) %>% 
-  filter(population %!in% bimodal_gridcell) %>% 
-  ggplot(aes(x = size_class, y = p)) +
-  geom_point() + geom_line() +
-  facet_wrap(~population, scales = "free")
-
-rls_model_errors %>% 
-  filter(population == "Chrysophrys auratus__-33_152")
-
-bimodal_pops <- 
-  paste0("input/data_cleaning/bimodal_", pop, ".csv") %>% 
-  read_csv(show_col_types = FALSE) %>% 
-  pull(population)
-
-get(paste0("plotdata_", pop)) %>% 
-  filter(data == "rls") %>% #3076
-  filter(!population %in% bimodal_pops) %>% # 3018
-  filter(!lowmean) # 2850
-
-
-plotdata_gridcell %>% filter(data == "rls")
-
-
-
-plotdata_gridcell %>% 
-  filter(!lowmean, 
-         !bimodal) %>% 
-  count(normal_better, data)
-
-# 
-1063/2897
-1834/2897
-
-
-
-
-nonconverge_pops("normal", "gridcell")
-nonconverge_pops("lognormal", "gridcell")
-c(nonconverge_pops("lognormal", "gridcell"), nonconverge_pops("normal", "gridcell")) %>% unique() %>% 
-  
-  nonconverge_pops("normal", "gridcell")[nonconverge_pops("normal", "gridcell") %!in% nonconverge_pops("lognormal", "gridcell")] %>% length()
-nonconverge_pops("lognormal", "gridcell")[nonconverge_pops("lognormal", "gridcell") %!in% nonconverge_pops("normal", "gridcell")] %>% length()
-
+nonconverge_pops("rls", "lognormal", "gridcell")[nonconverge_pops("rls", "lognormal", "gridcell") %!in% nonconverge_pops("rls", "normal", "gridcell")] %>% length()
+nonconverge_pops("rls", "normal", "gridcell")[nonconverge_pops("rls", "normal", "gridcell") %!in% nonconverge_pops("rls", "lognormal", "gridcell")] %>% length()
 
 ```
-
 
 ## Species common to both CBF and RLS
 
 ```{r}
 
-if(!file.exists("manuscript/ms_figures/supplementary/cbf_rls_common_sdd.png")| rerun_msfigures == TRUE){
+if(!file.exists("manuscript/ms_figures/supplementary/cbf_rls_common_sdd.png")| rerun_msfigures){
   rls_species <- get(paste0("obsdata_rls_", "species")) %>% pull(species)
   cbf_species <- get(paste0("obsdata_cbf_", "species")) %>% pull(species)
   
@@ -2227,95 +1896,13 @@ if(!file.exists("manuscript/ms_figures/supplementary/cbf_rls_common_sdd.png")| r
 
 ```
 
-## Number of species (at various scales)
-
-```{r}
-
-rls_nspp_species <- obsdata_rls_species$species %>% unique() %>% length()
-rls_nspp_ecoregion <- obsdata_rls_ecoregion$species %>% unique() %>% length()
-rls_nspp_gridcell <- obsdata_rls_gridcell$species %>% unique() %>% length()
-cbf_nspp_species <- obsdata_cbf_species$species %>% unique() %>% length()
-cbf_nspp_location <- obobsdata_cbf_location$species %>% unique() %>% length()
-
-```
-
-## CV quanitle values
-
-```{r}
-
-q_cov <- Vectorize(function(quant, pop) quantile(get(paste0("plotdata_", pop)) %>% filter(!lowmean) %>% pull(cov), quant))
-
-
-bimodal_species <- read_csv("input/data_cleaning/bimodal_species.csv", 
-                            show_col_types = FALSE) %>% pull(population)
-bimodal_gridcell <- read_csv("input/data_cleaning/bimodal_gridcell.csv", 
-                             show_col_types = FALSE) %>% pull(population)
-
-normal_cov <- plotdata_gridcell %>% filter(better_dist == "normal") %>% pull(cov_pref)
-lognormal_cov <- plotdata_gridcell  %>% filter(better_dist == "lognormal") %>% pull(cov_pref)
-
-normal_cov_species <- plotdata_species %>% filter(better_dist == "normal") %>% pull(cov_pref)
-lognormal_cov_species <- plotdata_species  %>% filter(better_dist == "lognormal") %>% pull(cov_pref)
-
-tibble(q = c(0.005, 0.025, 0.1, 0.5, 0.9, 0.975, 0.995)) %>% 
-  expand_grid(pop = c("gridcell", "species")) %>% 
-  mutate(cv = q_cov(q, pop)) %>% 
-  pivot_wider(values_from = cv, names_from = pop) %>% 
-  ggplot(aes(gridcell, species)) +
-  geom_point() +
-  geom_abline(slope = 1)
-
-
-tibble(q =seq(0, 1, by = 0.001)) %>% 
-  expand_grid(pop = c("gridcell", "species")) %>% 
-  mutate(cv = q_cov(q, pop)) %>% 
-  pivot_wider(values_from = cv, names_from = pop) %>% 
-  ggplot(aes(gridcell, species)) +
-  geom_point() +
-  geom_abline(slope = 1)
-
-# all populations
-wilcox.test(
-  plotdata_gridcell %>% filter(better_dist == "normal") %>% pull(cov_pref), 
-  plotdata_gridcell %>% filter(better_dist == "lognormal") %>% pull(cov_pref)
-)
-
-# unimodal populations
-wilcox.test(
-  get(paste0("plotdata_", "gridcell"))  %>% 
-    filter(!lowmean,
-           better_dist == "normal",
-           population %!in% bimodal_gridcell) %>% pull(cov), 
-  get(paste0("plotdata_", "gridcell"))  %>% 
-    filter(!lowmean,
-           better_dist == "lognormal", 
-           population %!in% bimodal_gridcell) %>% pull(cov))
-
-# 
-wilcox.test(
-  get(paste0("plotdata_", "species"))  %>% filter(!lowmean, better_dist == "normal") %>% pull(cov), 
-  get(paste0("plotdata_", "species"))  %>% filter(!lowmean, better_dist == "lognormal") %>% pull(cov))
-
-wilcox.test(normal_cov, conf.int = TRUE, conf.level = 0.95)
-wilcox.test(lognormal_cov, conf.int = TRUE, conf.level = 0.95)
-
-# species-level
-wilcox.test(normal_cov_species, conf.int = TRUE, conf.level = 0.95)
-wilcox.test(lognormal_cov_species, conf.int = TRUE, conf.level = 0.95)
-
-wilcox.test(normal_cov, lognormal_cov)
-
-```
-
-
 
 ## Numerical calculation of the parameters
 
 ```{r}
 
 
-if(!file.exists("manuscript/ms_figures/supplementary/parameter_regression_numerical.png")| rerun_msfigures == TRUE){
-  
+if(!file.exists("manuscript/ms_figures/supplementary/parameter_regression_numerical.png")| rerun_msfigures){
   
   for(pop in c("species", "ecoregion", "gridcell")){
     
@@ -2342,17 +1929,17 @@ if(!file.exists("manuscript/ms_figures/supplementary/parameter_regression_numeri
     plot_data2_cbf <- 
       obsdata_filename("cbf", cbf_pop) %>%
       read_csv(show_col_types = FALSE) %>% 
-      mutate(size_cm = tl_cm) %>% 
-      select(population, size_cm) %>% 
+      select(population, size_class, n) %>% 
+      uncount(n) %>% 
       summarise(
-        mean = mean(size_cm), 
-        sd = sd(size_cm), 
-        logmean = mean(log(size_cm)), 
-        logsd = sd(log(size_cm)), 
+        mean = mean(size_class), 
+        sd = sd(size_class), 
+        logmean = mean(log(size_class)), 
+        logsd = sd(log(size_class)), 
         .by = population
       ) %>% 
       mutate(cov1 = sd/mean, 
-             cov2 = sqrt(exp(logsd)-1)) %>% 
+             cov2 = sqrt(exp(logsd)-1))  %>% 
       mutate(data = "cbf")
     
     bind_rows(plot_data2_rls, 
@@ -2481,15 +2068,167 @@ if(!file.exists("manuscript/ms_figures/supplementary/parameter_regression_numeri
 
 ```
 
+## Predicted distribution 
 
 ```{r}
-plot_dist <- function(meansize) tibble(x = seq(1, 50, by = 0.1)) %>% mutate(normal = dnorm(x, meansize, 15*0.3), lognormal = dlnorm(x, (log(meansize)-0.043), 0.291)) %>% pivot_longer(cols = c(normal, lognormal)) %>% ggplot(aes(x, value, col = name)) + geom_line() +
-  geom_vline(xintercept = meansize, lty = 2)
 
-plot_dist(40)
-plot_dist(20)
-plot_dist(10)
-plot_dist(5)
+rls_bin_breaks <- 
+  c(2.5, 5.0, 7.5,  10.0, 12.5, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 
+    50.0, 62.5, 75.0, 87.5, 100.0, 112.5, 125.0, 137.5, 150.0, 
+    162.5, 175.0, 187.5, 200.0, 250.0, 300.0, 350.0, 400.0)
 
+predict_size <- function(meansize){
+  
+  tibble(size_class = c(0, rls_bin_breaks, 500)) %>% 
+    mutate(
+      size_indx  = 0:(length(size_class)-1),
+      size_min = (size_class + lag(size_class))/2,
+      size_max = lead(size_min)
+    ) %>% 
+    filter(size_class %in% c(rls_bin_breaks, 500)) %>% 
+    mutate(Normal = pnorm(size_max, meansize, meansize*0.3) - pnorm(size_min, meansize, meansize*0.3), 
+           Lognormal = plnorm(size_max, log(meansize)-0.043, 0.291) - plnorm(size_min, log(meansize)-0.043, 0.291)) %>% 
+    pivot_longer(cols = contains("ormal"), 
+                 names_to = "dist", 
+                 values_to = "p") %>% 
+    filter(p > 0.001) 
+}
+
+
+pred_vs_obs <- function(pop_indx, inc_obs = TRUE){
+  myppop <- 
+    obsdata_rls_gridcell %>% 
+    filter(population_indx == pop_indx)
+  
+  mypop_meansize <- 
+    myppop %>% 
+    uncount(n) %>% 
+    pull(size_class) %>% 
+    mean()
+  
+  print(paste("Mean size =", mypop_meansize %>% round(1), "cm") )
+  
+  predict_size(mypop_meansize) %>% 
+    bind_rows(myppop %>% 
+                select(population, size_class, size_min, size_max, p) %>% 
+                mutate(dist = "Observed")) %>% 
+    {if(!inc_obs) filter(., dist != "Observed") else .} %>% 
+    ggplot(aes(x = size_class, y = p, color = dist)) +
+    geom_path(linewidth = 2) +
+    geom_point(size = 4) +
+    theme_cowplot() +
+    labs(x = "Body size (cm)", y = "Probability") +
+    theme(legend.position = c(1,1), 
+          legend.justification = c(1.1,1.1), 
+          legend.title = element_blank()) +
+    scale_color_manual(values = c("Lognormal" = rgb(29, 84, 128, maxColorValue=255), 
+                                  "Normal" = rgb(181, 144, 19, maxColorValue=255), 
+                                  "Observed" = "black"))
+}
+
+pred_vs_obs(4, FALSE)
+pred_vs_obs(4, TRUE)
+
+
+```
+
+```{r}
+
+presdat1 <- 
+  obsdata_rls_gridcell %>% 
+  filter(population_indx < 10) 
+
+presdat2 <- 
+  plotdata_gridcell %>% 
+  filter(population %in% presdat1$population) %>% 
+  right_join(presdat1 %>% select(population, size_class, size_min, size_max)) %>% 
+  mutate(p_norm = pnorm(size_max, mu, sigma) - pnorm(size_min, mu, sigma), 
+         p_lnorm = plnorm(size_max, meanlog, sdlog) - plnorm(size_min, meanlog, sdlog)) %>% 
+  select(population, size_class, p_norm, p_lnorm) %>% 
+  pivot_longer(cols = contains("p_"))
+
+
+presdat1 %>% 
+  ggplot() +
+  geom_point(aes(x = size_class, 
+                 y = p)) +
+  geom_path(aes(x = size_class, 
+                y = p)) +
+  geom_path(aes(y = value, x = size_class, col = name), data = presdat2, linewidth = 1.5, alpha = 0.8) +
+  scale_color_manual(values = c("p_lnorm" = rgb(29, 84, 128, maxColorValue=255), 
+                                "p_norm" = rgb(181, 144, 19, maxColorValue=255)), 
+                     label = c("p_lnorm" = "Lognormal", 
+                               "p_norm" = "Normal")) +
+  facet_wrap(~population, scales = "free") +
+  theme_cowplot() +
+  labs(x = "Body size (cm)", 
+       y = "Probability") +
+  theme(legend.title = element_blank())
+
+```
+
+## Number of transect per gridcell
+
+```{r}
+
+n_transects_gridcell <- 
+  obsdata_rls_gridcell %>% 
+  select(population, n_transects) %>% 
+  distinct()
+
+plotdata_gridcell %>% 
+  left_join(n_transects_gridcell, by = join_by(population)) %>% 
+  filter(!lowmean) %>% 
+  ggplot(aes(x = n_transects %>% log(),
+             y = cov_pref)) +
+  geom_point(alpha = 0.1) +
+  geom_smooth()
+
+plotdata_gridcell %>% 
+  left_join(n_transects_gridcell, by = join_by(population)) %>% 
+  filter(!lowmean) %>% 
+  lm(cov_pref ~ (n_transects), data = .) %>% 
+  summary()
+
+# the more transects at a given gridcell the larger the CV, but extremely minor, 0.0001 increase in CV per transect/survey
+
+plotdata_gridcell %>% 
+  left_join(n_transects_gridcell, by = join_by(population)) %>% 
+  filter(!lowmean) %>% 
+  ggplot(aes(x = n_transects,
+             y = normal_better %>% as.numeric())) +
+  geom_point(alpha = 0.1) +
+  geom_smooth()
+
+
+```
+
+```{r}
+
+predat3 <- 
+obsdata_cbf_location %>% 
+  filter(cumsum(!duplicated(population)) %in% 3:11) %>% 
+  ggplot(aes(x = size_class, y = n)) +
+  geom_point() +
+  geom_path() +
+  facet_wrap(~population, scales = "free", ncol = 3) +
+  theme_cowplot() +
+  labs(y = "Count", 
+       x = "Body size (cm)")
+
+predat4 <- 
+  obsdata_rls_gridcell %>% 
+  filter(cumsum(!duplicated(population)) %in% 3:11) %>% 
+  ggplot(aes(x = size_class, y = n)) +
+  geom_point() +
+  geom_path() +
+  facet_wrap(~population, scales = "free", ncol = 3) +
+  theme_cowplot() +
+  labs(y = "Count", 
+       x = "Body size (cm)")
+
+ggsave("cbf_dists.png", predat3, width = 10, height = 10)
+ggsave("rls_dists.png", predat4, width = 10, height = 10)
+  
 ```
 
