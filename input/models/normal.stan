@@ -8,7 +8,7 @@ data {
 }
 
 parameters {
-  real               mu;     // population meanlog
+  real<lower = 0.0>     mu;     // population meanlog
   real<lower=0.001>  sigma;  // population sdlog
   real<lower=0.001>  theta0; // variance parameter
 }
@@ -23,7 +23,7 @@ model {
   
   theta0 ~ exponential(0.01);
   sigma  ~ exponential(0.02);
-  mu     ~ normal(10.0, 5.0);
+  // mu     ~ normal(10.0, 5.0);
   
   nconst = 1.0 - normal_cdf(low_bound, mu, sigma); 
   

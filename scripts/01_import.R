@@ -16,7 +16,7 @@ library(arrow) # for parquet files
 rls_min_bins  <- 4
 rls_min_count <- 200
 cbf_min_count <- 10
-force_run <- TRUE
+force_run <- FALSE
 
 # Targeted species =============================================================
 
@@ -63,6 +63,10 @@ for(pop in c("species", "ecoregion", "gridcell")){
                 by = join_by(survey_id)) %>% 
       rename(species = species_name) %>% 
       mutate(ecoregion = str_replace_all(ecoregion, "/", "-"), 
+             ecoregion = str_replace_all(ecoregion, "Great Barrier Reef", "GBR"), 
+             ecoregion = str_replace_all(ecoregion, "Central", "C"), 
+             ecoregion = str_replace_all(ecoregion, "Northern", "N"), 
+             ecoregion = str_replace_all(ecoregion, "Southern", "S"), 
              lat_grid = round(latitude), 
              lon_grid = round(longitude), 
              gridcell = paste(lat_grid, lon_grid, sep = "_"), 
@@ -122,7 +126,6 @@ for(pop in c("species", "ecoregion", "gridcell")){
 # CBF import ===================================================================
 
 for(pop in c("species", "location")){
-  
   
   filename <-
     paste0("input/data/processed/cbf_obsdata_", 
