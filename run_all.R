@@ -1,0 +1,16 @@
+library(tidyverse)
+library(scales)
+library(cowplot)
+library(rstan)
+library(posterior)
+library(stringr)
+library(arrow)
+
+
+source("scripts/00_setup.R")
+source("scripts/01_import.R")
+source("scripts/02_wrangling.R")
+source("scripts/03_datavis.R")
+source("scripts/04_modelling.R")
+source("scripts/05_figures.R")
+source("scripts/06_supplementary.R")

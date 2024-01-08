@@ -168,9 +168,9 @@ if(!file.exists(output_filename) | force_run){
     left_join(meansizes_gridcell %>% 
                 mutate(species = str_extract(population, ".*(?=__)")) %>% 
                 select(population, data, mean_size), 
-              by = join_by(population)) 
+              by = join_by(population))
   
-  cv_mod <- lmerTest::lmer(cov_pref ~ mean_size*data + (1|species), data = mod_data) 
+  cv_mod <- lmerTest::lmer(cov_pref ~ mean_size + data + mean_size:data + (1|species), data = mod_data) 
   
   summary(cv_mod)
   m1_pred <- effects::effect(term = "mean_size", 
@@ -192,7 +192,7 @@ if(!file.exists(output_filename) | force_run){
               data = m1_pred) +
     scale_x_log10(label = label_number(suffix = "cm")) +
     scale_shape_manual(values = c("rls" = 21, "cbf" = 24), 
-                       labels = c("rls" = "Reef Life Survey (binned)",
+                       labels = c("rls" = "Visual census",
                                   "cbf" = "Cryptobenthic (continuous)")) +
     scale_color_manual(values = c("normal" = rgb(181, 144, 19, maxColorValue=255),
                                   "lognormal" = rgb(29, 84, 128, maxColorValue=255)),
@@ -305,6 +305,15 @@ wilcox.test(
   lognormal_cov
 )
 
+plotdata_gridcell %>% 
+  filter(!bimodal) %>% 
+  summarise(
+    mean = mean(cov_pref) %>% round(2),
+    sd = sd(cov_pref),
+    n = n(),
+    se = sd / sqrt(n)
+  )
+
 wilcox.test(normal_cov, conf.int = TRUE, conf.level = 0.95)
 wilcox.test(lognormal_cov, conf.int = TRUE, conf.level = 0.95)
 
@@ -322,8 +331,13 @@ wilcox.test(
            better_dist == "lognormal") %>% 
     pull(cov_pref))
 
-# Number of transects vs CV estimate ===========================================
+plotdata_gridcell %>% 
+  summarise(mean = mean(cov_pref), 
+            sd = sd(cov_pref), 
+            n = n(), 
+            se = sd/sqrt(n))
 
+# Number of transects vs CV estimate ===========================================
 
 obsdata_rls_gridcell %>% 
   select(population, n_transects) %>% 
@@ -609,3 +623,99 @@ for(mod in c("lognormal", "normal")){
   }
 }
 
+files <- 
+list.files("output/tables/", 
+           pattern = "sensitivity", 
+           full.names = TRUE) 
+xx <- 
+  map(files, read_csv) %>% 
+  bind_rows(.id = "id") %>% 
+  mutate(id = as.numeric(id)) %>% 
+  left_join(tibble(filename = files) %>% mutate(id = row_number())) %>% 
+  mutate(mincount = str_extract(filename, "\\d*(?=.csv)") %>% as.numeric())
+
+p0 <-
+  xx %>% 
+  summarise(mid = median(cv_50), 
+            lwr = quantile(cv_50, probs = 0.05),
+            upr = quantile(cv_50, probs = 0.95), 
+            .by = c(dat, mod, mincount)) %>% 
+  mutate(datatype = ifelse(dat == "rls", "Visual census", "Cryptobenthic")) %>% 
+  ggplot(aes(x = as.factor(mincount), y = mid, col = mod)) +
+  geom_linerange(aes(ymin = lwr, ymax = upr), position = position_dodge(0.1)) +
+  geom_point(position = position_dodge(0.1), size = 2) +
+  facet_wrap(datatype~., scales = "free_x") +
+  scale_color_manual(values = c("normal" = rgb(181, 144, 19, maxColorValue=255),
+                                "lognormal" = rgb(29, 84, 128, maxColorValue=255)), 
+                     labels = c("normal" = "Normal",
+                                "lognormal" = "Lognormal")) +
+  labs(x = "Minimum population size", 
+       y = "Median CV estimate") +
+  theme_cowplot(20) +
+  theme(legend.position = c(0,1), 
+        legend.justification = c(0,1),
+        legend.title = element_blank(), 
+        plot.margin = margin(10, 50, 10, 10))
+
+ggsave(filename = "output/figures/ms_figs/supplementary/mincount_sensitivity.png",
+       plot = p0,
+       height = 25,
+       width = 35,
+       units = "cm")
+
+# Predicting biomass from total abundance and mean size ========================
+
+
+estimated_prob <- 
+  meansizes_gridcell %>%  
+  mutate(mu = mean_size, 
+         sd = mu*0.35, 
+         sdlog = sqrt(log((0.35^2)+1)), 
+         meanlog = log(mean_size) - ((sdlog^2)/2)) %>% 
+  right_join(obsdata_rls_gridcell %>% {if(inc_fished) . else filter(., !fished)}) %>% 
+  mutate(p_norm = pnorm(size_max, mean = mu, sd = sd) -  pnorm(size_min, mean = mu, sd = sd),
+         plnorm_upper = plnorm(size_max, meanlog = meanlog, sdlog = sdlog), 
+         plnorm_lower = plnorm(size_min, meanlog = meanlog, sdlog = sdlog),
+         p_lnorm = plnorm(size_max, meanlog = meanlog, sdlog = sdlog) - plnorm(size_min, meanlog = meanlog, sdlog = sdlog)) %>% 
+  select(population, species,
+         size_class, 
+         p_obs, p_norm, p_lnorm)
+
+
+suppl_fig <- 
+  estimated_prob %>% 
+  left_join(obsdata_rls_gridcell %>% select(population, n, size_class, population_n, n_transects) %>% distinct()) %>% 
+  mutate(n_obs = n/n_transects) %>% 
+  mutate(n_norm = p_norm*population_n/n_transects, 
+         n_lnorm = p_lnorm*population_n/n_transects) %>% 
+  mutate(mass = 0.01*size_class^3) %>% 
+  mutate(m_obs = n_obs*mass, 
+         m_norm = n_norm*mass, 
+         m_lnorm = n_lnorm*mass) %>% 
+  summarise(biomass = sum(m_obs), 
+            biomass_norm = sum(m_norm), 
+            biomass_lnorm = sum(m_lnorm), 
+            .by = population) %>% 
+  pivot_longer(cols = contains("biomass_")) %>% 
+  ggplot(aes(x = biomass/1e3, y = value/1e3, col = name)) +
+  geom_point(alpha = 0.8, pch = 21) +
+  geom_abline(slope = 1, lty = 2) +
+  scale_y_log10(label = label_number(suffix = "kg")) +
+  scale_x_log10(label = label_number(suffix = "kg")) +
+  scale_color_manual(values = c("biomass_norm" = rgb(181, 144, 19, maxColorValue=255),
+                                "biomass_lnorm" = rgb(29, 84, 128, maxColorValue=255)), 
+                     labels = c("biomass_norm" = "Normal",
+                                "biomass_lnorm" = "Lognormal")) +
+  labs(x = "Population biomass (per transect)", 
+       y = "Estimated biomass (per transect)") +
+  theme_cowplot(20) +
+  theme(legend.position = c(0,1), 
+        legend.justification = c(0,1),
+        legend.title = element_blank(), 
+        plot.margin = margin(10, 50, 10, 10))
+
+ggsave(filename = "output/figures/ms_figs/supplementary/estimating_biomass.png",
+       plot = suppl_fig,
+       height = 25,
+       width = 35,
+       units = "cm")

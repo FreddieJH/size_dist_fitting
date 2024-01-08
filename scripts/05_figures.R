@@ -621,8 +621,7 @@ for(inc_fished in c(TRUE, FALSE)){
       plotdata_gridcell %>% 
       {if(inc_fished) . else filter(., !fished)} %>%
       pull(cov_pref) %>% 
-      median() %>% 
-      round(1)
+      median() 
     
     estimated_prob <- 
       meansizes_gridcell %>%  
@@ -696,4 +695,6 @@ for(inc_fished in c(TRUE, FALSE)){
     print(paste0(fig_filename, " figure already saved."))
   }
 }
+
+
 
