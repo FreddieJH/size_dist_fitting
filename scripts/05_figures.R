@@ -117,6 +117,32 @@ for(pop in c("species",
 
 # Scaling body size ============================================================
 
+read_edit <- function(filename) read_csv(filename, col_names = FALSE) %>% 
+  mutate(file = filename)
+
+# giometto <- 
+#   list.files("giometto", full.names = TRUE) %>% 
+#   map(read_edit) %>% 
+#   bind_rows()
+
+giometto <-
+  read_csv("giometto_raw.csv")
+
+
+giometto_scaled <- 
+giometto %>% 
+  mutate(sum_y = sum(X2), .by = file) %>% 
+  mutate(scaled_y = X2/sum_y) %>% 
+  mutate(mean_x = weighted.mean(X1, w = X2), .by = file) %>% 
+  mutate(scaled_x = X1/mean_x) 
+
+giometto_scaled %>% 
+  ggplot(aes(scaled_x, scaled_y)) +
+  geom_point(aes(col = file)) +
+  scale_x_log10() +
+  scale_y_log10()
+
+
 fig_filename <- "output/figures/ms_figs/scaling_distributions.png"
 
 if(!file.exists(fig_filename)|force_run){
@@ -239,30 +265,41 @@ if(!file.exists(fig_filename)|force_run){
       mutate(size = rls_bin(size)) %>%
       mutate(mean_size = mean(size)) %>% 
       mutate(scaled_size = size/mean_size) %>% 
-      count(scaled_size) %>% 
+      count(scaled_size, size) %>% 
       mutate(scaled_n = n/sum(n)) %>% 
-      select(scaled_size, scaled_n)
+      select(scaled_size, scaled_n, size)
   }
   
   # scaling the median parameter values
   plot_lines <- 
-    scale_size_vec(rnorm(1e6, all_pars_median$mu, all_pars_median$sigma)) %>% 
+    scale_size_vec(rnorm(1e6, all_pars_median$mu,
+                         all_pars_median$sigma)) %>% 
     mutate(dist = "normal") %>% 
     bind_rows(
-      scale_size_vec(rlnorm(1e6, all_pars_median$meanlog, all_pars_median$sdlog)) %>% 
+      scale_size_vec(rlnorm(1e6, all_pars_median$meanlog, 
+                            all_pars_median$sdlog)) %>% 
         mutate(dist = "lognormal") 
-    )
+    ) %>% 
+    rename(size_class = size) %>% 
+    left_join(rls_bin_table, by = join_by(size_class)) %>% 
+    mutate(scaled_n = scaled_n/(size_max-size_min))
   
-  # scaled size vs scaled count (log-log, all populations)
-  p_scaling_size_5 <- 
+  plot_dat <- 
     obsdata_rls_gridcell %>% 
-    bind_rows(obsdata_cbf_location) %>% 
-    left_join(meansizes_gridcell, by = join_by(population)) %>% 
+    mutate(dat = "rls") %>% 
+    bind_rows(obsdata_cbf_location %>% 
+                mutate(dat = "cbf")) %>% 
+    left_join(meansizes_gridcell, by = join_by(population, species)) %>% 
     left_join(plotdata_gridcell %>% 
                 select(population, normal_better), 
               by = join_by(population)) %>% 
     mutate(scaled_size = size_class/mean_size) %>% 
-    mutate(scaled_n = n/population_n) %>%
+    mutate(scaled_n = case_when(dat == "rls" ~ (n/population_n)/(size_max-size_min), 
+                                TRUE ~ (n/population_n)))
+  
+  # scaled size vs scaled count (log-log, all populations)
+  p_scaling_size_5 <-
+    plot_dat %>%
     ggplot(aes(x = scaled_size, 
                y = scaled_n)) +
     geom_line(aes(y = scaled_n, group = population), 
@@ -271,19 +308,86 @@ if(!file.exists(fig_filename)|force_run){
     geom_line(aes(col = dist), 
               linewidth = 2,
               data = plot_lines) +
+    geom_line(aes(x = scaled_x, 
+                  y = scaled_y, 
+                  col = file, 
+                  group = file),
+              linewidth = 0.5,
+              lty = 2,
+              data = giometto_scaled) +
     scale_x_log10(label = label_number(suffix = "x")) +
     scale_y_log10() +
     scale_color_manual(
       values = c("normal" = rgb(181, 144, 19, maxColorValue=255),
-                 "lognormal" = rgb(29, 84, 128, maxColorValue=255))) +
+                 "lognormal" = rgb(29, 84, 128, maxColorValue=255),
+                 "giometto/Dataset 0.csv" = "grey50"),
+      label = c("normal" = "Normal fit",
+                "lognormal" = "Lognormal fit",
+                "giometto/Dataset 0.csv" = "13 protist species*")) +
     theme_cowplot(20) +
     theme(legend.position = c(0.1,0.1), 
           legend.justification = c(0,0),
           legend.title = element_blank()) +
     labs(
       x = "Relative body size (log)",
-      y = "Relative abundance (log)"
-    )
+      y = "Relative N (log)"
+    ) #+
+    # guides(col = guide_legend(override.aes = list(lty = c(1,  2))))
+  
+  plot_dat %>% 
+    select(scaled_size, scaled_n, population) %>% 
+    bind_rows(plot_lines, )
+  
+  p_scaling_size_5_simple <-
+    plot_lines %>%
+      mutate(file = dist) %>% 
+      bind_rows(giometto_scaled %>% 
+                  mutate(dist = "giometto") %>% 
+                  select(dist, file, scaled_size = scaled_x, scaled_n = scaled_y)) %>% 
+    mutate(col = case_when(dist == "normal" ~ rgb(181, 144, 19, maxColorValue=255), 
+                           dist == "lognormal" ~ rgb(29, 84, 128, maxColorValue=255), 
+                           TRUE ~ "grey50"),
+           lty = case_when(dist == "normal" ~ "solid", 
+                           dist == "lognormal" ~ "solid", 
+                           TRUE ~ "dashed"),
+           lwd = case_when(dist == "normal" ~ 2, 
+                           dist == "lognormal" ~ 2, 
+                           TRUE ~ 0.5)) %>% 
+    ggplot(aes(x = scaled_size, 
+               y = scaled_n, 
+               group = file)) +
+    geom_line(aes(y = scaled_n, 
+                  group = population),
+              col = "grey70",
+              alpha = 0.1, 
+              data = plot_dat) +
+    geom_line(aes(col = col, 
+                  lty = lty, 
+                  linewidth = lwd)) +
+    scale_x_log10(label = label_number(suffix = "x")) +
+    scale_y_log10() +
+      scale_color_identity(labels = c("Lognormal fit", 
+                                      "Normal fit", 
+                                      "13 protist species*"), guide = "legend") +
+      scale_linetype_identity() +
+      scale_linewidth_identity() +
+    theme_cowplot(20) +
+    theme(legend.position = c(0.1,0.1), 
+          legend.justification = c(0,0),
+          legend.title = element_blank(), 
+          plot.margin = margin(10, 20, 10, 10)) +
+    labs(
+      x = "Relative body size (log)",
+      y = "Abundance density (log)"
+    ) +
+      guides(col = guide_legend(override.aes = list(lty = c(1, 1, 2), 
+                                                    linewidth = c(2,2,0.5))))
+  
+    ggsave(filename = "output/figures/ms_figs/scaling_p5.png",
+           plot = p_scaling_size_5_simple,
+           height = 15,
+           width = 15*1.618,
+           units = "cm")
   
   # combining the five figures
   p_scaling_size_all <- 
@@ -320,8 +424,8 @@ if(!file.exists(fig_filename)|force_run){
 # Mean size vs CV ==============================================================
 
 for(inc_bimodal in c(TRUE, FALSE)){
-for(inc_fished in c(TRUE, FALSE)){
-    for(pop in c("species", "ecoregion", "gridcell")){
+  for(inc_fished in c(TRUE, FALSE)){
+      # for(pop in c("gridcell", "ecoregion", "species")){
       
       fig_filename <- paste0("output/figures/ms_figs/meansize_cv_", 
                              pop, 
@@ -342,184 +446,430 @@ for(inc_fished in c(TRUE, FALSE)){
         
         q_cov <- function(quant) quantile(plotdata_current$cov_pref, quant)
         
-        p1 <- 
-          plotdata_current %>% 
-          ggplot() + 
-          aes(
-            x = mean_size, 
-            y = cov_pref, 
-            pch = dat,
-            col = better_dist
-          ) +
-          annotate(geom = "rect",
-                   xmin = min(plotdata_current$mean_size), 
-                   xmax = max(plotdata_current$mean_size), 
-                   ymin = q_cov(0.975),
-                   ymax = q_cov(0.025), 
-                   fill = "grey90", 
-                   col = "transparent") +
-          # annotate(geom = "rect",
-          #          xmin = min(plotdata_current$mean_size), 
-          #          xmax = max(plotdata_current$mean_size), 
-          #          ymin = q_cov(0.05),
-          #          ymax = q_cov(0.95), 
-          #          fill = "grey70", 
-          # col = "transparent") +
-          annotate(geom = "rect",
-                   xmin = min(plotdata_current$mean_size), 
-                   xmax = max(plotdata_current$mean_size), 
-                   ymin = q_cov(0.1),
-                   ymax = q_cov(0.9), 
-                   fill = "grey50", 
-                   col = "transparent") +
-          geom_point(alpha = 1) +
-          geom_point(col = "red", pch = 4, 
-                     data = plotdata_current %>% filter(bimodal)) +
-          # geom_point(col = "red", pch = 4, data = plotdata_current %>% filter(fished)) +
-          annotate(geom = "text", 
-                   x = 90, 
-                   y = q_cov(0.9) - ((q_cov(0.9) - q_cov(0.1))/2),
-                   label = "80%", 
-                   size = 8) +
-          # annotate(geom = "text", 
-          #          x = 100, 
-          #          y = q_cov(0.95) - ((q_cov(0.95) - q_cov(0.9))/2), 
-          #          label = "90%", 
-          #          size = 8) +
-          annotate(geom = "text", 
-                   x = 90, 
-                   y = q_cov(0.975) - ((q_cov(0.975) - q_cov(0.9))/2), 
-                   label = "95%", 
-                   size = 8) +
+        
+        main_plot <- function(.data) {
+          .data %>% 
+            mutate(level = "gridcell") %>% 
+            bind_rows(plotdata_species%>% 
+                        mutate(level = "species")) %>% 
+            
+            {if(inc_fished) . else filter(., !fished)} %>% 
+            {if(inc_bimodal) . else filter(., !bimodal)} %>% 
+            left_join(meansizes_gridcell %>% 
+                        mutate(level = "gridcell") %>% 
+                        bind_rows(meansizes_species%>% 
+                                    mutate(level = "species")) %>% 
+                        rename(dat = data), 
+                      by = join_by(population, level, species, dat)) %>% 
+            ggplot() + 
+            aes(
+              x = mean_size, 
+              y = cov_pref, 
+              pch = dat,
+              col = better_dist
+            ) +
+            annotate(geom = "rect",
+                     xmin = min(plotdata_current$mean_size), 
+                     xmax = max(plotdata_current$mean_size), 
+                     ymin = q_cov(0.975),
+                     ymax = q_cov(0.025), 
+                     fill = "grey95", 
+                     col = "transparent") +
+            annotate(geom = "rect",
+                     xmin = min(plotdata_current$mean_size), 
+                     xmax = max(plotdata_current$mean_size), 
+                     ymin = q_cov(0.1),
+                     ymax = q_cov(0.9), 
+                     fill = "grey80", 
+                     col = "transparent") +
+            geom_point(alpha = 1, size = 2) +
+            geom_point(col = "red", pch = 4, size = 2,
+                       data = plotdata_current %>% filter(bimodal)) +
+            scale_x_continuous(trans = "log10", 
+                               labels = label_number(suffix="cm"), 
+                               limits = range(plotdata_current$mean_size)) +
+            scale_shape_manual(
+              values = c("rls" = 21, "cbf" = 24), 
+              labels = c("rls" = "Visual census",
+                         "cbf" = "Exhaustive sampling")) +
+            scale_color_manual(
+              values = c("normal" = rgb(181, 144, 19, maxColorValue=255),
+                         "lognormal" = rgb(29, 84, 128, maxColorValue=255)),
+              labels = c("normal" = "Normal preferred",
+                         "lognormal" = "Lognormal preferred")) +
+            labs(x = "Mean body size (log)", 
+                 y = "Coefficient of variation") +
           
-          scale_x_continuous(trans = "log10", 
-                             labels = label_number(suffix="cm"), 
-                             limits = range(plotdata_current$mean_size)) +
-          scale_shape_manual(
-            values = c("rls" = 21, "cbf" = 24), 
-            labels = c("rls" = "Reef Life Survey (binned)",
-                       "cbf" = "Cryptobenthic (continuous)")) +
-          scale_color_manual(
-            values = c("normal" = rgb(181, 144, 19, maxColorValue=255),
-                       "lognormal" = rgb(29, 84, 128, maxColorValue=255)),
-            labels = c("normal" = "Normal preferred",
-                       "lognormal" = "Lognormal preferred")) +
-          labs(x = "Log mean size", 
-               y = "Coefficient of variation") +
-          theme_cowplot(20) +
-          theme(legend.position = "none")
+            theme_cowplot(20) +
+            theme(legend.position = "none", 
+                  axis.title.y = element_blank(),
+                  # panel.background = element_rect(colour = "black", size = 1)
+                  ) 
+        }
         
-        assign(x = paste("p1", 
-                         pop, 
-                         ifelse(inc_fished, "incfished", "unfished"), 
-                         sep = "_"), 
-               value = p1, 
-               envir = .GlobalEnv)
+        side_plot <- function(.data){
+          .data %>% 
+            ggplot() +
+            aes(
+              x = cov_pref,
+              fill = better_dist
+            ) +
+            scale_fill_manual(
+              values = c("normal" = rgb(181, 144, 19, maxColorValue=255),
+                         "lognormal" = rgb(29, 84, 128, maxColorValue=255))) +
+            geom_density(alpha = 0.3, col = "black") +
+            coord_flip() +
+            theme_void(20) +
+            theme(legend.position = "none")
+        }
         
-        p2 <- 
-          plotdata_current %>% 
-          ggplot() +
-          aes(
-            x = cov_pref, 
-            fill = better_dist
-          ) +
-          scale_fill_manual(
-            values = c("normal" = rgb(181, 144, 19, maxColorValue=255),
-                       "lognormal" = rgb(29, 84, 128, maxColorValue=255))) +
-          geom_density(alpha = 0.3, col = "black") +
-          coord_flip() +
-          theme_void(20) +
-          theme(legend.position = "none") 
+        pop_data <- 
+          plotdata_gridcell %>% 
+          {if(inc_fished) . else filter(., !fished)} %>% 
+          {if(inc_bimodal) . else filter(., !bimodal)}
+        
+        spp_data <- 
+          plotdata_species %>% 
+          {if(inc_fished) . else filter(., !fished)} %>% 
+          {if(inc_bimodal) . else filter(., !bimodal)}
         
         
-        assign(x = paste("p2",
-                         pop, 
-                         ifelse(inc_fished, "incfished", "unfished"), 
-                         sep = "_"),
-               value = p2, 
-               envir = .GlobalEnv)
+        ppp <- 
+        main_plot(pop_data) + theme(axis.title.x = element_blank(), 
+                                    # axis.text.x = element_blank()
+                                    ) +
+          ylim(0, plot_ylim) +
+          annotate("text", x = 50, 
+                                y = plot_ylim*0.95,
+                                label = "Population-level",
+                                size = 10) +
+          side_plot(pop_data) + xlim(0, plot_ylim) +
+        main_plot(spp_data) + ylim(0, plot_ylim) +
+          annotate("text", x = 50, 
+                   y = plot_ylim*0.95,
+                   label = "Species-level",
+                   size = 10) +
+          side_plot(spp_data) +xlim(0, plot_ylim) +
+          plot_layout(design = {"
+      AAAAAAB
+      AAAAAAB
+      CCCCCCD
+      CCCCCCD"
+          })
+        
+        leg <- 
+        ggpubr::as_ggplot(
+          get_legend(
+            main_plot(pop_data) +
+              theme(axis.title = element_blank(), 
+                    axis.text = element_blank()) +
+                  guides(colour = guide_legend(override.aes = list(size=6)),
+                         pch = guide_legend(override.aes = list(size=6))) +
+                  theme(legend.position = "bottom",
+                        legend.justification = c(0.5,0.5),
+                        legend.background = element_rect(color = "black"),
+                        legend.margin=margin(10,10,10,10),
+                        legend.title = element_blank()))) 
+        
+        cc <- 
+          wrap_elements(ppp) +
+          labs(tag = "Coeffient of variation") +
+          theme(
+            plot.tag = element_text(size = 20, angle = 90),
+            plot.tag.position = "left"
+          )
+        
+        p_simple <- cc + leg +
+          plot_layout(design = {"
+      AAAAAAA
+      AAAAAAA
+      AAAAAAA
+      AAAAAAA
+            #BBBBB#"
+          })
+        
+        # 
+        # 
+        # plot_ylim <- max(layer_scales(
+        #   main_plot(pop_data))$y$range$range,
+        #   layer_scales(
+        #     main_plot(pop_data))$y$range$range)
+        # 
+        # p_simple <-
+        # plotdata_gridcell %>% 
+        #   mutate(level = "gridcell") %>% 
+        #   bind_rows(plotdata_species%>% 
+        #               mutate(level = "species")) %>% 
+        #   
+        #   {if(inc_fished) . else filter(., !fished)} %>% 
+        #   {if(inc_bimodal) . else filter(., !bimodal)} %>% 
+        #   left_join(meansizes_gridcell %>% 
+        #               mutate(level = "gridcell") %>% 
+        #               bind_rows(meansizes_species%>% 
+        #                           mutate(level = "species")) %>% 
+        #               rename(dat = data), 
+        #             by = join_by(population, level, species, dat)) %>% 
+        #   ggplot() + 
+        #   aes(
+        #     x = mean_size, 
+        #     y = cov_pref, 
+        #     pch = dat,
+        #     col = better_dist
+        #   ) +
+        #   annotate(geom = "rect",
+        #            xmin = min(plotdata_current$mean_size), 
+        #            xmax = max(plotdata_current$mean_size), 
+        #            ymin = q_cov(0.975),
+        #            ymax = q_cov(0.025), 
+        #            fill = "grey95", 
+        #            col = "transparent") +
+        #   annotate(geom = "rect",
+        #            xmin = min(plotdata_current$mean_size), 
+        #            xmax = max(plotdata_current$mean_size), 
+        #            ymin = q_cov(0.1),
+        #            ymax = q_cov(0.9), 
+        #            fill = "grey80", 
+        #            col = "transparent") +
+        #   geom_point(alpha = 1, size = 2) +
+        #   geom_point(col = "red", pch = 4, size = 2,
+        #              data = plotdata_current %>% filter(bimodal)) +
+        #   scale_x_continuous(trans = "log10", 
+        #                      labels = label_number(suffix="cm"), 
+        #                      limits = range(plotdata_current$mean_size)) +
+        #   scale_shape_manual(
+        #     values = c("rls" = 21, "cbf" = 24), 
+        #     labels = c("rls" = "Visual census",
+        #                "cbf" = "Exhaustive sampling")) +
+        #   scale_color_manual(
+        #     values = c("normal" = rgb(181, 144, 19, maxColorValue=255),
+        #                "lognormal" = rgb(29, 84, 128, maxColorValue=255)),
+        #     labels = c("normal" = "Normal preferred",
+        #                "lognormal" = "Lognormal preferred")) +
+        #   labs(x = "Mean body size (log)", 
+        #        y = "Coefficient of variation") +
+        #   facet_wrap(~level, labeller = as_labeller(c("gridcell" = "Population", 
+        #                                                "species" = "Species")), 
+        #              strip.position="top", 
+        #              nrow = 2) +
+        #   theme_cowplot(20) +
+        #   theme(legend.position = "bottom", 
+        #         panel.background = element_rect(colour = "black", size = 1), 
+        #         strip.background = element_rect(fill="white", colour = "black", size = 1), 
+        #         legend.justification = c(0.5,0.5),
+        #         legend.background = element_rect(color = "black"),
+        #         legend.title = element_blank()) +
+        #   guides(colour = guide_legend(override.aes = list(size=5)),
+        #          pch = guide_legend(override.aes = list(size=5))) 
+        # 
+        # 
+        # plotdata_gridcell %>% 
+        #     ggplot() +
+        #     aes(
+        #       x = cov_pref,
+        #       fill = better_dist
+        #     ) +
+        #     scale_fill_manual(
+        #       values = c("normal" = rgb(181, 144, 19, maxColorValue=255),
+        #                  "lognormal" = rgb(29, 84, 128, maxColorValue=255))) +
+        #     geom_density(alpha = 0.3, col = "black") +
+        #     coord_flip() +
+        #     theme_void(20) +
+        #     theme(legend.position = "none")
+        #   
+        # 
+      #   p1 <- 
+      #     plotdata_current %>% 
+      #     ggplot() + 
+      #     aes(
+      #       x = mean_size, 
+      #       y = cov_pref, 
+      #       pch = dat,
+      #       col = better_dist
+      #     ) +
+      #     annotate(geom = "rect",
+      #              xmin = min(plotdata_current$mean_size), 
+      #              xmax = max(plotdata_current$mean_size), 
+      #              ymin = q_cov(0.975),
+      #              ymax = q_cov(0.025), 
+      #              fill = "grey95", 
+      #              col = "transparent") +
+      #     # annotate(geom = "rect",
+      #     #          xmin = min(plotdata_current$mean_size), 
+      #     #          xmax = max(plotdata_current$mean_size), 
+      #     #          ymin = q_cov(0.05),
+      #     #          ymax = q_cov(0.95), 
+      #     #          fill = "grey70", 
+      #     # col = "transparent") +
+      #     annotate(geom = "rect",
+      #              xmin = min(plotdata_current$mean_size), 
+      #              xmax = max(plotdata_current$mean_size), 
+      #              ymin = q_cov(0.1),
+      #              ymax = q_cov(0.9), 
+      #              fill = "grey80", 
+      #              col = "transparent") +
+      #     geom_point(alpha = 1) +
+      #     geom_point(col = "red", pch = 4, 
+      #                data = plotdata_current %>% filter(bimodal)) +
+      #     # geom_point(col = "red", pch = 4, data = plotdata_current %>% filter(fished)) +
+      #     annotate(geom = "text", 
+      #              x = 90, 
+      #              y = q_cov(0.9) - ((q_cov(0.9) - q_cov(0.1))/2),
+      #              label = "80%", 
+      #              size = 8) +
+      #     # annotate(geom = "text", 
+      #     #          x = 100, 
+      #     #          y = q_cov(0.95) - ((q_cov(0.95) - q_cov(0.9))/2), 
+      #     #          label = "90%", 
+      #     #          size = 8) +
+      #     annotate(geom = "text", 
+      #              x = 90, 
+      #              y = q_cov(0.975) - ((q_cov(0.975) - q_cov(0.9))/2), 
+      #              label = "95%", 
+      #              size = 8) +
+      #     
+      #     scale_x_continuous(trans = "log10", 
+      #                        labels = label_number(suffix="cm"), 
+      #                        limits = range(plotdata_current$mean_size)) +
+      #     scale_shape_manual(
+      #       values = c("rls" = 21, "cbf" = 24), 
+      #       labels = c("rls" = "Visual census",
+      #                  "cbf" = "Exhaustive sampling")) +
+      #     scale_color_manual(
+      #       values = c("normal" = rgb(181, 144, 19, maxColorValue=255),
+      #                  "lognormal" = rgb(29, 84, 128, maxColorValue=255)),
+      #       labels = c("normal" = "Normal preferred",
+      #                  "lognormal" = "Lognormal preferred")) +
+      #     labs(x = "Log mean size", 
+      #          y = "Coefficient of variation") +
+      #     theme_cowplot(20) +
+      #     theme(legend.position = "none")
+      #   
+      #   assign(x = paste("p1", 
+      #                    pop, 
+      #                    ifelse(inc_fished, "incfished", "unfished"), 
+      #                    sep = "_"), 
+      #          value = p1, 
+      #          envir = .GlobalEnv)
+      #   
+      #   p2 <- 
+      #     plotdata_current %>% 
+      #     ggplot() +
+      #     aes(
+      #       x = cov_pref, 
+      #       fill = better_dist
+      #     ) +
+      #     scale_fill_manual(
+      #       values = c("normal" = rgb(181, 144, 19, maxColorValue=255),
+      #                  "lognormal" = rgb(29, 84, 128, maxColorValue=255))) +
+      #     geom_density(alpha = 0.3, col = "black") +
+      #     coord_flip() +
+      #     theme_void(20) +
+      #     theme(legend.position = "none") 
+      #   
+      #   
+      #   assign(x = paste("p2",
+      #                    pop, 
+      #                    ifelse(inc_fished, "incfished", "unfished"), 
+      #                    sep = "_"),
+      #          value = p2, 
+      #          envir = .GlobalEnv)
+      #   
+      #   ggsave(filename = fig_filename,
+      #          plot = p1 + p2 + plot_layout(widths = c(6,1)),
+      #          height = 15,
+      #          width = 15*1.618,
+      #          units = "cm")
+      #   
+      #   
+      #   legend_only <- get_legend(
+      #     get(paste0("p1_gridcell_", ifelse(inc_fished, "incfished", "unfished"))) + 
+      #       guides(colour = guide_legend(override.aes = list(size=6)),
+      #              pch = guide_legend(override.aes = list(size=6))) +
+      #       theme(legend.position = "bottom",
+      #             legend.justification = c(0.5,0.5),
+      #             legend.background = element_rect(color = "black"),
+      #             legend.margin=margin(10,10,10,10),
+      #             legend.title = element_blank()))
+      #   
+        # plot_ylim <- max(layer_scales(
+        #   get(paste0("p1_gridcell_",
+        #              ifelse(inc_fished, "incfished", "unfished"))))$y$range$range,
+        #   layer_scales(
+        #     get(paste0("p1_species_",
+        #                ifelse(inc_fished, "incfished", "unfished"))))$y$range$range)
+      #   
+      #   fig_design <- {"AAAAAABCCCCCCD
+      # AAAAAABCCCCCCD
+      # AAAAAABCCCCCCD
+      # AAAAAABCCCCCCD
+      # AAAAAABCCCCCCD
+      # ####EEEEEE####"}
+      #   
+      #   fig_design <- {"AAAAAAB
+      #     AAAAAAB
+      # AAAAAAB
+      # CCCCCCD
+      # CCCCCCD
+      #     CCCCCCD
+      # EEEEEEE"}
+      #   
+      #   p2 <- 
+      #     get(paste0("p2_gridcell_", 
+      #                ifelse(inc_fished, "incfished", "unfished"))) + 
+      #     xlim(0, plot_ylim) +
+      #     plot_layout(tag_level = 'new')
+      #   
+      #   p4 <- 
+      #     get(paste0("p2_species_", 
+      #                ifelse(inc_fished, "incfished", "unfished"))) + 
+      #     xlim(0, plot_ylim) +
+      #     plot_layout(tag_level = 'new')
+      #   
+      #   p5 <- 
+      #     ggpubr::as_ggplot(legend_only) +
+      #     plot_layout(tag_level = 'new')
+      #     
+      #   p_cv_meansize <-
+      #     get(paste0("p1_gridcell_", 
+      #                ifelse(inc_fished, "incfished", "unfished"))) + 
+      #     annotate("text", x = 10, 
+      #              y = plot_ylim, 
+      #              label = "Population-level", 
+      #              size = 12) + 
+      #     ylim(0, plot_ylim) +
+      #     p2 +
+      #     get(paste0("p1_species_", 
+      #                ifelse(inc_fished, "incfished", "unfished"))) + 
+      #     annotate("text", x = 10, 
+      #              y = plot_ylim, 
+      #              label = "Species-level", 
+      #              size = 12) + 
+      #     ylim(0, plot_ylim) + 
+      #     theme(axis.title.y = element_blank()) +
+      #     p4 + 
+      #     p5 +
+      #     plot_layout(design = fig_design) +
+      #     plot_annotation(tag_levels = 'A')
         
         ggsave(filename = fig_filename,
-               plot = p1 + p2 + plot_layout(widths = c(6,1)),
-               height = 15,
-               width = 15*1.618,
+               plot = p_simple,
+               height = 20,
+               width = 20*1.618,
                units = "cm")
         
-        rm(p1, 
-           p2,
-           pop, 
-           q_cov, 
-           plotdata_current)
-      
-    
-
-  
-  legend_only <- get_legend(
-    get(paste0("p1_gridcell_", ifelse(inc_fished, "incfished", "unfished"))) + 
-      theme(legend.position = "bottom",
-            legend.justification = c(0.5,0.5),
-            legend.background = element_rect(color = "black"),
-            legend.margin=margin(10,10,10,10),
-            legend.title = element_blank()))
-  
-  plot_ylim <- max(layer_scales(
-    get(paste0("p1_gridcell_", 
-               ifelse(inc_fished, "incfished", "unfished"))))$y$range$range,
-    layer_scales(
-      get(paste0("p1_species_",
-                 ifelse(inc_fished, "incfished", "unfished"))))$y$range$range)
-  
-  fig_design <- {"AAAAAABCCCCCCD
-      AAAAAABCCCCCCD
-      AAAAAABCCCCCCD
-      AAAAAABCCCCCCD
-      AAAAAABCCCCCCD
-      ####EEEEEE####"}
-  
-  p_cv_meansize <-
-    get(paste0("p1_gridcell_", 
-               ifelse(inc_fished, "incfished", "unfished"))) + 
-    annotate("text", x = 10, 
-             y = plot_ylim, 
-             label = "Population-level", 
-             size = 12) + 
-    ylim(0, plot_ylim) +
-    get(paste0("p2_gridcell_", 
-               ifelse(inc_fished, "incfished", "unfished"))) + 
-    xlim(0, plot_ylim) +
-    get(paste0("p1_species_", 
-               ifelse(inc_fished, "incfished", "unfished"))) + 
-    annotate("text", x = 10, 
-             y = plot_ylim, 
-             label = "Species-level", 
-             size = 12) + 
-    ylim(0, plot_ylim) + 
-    theme(axis.title.y = element_blank()) +
-    get(paste0("p2_species_", 
-               ifelse(inc_fished, "incfished", "unfished"))) + 
-    xlim(0, plot_ylim) + 
-    ggpubr::as_ggplot(legend_only) +
-    plot_layout(design = fig_design)
-  
-  ggsave(filename = fig_filename,
-         plot = p_cv_meansize,
-         height = 15,
-         width = 40,
-         units = "cm")
-  
-      } else {
-        print(paste0(fig_filename, " figure already saved."))
-      }
+      # } else {
+      #   print(paste0(fig_filename, " figure already saved."))
+      # }
     }
-  
-  # rm(inc_bimodal, p_cv_meansize, fig_design, plot_ylim, legend_only)
-}
-# rm(inc_fished)
+    
+    # rm(inc_bimodal, p_cv_meansize, fig_design, plot_ylim, legend_only)
+  }
+  # rm(inc_fished)
 }
 
 # Estimated body size ==========================================================
 
-for(inc_fished in c(TRUE, FALSE)){
+for(inc_fished in c(FALSE, TRUE)){
   
   fig_filename <- paste0("output/figures/ms_figs/var_explained_", 
                          {if(inc_fished) "_incfished" else "_unfished"}, 
@@ -533,12 +883,14 @@ for(inc_fished in c(TRUE, FALSE)){
       
       d1 <- 
         obsdata_rls_gridcell %>% 
-        select(population, size_class, size_min, size_max, n, p_obs)
+        select(population, size_class, size_min, size_max, n, p_obs)%>% 
+        mutate(dat = "rls")
       
       d2 <- 
         obsdata_cbf_location %>% 
         mutate(p = n/population_n) %>% 
-        select(population, size_class, size_min, size_max, n, p_obs)
+        select(population, size_class, size_min, size_max, n, p_obs) %>% 
+        mutate(dat = "cbf")
       
       joined_data <-  
         meansizes_gridcell %>% 
@@ -548,10 +900,17 @@ for(inc_fished in c(TRUE, FALSE)){
         filter(!bimodal) %>% 
         {if(inc_fished) . else filter(., !fished)} %>% 
         select(population, species, size_class, mean_size, size_min, 
-               size_max, n, p_obs, mu_50, sigma_50, meanlog_50, sdlog_50, better_dist)
+               size_max, n, p_obs, mu_50, sigma_50, meanlog_50, sdlog_50, better_dist, dat)
+      
+      size_classes <- 
+        joined_data %>% 
+        filter(dat == "rls") %>% 
+        pull(size_class) %>% 
+        unique() %>% 
+        sort()
       
       out <- tibble()
-      for(c in seq(0, 1.5, by = 0.01)){
+      for(c in seq(0.1, 1.5, by = 0.01)){
         
         estimated_prob <- 
           joined_data %>% 
@@ -559,125 +918,143 @@ for(inc_fished in c(TRUE, FALSE)){
                  sd = mu*c,
                  sdlog = sqrt(log((c^2)+1)),
                  meanlog = log(mean_size) - ((sdlog^2)/2)) %>%
-          mutate(p_norm = pnorm(size_max, mean = mu, sd = sd) -  pnorm(size_min, mean = mu, sd = sd),
-                 p_lnorm = plnorm(size_max, meanlog = meanlog, sdlog = sdlog) -  plnorm(size_min, meanlog = meanlog, sdlog = sdlog), 
+          mutate(p_norm = 
+                   pnorm(size_max, mean = mu, sd = sd) -  
+                   pnorm(size_min, mean = mu, sd = sd),
+                 p_lnorm = 
+                   plnorm(size_max, meanlog = meanlog, sdlog = sdlog) -  
+                   plnorm(size_min, meanlog = meanlog, sdlog = sdlog), 
                  p_pref = ifelse(better_dist == "normal", p_norm, p_lnorm)) %>% 
           select(population, species,
                  size_class, better_dist, 
-                 p_obs, p_norm, p_lnorm, p_pref)
+                 p_obs, p_norm, p_lnorm, p_pref, n, dat) %>% 
+          filter(dat == "rls") %>% 
+          mutate(pop_id = cur_group_id(), .by = population)
         
-        lmer_norm <- lmerTest::lmer(p_obs ~ p_norm + (1|species), data = estimated_prob) 
-        lmer_lnorm <-  lmerTest::lmer(p_obs ~ p_lnorm + (1|species), data = estimated_prob) 
-        lmer_pref <-  lmerTest::lmer(p_obs ~ p_pref + (1|species), data = estimated_prob) 
+        
+        out_norm <- c()
+        out_lnorm <- c()
+        out_pref <- c()
+        for(ii in 1:max(estimated_prob$pop_id)){
+          
+          curr_dat <- 
+            estimated_prob %>% 
+            filter(pop_id == ii)
+          
+          out_norm[ii]  <- ks.test(curr_dat$p_obs, y = curr_dat$p_norm)$statistic %>% as.numeric()
+          out_lnorm[ii] <- ks.test(curr_dat$p_obs, y = curr_dat$p_lnorm)$statistic %>% as.numeric()
+          out_pref[ii]  <- ks.test(curr_dat$p_obs, y = curr_dat$p_pref)$statistic %>% as.numeric()
+          
+        }
         
         out <- 
           out %>% 
           bind_rows(
-            tibble(cv = c, 
-                   marginal_r2_normal = MuMIn::r.squaredGLMM(lmer_norm)[1], 
-                   conditional_r2_normal = MuMIn::r.squaredGLMM(lmer_norm)[2], 
-                   marginal_r2_lognormal = MuMIn::r.squaredGLMM(lmer_lnorm)[1], 
-                   conditional_r2_lognormal = MuMIn::r.squaredGLMM(lmer_lnorm)[2], 
-                   marginal_r2_pref = MuMIn::r.squaredGLMM(lmer_pref)[1], 
-                   conditional_r2_pref = MuMIn::r.squaredGLMM(lmer_pref)[2])
-          )
+            tibble(norm_ks = unlist(out_norm), 
+                   lnorm_ks = unlist(out_lnorm),
+                   pref_ks = unlist(out_pref),
+                   c = c))
         
         cat(c, "\n")
       }
       
-      write_csv(out, paste0("output/tables/var_explained_bycv",  ifelse(inc_fished, "_incfished", "_unfished"), ".csv"))
+      write_csv(out, paste0("output/tables/var_explained_bycv_ks",  ifelse(inc_fished, "_incfished", "_unfished"), ".csv"))
       rm(c, out, estimated_prob, lmer_norm, lmer_lnorm, lmer_pref, joined_data, d1, d2)
     }
     
     
     p <- 
-      paste0("output/tables/var_explained_bycv",  ifelse(inc_fished, "_incfished", "_unfished"), ".csv") %>% 
+      paste0("output/tables/var_explained_bycv_ks",  ifelse(inc_fished, "_incfished", "_unfished"), ".csv") %>% 
       read_csv(show_col_types = FALSE) %>% 
-      pivot_longer(cols = contains("r2"), values_to = "r2") %>% 
-      mutate(dist = str_extract(name, "(?<=r2_)[a-z]+"),
-             r2_type = str_extract(name, "[a-z]+(?=_)")) %>% 
-      filter(r2_type == "marginal") %>% 
-      ggplot(aes(x = cv, 
-                 y = r2, 
+      pivot_longer(cols = contains("ks"), 
+                   values_to = "ks",
+                   names_to = "dist") %>% 
+      summarise(mean_ks = mean(ks), 
+                median_ks = median(ks), 
+                lwr_ks = quantile(ks, 0.025), 
+                upr_ks = quantile(ks, 0.875), 
+                .by = c(c, dist)) %>% 
+      ggplot(aes(x = c, 
+                 y = mean_ks, 
                  color = dist)) +
       geom_line(linewidth = 2, alpha = 0.8) +
-      scale_color_manual(values = c("normal" = rgb(181, 144, 19, maxColorValue=255),
-                                    "lognormal" = rgb(29, 84, 128, maxColorValue=255), 
-                                    "pref" = "pink"),
-                         labels = c("normal" = "Normal",
-                                    "lognormal" = "Lognormal", 
-                                    "pref" = "Preferred")) +
+      scale_color_manual(values = c("norm_ks" = rgb(181, 144, 19, maxColorValue=255),
+                                    "lnorm_ks" = rgb(29, 84, 128, maxColorValue=255), 
+                                    "pref_ks" = "pink"),
+                         labels = c("norm_ks" = "Normal",
+                                    "lnorm_ks" = "Lognormal", 
+                                    "pref_ks" = "Preferred")) +
       guides(color = guide_legend(override.aes = list(alpha = 1) ) ) +
-      scale_y_continuous(label = label_percent(), limits = c(0,0.8)) +
+      scale_y_continuous() +
       labs(x = "Assumed Coefficient of Variation", 
-           y = "Variance explained") +
-      theme_cowplot(15) +
-      theme(legend.position = c(0.95,0.95), 
-            legend.justification = c(1,1),
+           y = "Kolmogorov-Smirnov statistic") +
+      theme_cowplot(20) +
+      theme(legend.position = c(0.95,0.05), 
+            legend.justification = c(1,0),
             legend.title = element_blank(), 
-            plot.background = element_rect(color = "black")) 
+            plot.background = element_rect(color = "transparent")) 
     
-    all_median_cov <- 
-      plotdata_gridcell %>% 
+    all_median_cov <-
+      plotdata_gridcell %>%
       {if(inc_fished) . else filter(., !fished)} %>%
-      pull(cov_pref) %>% 
-      median() 
+      pull(cov_pref) %>%
+      median()
     
-    estimated_prob <- 
-      meansizes_gridcell %>%  
-      mutate(mu = mean_size, 
-             sd = mu*all_median_cov, 
-             sdlog = sqrt(log((all_median_cov^2)+1)), 
-             meanlog = log(mean_size) - ((sdlog^2)/2)) %>% 
-      right_join(obsdata_rls_gridcell %>% {if(inc_fished) . else filter(., !fished)}) %>% 
+    estimated_prob <-
+      meansizes_gridcell %>%
+      mutate(mu = mean_size,
+             sd = mu*all_median_cov,
+             sdlog = sqrt(log((all_median_cov^2)+1)),
+             meanlog = log(mean_size) - ((sdlog^2)/2)) %>%
+      right_join(obsdata_rls_gridcell %>% {if(inc_fished) . else filter(., !fished)}) %>%
       mutate(p_norm = pnorm(size_max, mean = mu, sd = sd) -  pnorm(size_min, mean = mu, sd = sd),
-             plnorm_upper = plnorm(size_max, meanlog = meanlog, sdlog = sdlog), 
+             plnorm_upper = plnorm(size_max, meanlog = meanlog, sdlog = sdlog),
              plnorm_lower = plnorm(size_min, meanlog = meanlog, sdlog = sdlog),
-             p_lnorm = plnorm(size_max, meanlog = meanlog, sdlog = sdlog) - plnorm(size_min, meanlog = meanlog, sdlog = sdlog)) %>% 
+             p_lnorm = plnorm(size_max, meanlog = meanlog, sdlog = sdlog) - plnorm(size_min, meanlog = meanlog, sdlog = sdlog)) %>%
       select(population, species,
-             size_class, 
+             size_class,
              p_obs, p_norm, p_lnorm)
     
-    lmer_norm <- lmerTest::lmer(p_obs ~ p_norm + (1|species), data = estimated_prob) 
-    lmer_lnorm <-  lmerTest::lmer(p_obs ~ p_lnorm + (1|species), data = estimated_prob) 
+    lmer_norm <- lmerTest::lmer(p_obs ~ p_norm + (1|species), data = estimated_prob)
+    lmer_lnorm <-  lmerTest::lmer(p_obs ~ p_lnorm + (1|species), data = estimated_prob)
     
     p_obs_vs_exp <-
-      estimated_prob %>% 
-      mutate(lmer_norm = predict(lmer_norm),
-             lmer_lnorm = predict(lmer_lnorm)) %>%
-      pivot_longer(cols = contains("norm"), 
-                   names_to = "dist", 
-                   values_to = "p_est") %>% 
-      ggplot(aes(x = p_est, 
-                 y = p_obs, 
+      estimated_prob %>%
+      # mutate(lmer_norm = predict(lmer_norm),
+      #        lmer_lnorm = predict(lmer_lnorm)) %>%
+      pivot_longer(cols = contains("norm"),
+                   names_to = "dist",
+                   values_to = "p_est") %>%
+      ggplot(aes(x = p_est,
+                 y = p_obs,
                  col = dist), pch = 21) +
       geom_point(alpha = 0.1) +
-      geom_abline(slope = 1, lty = 2) +
-      labs(y = "Observed probability in size bin", 
+      geom_textabline(slope = 1, lty = 2, label = "Predicted = Observed", size = 6) +
+      labs(y = "Observed probability in size bin",
            x = "Predicted probabiliy in size bin") +
       scale_x_continuous(label = label_percent()) +
       scale_y_continuous(label = label_percent()) +
       scale_color_manual(values = c("p_norm" = rgb(181, 144, 19, maxColorValue=255),
-                                    "p_lnorm" = rgb(29, 84, 128, maxColorValue=255)), 
+                                    "p_lnorm" = rgb(29, 84, 128, maxColorValue=255)),
                          labels = c("p_norm" = "Normal",
                                     "p_lnorm" = "Lognormal")) +
       guides(color = guide_legend(override.aes = list(alpha = 1) ) ) +
       theme_cowplot(20) +
-      theme(legend.position = c(0.05,0.95), 
+      theme(legend.position = c(0.05,0.95),
             legend.justification = c(0,1),
             legend.title = element_blank())
     
     
-    p2 <- 
-      p_obs_vs_exp + inset_element(
-        p, 
-        left =  0.6, right = 0.995, 
-        bottom =  0.05, top = 0.495)
+    p2 <- p_obs_vs_exp + p + plot_annotation(tag_levels = 'A')
+      # p_obs_vs_exp + inset_element(
+      #   p,
+      #   left =  0.6, right = 0.995,
+      #   bottom =  0.05, top = 0.495)
     
     ggsave(filename = fig_filename,
            plot = p2,
-           height = 25,
-           width = 35,
+           height = 15,
+           width = 30,
            units = "cm")
     
     # ggsave(filename = "output/figures/ms_figs/fig3_main.png",
@@ -698,3 +1075,44 @@ for(inc_fished in c(TRUE, FALSE)){
 
 
 
+# New figure 3
+
+
+tab1 <- 
+obsdata_rls_species %>% 
+  mutate(population_indx = cur_group_id(), 
+         .by = species) %>% 
+  filter(population_indx < 7) %>% 
+  left_join(meansizes_species) %>% 
+  select(species, mean_size, size_class, size_min, size_max, p_obs)
+
+tab1 %>% 
+  select(species, mean_size) %>% 
+  distinct()
+
+tab1  %>% 
+  mutate(mu = mean_size,
+         sd = mu*0.35,
+         sdlog = sqrt(log((0.35^2)+1)),
+         meanlog = log(mean_size) - ((sdlog^2)/2)) %>% 
+  mutate(p_norm = 
+           pnorm(size_max, mean = mu, sd = sd) -  
+           pnorm(size_min, mean = mu, sd = sd),
+         p_lnorm = 
+           plnorm(size_max, meanlog = meanlog, sdlog = sdlog) -  
+           plnorm(size_min, meanlog = meanlog, sdlog = sdlog)) %>% 
+  ggplot(aes(x = size_class,
+             y = p_obs, 
+             width = size_max-size_min)) +
+  geom_rect(aes(xmin = size_min, xmax = size_max, ymin = 0, ymax = p_obs), alpha =.2, col = "grey50") + 
+  facet_wrap(~species) +
+  geom_point(aes(y = p_norm), col = rgb(181, 144, 19, maxColorValue=255)) +
+  geom_path(aes(y = p_norm), col = rgb(181, 144, 19, maxColorValue=255)) +
+  geom_point(aes(y = p_lnorm), col = rgb(29, 84, 128, maxColorValue=255)) +
+  geom_path(aes(y = p_lnorm), col = rgb(29, 84, 128, maxColorValue=255)) +
+  theme_cowplot(20) +
+  labs(x = "Size class (cm)", 
+       y = "Proportion in size class") +
+  theme(legend.position="none",
+        strip.background=element_rect(colour="black",
+                                      fill="grey97"))

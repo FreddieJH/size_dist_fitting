@@ -170,28 +170,18 @@ if(!file.exists(output_filename) | force_run){
                 select(population, data, mean_size), 
               by = join_by(population))
   
-  cv_mod <- lmerTest::lmer(cov_pref ~ mean_size + data + mean_size:data + (1|species), data = mod_data) 
-  
-  summary(cv_mod)
-  m1_pred <- effects::effect(term = "mean_size", 
-                             mod = cv_mod, 
-                             xlevels = list(mean_size = seq(1, 100, 1))) %>% 
-    as_tibble()
-  
-  p <- 
+
+
+
+  p <-
     mod_data %>% 
     ggplot() + 
     aes(x = mean_size) +
     geom_point(aes( y = cov_pref,
                     pch = data,
                     col = better_dist)) +
-    geom_ribbon(aes(ymin = (lower), 
-                    ymax = (upper)), 
-                data = m1_pred, alpha = 0.5) +
-    geom_line(aes(y = fit), 
-              data = m1_pred) +
     scale_x_log10(label = label_number(suffix = "cm")) +
-    scale_shape_manual(values = c("rls" = 21, "cbf" = 24), 
+    scale_shape_manual(values = c("rls" = 21, "cbf" = 4), 
                        labels = c("rls" = "Visual census",
                                   "cbf" = "Cryptobenthic (continuous)")) +
     scale_color_manual(values = c("normal" = rgb(181, 144, 19, maxColorValue=255),
@@ -681,13 +671,13 @@ estimated_prob <-
          size_class, 
          p_obs, p_norm, p_lnorm)
 
-
-suppl_fig <- 
+estimated_prob2 <- 
   estimated_prob %>% 
   left_join(obsdata_rls_gridcell %>% select(population, n, size_class, population_n, n_transects) %>% distinct()) %>% 
   mutate(n_obs = n/n_transects) %>% 
   mutate(n_norm = p_norm*population_n/n_transects, 
          n_lnorm = p_lnorm*population_n/n_transects) %>% 
+  mutate(mean_size = weighted.mean(size_class, w = n), .by = population) %>% 
   mutate(mass = 0.01*size_class^3) %>% 
   mutate(m_obs = n_obs*mass, 
          m_norm = n_norm*mass, 
@@ -695,11 +685,16 @@ suppl_fig <-
   summarise(biomass = sum(m_obs), 
             biomass_norm = sum(m_norm), 
             biomass_lnorm = sum(m_lnorm), 
-            .by = population) %>% 
+            .by = c(population, mean_size, population_n, n_transects)) %>% 
+  mutate(est_b = ((0.01*mean_size^3)*population_n)/n_transects) 
+
+suppl_fig <- 
+  estimated_prob2 %>% 
   pivot_longer(cols = contains("biomass_")) %>% 
   ggplot(aes(x = biomass/1e3, y = value/1e3, col = name)) +
+  geom_point(aes(y = est_b/1e3), col = "grey60") +
   geom_point(alpha = 0.8, pch = 21) +
-  geom_abline(slope = 1, lty = 2) +
+  geom_textabline(slope = 1, lty = 2, label = "Predicted = Observed", size = 6) +
   scale_y_log10(label = label_number(suffix = "kg")) +
   scale_x_log10(label = label_number(suffix = "kg")) +
   scale_color_manual(values = c("biomass_norm" = rgb(181, 144, 19, maxColorValue=255),
@@ -719,3 +714,17 @@ ggsave(filename = "output/figures/ms_figs/supplementary/estimating_biomass.png",
        height = 25,
        width = 35,
        units = "cm")
+
+lm(log(biomass)~0+log(est_b), data = estimated_prob2) %>% summary()
+lm(log(biomass)~0+log(biomass_lnorm), data = estimated_prob2) %>% summary()
+lm(log(biomass)~0+log(biomass_norm), data = estimated_prob2) %>% summary()
+
+
+# Max body size by population ==================================================
+
+obsdata_rls_gridcell %>% 
+  bind_rows(obsdata_cbf_location) %>% 
+  summarise(max_size = max(size_class), 
+            .by = population) %>% 
+  pull(max_size) %>% 
+  range()
