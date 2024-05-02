@@ -16,6 +16,8 @@
 *.csv
 *.rds
 *.parquet
+*.xlsx
+*.png
 analysis/output/
 
 other/
