@@ -6,11 +6,6 @@
 # RLS has three population levels: species, gridcell (1x1 deg), ecoregion
 # CBF has two population levels: species, location
 
-# Packages =====================================================================
-
-library(tidyverse)
-library(arrow) # for parquet files
-
 # Parameters ===================================================================
 
 rls_min_bins  <- 4
@@ -70,8 +65,14 @@ for(pop in c("species", "ecoregion", "gridcell")){
              lat_grid = round(latitude), 
              lon_grid = round(longitude), 
              gridcell = paste(lat_grid, lon_grid, sep = "_"), 
-             population = paste(species, !!sym(pop), sep = "__")) 
-    
+             population = paste(species, !!sym(pop), sep = "__")) %>% 
+      filter(!species %in% c("Sepia apama", 
+                             "Sepioteuthis australis", 
+                             "Sepia plangon", 
+                             "Aipysurus laevis", 
+                             # "Bathytoshia brevicaudata", # this is classed as elasmobranch
+                             "Arctocephalus pusillus")) # non-fish M1 species
+      
     n_transects <- 
       raw_data %>% 
       select(population, survey_date) %>% 
@@ -126,12 +127,14 @@ for(pop in c("species", "ecoregion", "gridcell")){
 # CBF import ===================================================================
 
 for(pop in c("species", "location")){
+  for(bin_cbf in c(TRUE, FALSE)){
   
   filename <-
     paste0("input/data/processed/cbf_obsdata_", 
            pop, "_", 
-           cbf_min_count, ".csv")
-  
+           cbf_min_count,
+           ifelse(bin_cbf, "_binned", ""),
+           ".csv")
   
   if(!file.exists(filename)|force_run){
     
@@ -145,15 +148,28 @@ for(pop in c("species", "location")){
              tl_cm
       ) 
     
-    simple_data <- 
-      raw_data %>%
-      mutate(size_class = tl_cm %>% round(1), 
-             size_min = size_class - 0.05, 
-             size_max = size_class + 0.05) %>% 
-      filter(str_detect(species, "^[A-Z]{1}[a-z]+\\s[a-z]+$")) %>% 
-      mutate(population = paste(species, !!sym(pop), sep = "__")) %>% 
-      count(population, size_class, size_min, size_max)
-
+    if(bin_cbf){
+      
+      simple_data <- 
+        raw_data %>%
+        mutate(size_mult = tl_cm*3) %>% 
+        mutate(size_class = rls_bin_table$size_class[.bincode(x = size_mult, 
+                                                              breaks = rls_bin_table$size_min)]) %>% 
+        left_join(rls_bin_table, by = join_by(size_class)) %>% 
+        filter(str_detect(species, "^[A-Z]{1}[a-z]+\\s[a-z]+$")) %>% 
+        mutate(population = paste(species, location, sep = "__")) %>% 
+        count(population, size_class, size_min, size_max)
+    } else {
+      simple_data <- 
+        raw_data %>%
+        mutate(size_class = tl_cm %>% round(1), 
+               size_min = size_class - 0.05, 
+               size_max = size_class + 0.05) %>% 
+        filter(str_detect(species, "^[A-Z]{1}[a-z]+\\s[a-z]+$")) %>% 
+        mutate(population = paste(species, !!sym(pop), sep = "__")) %>% 
+        count(population, size_class, size_min, size_max)
+    }
+    
     filtered_data <- 
       simple_data %>% 
       add_count(population, wt = n,  name = "population_n") %>%
@@ -173,7 +189,7 @@ for(pop in c("species", "location")){
     
     
     
-    assign(paste0("obsdata_cbf_", pop), 
+    assign(paste0("obsdata_cbf_", pop, ifelse(bin_cbf, "_binned", "")), 
            value = clean_data, 
            envir = .GlobalEnv)
     
@@ -184,21 +200,21 @@ for(pop in c("species", "location")){
     
   } else {
     
-    assign(paste0("obsdata_cbf_", pop), 
+    assign(paste0("obsdata_cbf_", pop, ifelse(bin_cbf, "_binned", "")), 
            value = read_csv(filename, show_col_types = FALSE), 
            envir = .GlobalEnv)
     
-    print(paste("CBF obsdata at", pop, "level imported."))
+    print(paste("CBF obsdata at", pop, "level imported.", ifelse(bin_cbf, "(binned)", "(unbinned)")))
   }
   
   assign(
-    paste0("cbf_npops_", pop),
-    get(paste0("obsdata_cbf_", pop)) %>% 
+    paste0("cbf_npops_", pop, ifelse(bin_cbf, "_binned", "")),
+    get(paste0("obsdata_cbf_", pop, ifelse(bin_cbf, "_binned", ""))) %>% 
       pull(population) %>%
       n_distinct()
   )
   
-  rm(pop)
+  }
 }
 
 # End ==========================================================================

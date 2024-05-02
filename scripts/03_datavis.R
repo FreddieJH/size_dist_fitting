@@ -2,16 +2,6 @@
 
 # This script creates a plot with all the empirical body size distributions 
 
-# Parameters ===================================================================
-
-force_run <- FALSE
-
-# Packages =====================================================================
-
-library(tidyverse)
-library(scales)
-library(cowplot)
-
 # Empirical distributions ======================================================
 
 for(src in c("rls", "cbf")){
