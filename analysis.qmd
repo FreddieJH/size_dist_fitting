@@ -3,9 +3,6 @@ title: "Consistency in species body size distributions across marine fishes"
 subtitle: "R script to reconstruct figures"
 author: Freddie Heather
 date: "2024-05-14"
-project:
-  type: website
-  output-dir: docs
 format: 
   html:
     code-fold: true
