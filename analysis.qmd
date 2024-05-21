@@ -1,0 +1,668 @@
+---
+title: "Consistency in species body size distributions across marine fishes"
+subtitle: "R script to reconstruct figures"
+author: Freddie Heather
+date: "2024-05-14"
+format: 
+  html:
+    code-fold: true
+    code-tools: true
+editor: visual
+execute:
+  message: false
+  warning: false
+---
+
+## About
+
+The following code will reconstruct the figures from the manuscript: Heather *et al.* (Submitted) "Consistency in species body size distributions across marine fishes". 
+
+## Setup
+
+Loading the required packages.
+```{r packages}
+library(tidyverse)
+library(scales)
+library(cowplot)
+library(patchwork)
+library(ggpubr)
+```
+
+Loading the required data.
+
+```{r data}
+
+fig1_data_fits <- read_csv("fig1_data_fits.csv")
+fig1_data_main <- read_csv("fig1_data_main.csv")
+fig2_data_pop  <- read_csv("fig2_data_pop.csv")
+fig2_data_spp  <- read_csv("fig2_data_spp.csv")
+fig3_data      <- read_csv("fig3_data.csv")
+fig3_data_ks   <- read_csv("fig3_data_ks.csv")
+fig4_data      <- read_csv("fig4_data.csv")
+fig4_data_sample <- read_csv("fig4_data_sample.csv")
+
+```
+
+## Figure 1
+
+```{r fig1}
+
+fig1a <-
+  fig1_data_fits %>% 
+  bind_rows(tibble(col = "dummy_var")) %>% # needed for legend
+  ggplot(aes(x = scaled_size, 
+             y = scaled_n, 
+             group = file)) +
+  geom_line(aes(y = scaled_n, 
+                group = population, 
+                colour = col),
+            alpha = 0.1, 
+            data = fig1_data_main %>% 
+              mutate(col = case_when(
+                normal_better ~ rgb(181, 144, 19, 
+                                    maxColorValue=255), 
+                !normal_better ~ rgb(29, 84, 128, 
+                                     maxColorValue=255), 
+                TRUE ~ "grey80"),
+                lty = case_when(normal_better ~ "solid", 
+                                !normal_better ~ "solid", 
+                                TRUE ~ "dashed"),
+                lwd = case_when(normal_better ~ 2, 
+                                !normal_better ~ 2, 
+                                TRUE ~ 0.5)) ) +
+  geom_line(col = "black", lwd = 3, 
+            data = fig1_data_fits %>% 
+              filter(file %in% c("normal", "lognormal"))) +
+  geom_line(aes(col = col,
+                lty = lty,
+                linewidth = lwd)) +
+  scale_x_continuous(label = label_number(suffix = "x")) +
+  scale_color_identity(labels = c(
+    "Observed (Normal preferred)", 
+    "Observed (Lognormal preferred)",
+    "Normal fit",
+    "Lognormal fit", 
+    "13 protist species"
+  ), 
+  guide = "legend") +
+  scale_linetype_identity() +
+  scale_linewidth_identity() +
+  theme_cowplot(20) +
+  theme(legend.position = c(1,1), 
+        legend.justification = c(1,1),
+        legend.title = element_blank(), 
+        plot.margin = margin(10, 20, 10, 10)) +
+  labs(
+    x = "Body size relative to mean size",
+    y = "Abundance relative to max"
+  ) +
+  guides(col = guide_legend(
+    override.aes = list(lty = c(1, 1, 1, 1, 2), 
+                        linewidth = c(0.3, 0.3, 3, 3, 0.5), 
+                        colour = c(rgb(181, 144, 19, maxColorValue=255),
+                                   rgb(29, 84, 128, maxColorValue=255),
+                                   rgb(181, 144, 19, maxColorValue=255),
+                                   rgb(29, 84, 128, maxColorValue=255),
+                                   "black"), 
+                        alpha = 1), 
+    label.position = "left"))
+
+# getting a random selection of species
+out <- c()
+for(i in 1:10) {
+  set.seed(1)
+  out <- c(out, sample(((320*(i-1))+1):((320*(i-1)+1)+320), 1))
+}
+
+range_bodysizes <- 
+  fig1_data_main %>% 
+  filter(population %in% {fig1_data_main %>% filter(model_fit) %>% pull(population)}) %>% 
+  select(population, mean_size) %>% 
+  distinct() %>% 
+  arrange(mean_size) %>% 
+  rownames_to_column("size_num") %>% 
+  filter(size_num %in% out)
+
+set.seed(1)
+cbf_samples <- 
+  fig1_data_main %>% 
+  filter(population_n > 100) %>% 
+  filter(dat=="cbf") %>% 
+  select(population, mean_size) %>% 
+  distinct() %>% 
+  arrange(mean_size) %>% 
+  rownames_to_column("size_num") %>% 
+  filter(size_num %in% sample(1:nrow(.), 2))
+
+extra <- 
+  tibble(species = c(range_bodysizes$population, 
+                     cbf_samples$population) %>% 
+           str_extract(pattern = ".*(?=__)")) %>% 
+  filter(species %in% {fig1_data_main %>% filter(vector_icon) %>% pull(species)})
+
+fig1b <-
+  fig1_data_main %>% 
+  filter(population %in% c(range_bodysizes$population, cbf_samples$population)) %>%
+  mutate(highlight_spp = species %in% extra$species) %>% 
+  ggplot() +
+  geom_line(aes(x = scaled_size, 
+                y = scaled_n,
+                col = dat,
+                group = population),
+            alpha = 0.5, 
+            linewidth = 1) +
+  geom_line(aes(x = scaled_size,
+                y = scaled_n,
+                col = dat,
+                group = population),
+            data = . %>% filter(highlight_spp),
+            linewidth = 1.5) +
+  scale_x_continuous(label = label_number(suffix = "x")) +
+  scale_color_manual(values = c("rls" = "#56B4E9",
+                                "cbf" = "#E69F00"),
+                     labels = c("rls" = "Visual census",
+                                "cbf" = "Cryptobenthic specimen collection")) +
+  theme_cowplot(20) +
+  theme(legend.position = c(1,1), 
+        legend.justification = c(1,1),
+        legend.title = element_blank()) +
+  labs(
+    x = "Body size relative to mean size",
+    y = "Abundance relative to max"
+  ) +
+  guides(col = guide_legend(label.position = "left"))
+
+fig1 <- 
+  fig1a + 
+  fig1b + 
+  plot_layout(ncol = 1) +
+  plot_annotation(tag_levels = 'A')
+
+ggsave(filename = "ms_figs/scaling_distributions.png",
+       plot = fig1,
+       height = 25,
+       width = 30,
+       units = "cm", 
+       create.dir = TRUE)
+
+
+```
+
+![Observed body length distributions across 3,228 fish populations show a similar unimodal shape. A) Observed individual body length distributions shown in thin solid lines with the median parameter estimates from normal-preferred and lognormal-preferred model fits shown as thick yellow and dark blue lines, respectively. Dashed lines in (A) show scaled body size (cell diameter) distributions of 13 freshwater protist species extracted from Giometto et al. (2013). B) A random selection of 12 populations for visualisation purposes; three species have been highlighted (thicker lines) to indicate that each line represents a population-level body length distribution. Binned body length data were normalized to the bin width to allow comparison with continuous body length data. Abundance density (y-axis) is scaled to the maximum abundance density of the population, and body size (x-axis) is scaled to the mean body size of the population.
+The estimated CV values for fish length were consistent across three different spatial scales: population-level (Fig. 2), metapopulation or ecoregion-level20 (Extended Data Fig. 3), and the entire species-level (Fig. 2). The results were also similar when species that may be targeted by recreational or commercial fisheries (12% of total, n = 97 species) were removed from the analysis (Extended Data Fig. 4). Naturally, over short temporal and fine spatial scales, local recruitment and mortality events might increase the variability of size distributions and produce multimodal size frequencies, such as sometimes seen in fisheries samples, especially from highly seasonal species21,22. Multi-modality is likely to be rarer when body size data encompasses multiple sampling events and when seasonality is weaker, as is the case for our data. Only about 2% of coral reef and temperate rocky reef populations in our dataset revealed multiple peaks in body length frequencies (Extended Data Figs. 5).](ms_figs/scaling_distributions.png)
+
+# Figure 2
+
+```{r fig2}
+
+inc_bimodal <- FALSE
+inc_fished <- TRUE
+
+main_plot <- function(.data) {
+  .data %>% 
+    ggplot() + 
+    aes(
+      x = mean_size, 
+      y = cov_pref, 
+      pch = col
+    ) +
+    geom_hline(yintercept = 0.30, lty = 2, col = "black", alpha = 0.5) +
+    geom_hline(yintercept = 0.34, lty = 1, col = "#56B4E9", alpha = 0.5) +
+    geom_hline(yintercept = 0.37, lty = 1, col = "#CC79A7", alpha = 0.5) +
+    geom_hline(yintercept = 0.23, lty = 1, col = "#E69F00", alpha = 0.5) +
+    geom_hline(yintercept = 0.33, lty = 1, col = "#000000", alpha = 0.5) +
+    geom_point(alpha = 1, 
+               aes(col = col, 
+                   size = (population_n %>% log10()))) +
+    geom_point(col = "red",
+               pch = 4, 
+               size = 2,
+               data = .data %>% filter(bimodal)) +
+    scale_size_continuous(range = c(0.1,5),
+                          breaks = c(2,3,5),
+                          labels =  c("100", "1K", "100K"),
+                          transform = "log10", 
+                          name = "Sample size") + 
+    scale_x_continuous(transform = "log10", 
+                       labels = label_number(suffix="cm"), 
+                       limits = range(.data$mean_size)) +
+    scale_shape_manual(
+      values = c(
+        "rls_norm" = 21, 
+        "rls_lnorm" = 21, 
+        "cbf_norm" = 24, 
+        "cbf_lnorm" = 24),
+      label = c(
+        "rls_norm" = "Visual census (normal preferred)", 
+        "rls_lnorm" = "Visual census (lognormal preferred)", 
+        "cbf_norm" = "Cryptobenthic (normal preferred)", 
+        "cbf_lnorm" = "Cryptobenthic (lognormal preferred)")) +
+    scale_color_manual(values = c(
+      "rls_norm" = "#56B4E9", 
+      "rls_lnorm" = "#CC79A7", 
+      "cbf_norm" = "#E69F00", 
+      "cbf_lnorm" = "#000000"),
+      label = c(
+        "rls_norm" = "Visual census (normal preferred)", 
+        "rls_lnorm" = "Visual census (lognormal preferred)", 
+        "cbf_norm" = "Cryptobenthic (normal preferred)", 
+        "cbf_lnorm" = "Cryptobenthic (lognormal preferred)")) +
+    labs(x = "Mean body length (log)", 
+         y = "Coefficient of variation in body size") +
+    
+    theme_cowplot(20) +
+    theme(legend.position = "none", 
+          axis.title.y = element_blank()
+    ) 
+}
+
+side_plot <- function(.data, ylim){
+  .data %>% 
+    ggplot() +
+    aes(
+      x = cov_pref,
+      fill = col,
+    ) +
+    scale_fill_manual(values = c(
+      "rls_norm" = "#56B4E9", 
+      "rls_lnorm" = "#CC79A7", 
+      "cbf_norm" = "#E69F00", 
+      "cbf_lnorm" = "#000000"),
+      label = c(
+        "rls_norm" = "Visual census (normal preferred)", 
+        "rls_lnorm" = "Visual census (lognormal preferred)", 
+        "cbf_norm" = "Cryptobenthic (normal preferred)", 
+        "cbf_lnorm" = "Cryptobenthic (lognormal preferred)"))+
+    geom_density(alpha = 0.3, col = "black") +
+    scale_x_continuous(position = "top", 
+                       limits = c(0, ylim)) +
+    coord_flip() +
+    theme(legend.position = "none", 
+          plot.background = element_rect(fill = "white"),
+          panel.background = element_rect(fill = "white"),
+          axis.line.x = element_blank(),
+          axis.text.x = element_blank(),
+          axis.title.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          axis.line.y = element_line(), 
+          axis.title.y = element_blank(), 
+          axis.text.y = element_text(margin = margin(t = 0, 
+                                                     r = 0, 
+                                                     b = 0, 
+                                                     l = 10), 
+                                     size = 15), 
+          axis.ticks = element_line(linewidth = 1, colour = "black"))
+}
+
+pop_data <- 
+  fig2_data_pop %>%
+  {if(inc_fished) . else filter(., !fished)} %>% 
+  {if(inc_bimodal) . else filter(., !bimodal)} 
+
+spp_data <- 
+  fig2_data_spp %>% 
+  {if(inc_fished) . else filter(., !fished)} %>% 
+  {if(inc_bimodal) . else filter(., !bimodal)}
+
+plot_ylim <- 
+  max(layer_scales(
+    main_plot(pop_data))$y$range$range,
+    layer_scales(
+      main_plot(spp_data))$y$range$range)
+
+
+fig2_main <- 
+  main_plot(pop_data) + 
+  theme(axis.title.x = element_blank()) +
+  ylim(0, plot_ylim) +
+  annotate("text",
+           x = 1, 
+           hjust = 0, 
+           y = plot_ylim*0.95,
+           label = "Population-level",
+           size = 10) +
+  side_plot(pop_data %>% 
+              filter(col != "cbf_lnorm"), 
+            plot_ylim) + 
+  main_plot(spp_data) + ylim(0, plot_ylim) +
+  annotate("text", 
+           x = 1, 
+           hjust = 0, 
+           y = plot_ylim*0.95,
+           label = "Species-level",
+           size = 10) +
+  side_plot(spp_data %>% filter(col != "cbf_lnorm"), 
+            plot_ylim)  +
+  plot_layout(design = {"
+      AAAAAAB
+      AAAAAAB
+      CCCCCCD
+      CCCCCCD"
+  })
+
+fig2_legend <-
+  ggpubr::as_ggplot(
+    ggpubr::get_legend(
+      main_plot(pop_data) +
+        theme(axis.title = element_text(), 
+              axis.text = element_text()) +
+        guides(colour = guide_legend(override.aes = list(size=5, stroke = 2),
+                                     nrow = 2,
+                                     byrow = TRUE,
+                                     title = element_blank()), 
+               pch = guide_legend(nrow = 2,
+                                  byrow = TRUE,
+                                  title = element_blank())) +
+        theme(legend.position = "bottom", 
+              legend.box = "vertical",
+              legend.justification = c(0.5,0.5),
+              legend.background = element_rect(color = "black"),
+              legend.margin=margin(5,5,5,6),
+              legend.title = element_text()), 
+      
+    )) 
+
+fig2_yaxis <- 
+  wrap_elements(fig2_main) +
+  labs(tag = "Coeffient of variation in body size") +
+  theme(
+    plot.tag = element_text(size = 20, angle = 90),
+    plot.tag.position = "left"
+  )
+
+fig2 <- 
+  fig2_yaxis + 
+  fig2_legend +
+  plot_layout(design = {"
+      AAAAAAA
+      AAAAAAA
+      AAAAAAA
+      AAAAAAA
+            #BBBBB#"
+  })
+
+ggsave(filename = "ms_figs/cv_meansize.png",
+       plot = fig2,
+       height = 20,
+       width = 20*1.618,
+       units = "cm", 
+       create.dir = TRUE)
+```
+
+![Coefficient of variation (CV) of body length distributions of ca 3000 fish populations of larger bodied species (visual census and largest cryptobenthic fish) is approximately 0.34, regardless of the mean body length of the population and the assumed statistical distribution. Each symbol shows the CV value of a single fish population (grid cell, see Methods) or species. The color and shape of the symbol indicates the better-fitting statistical distribution and the sampling method. CV (y-axis) is calculated as the median of the posterior parameters associated with the better-fit distribution. Colored horizonal lines represent the median CV values, dashed line shows the estimated CV value of protists from Giometto et al.13. Margin density plots show the distribution of CV values across populations; for cryptobenthic lognormal preferred (black triangles), marginal plots are not shown due to small sample sizes (n = 9 populations). Symbol size is relative to the sample size (log scale).](ms_figs/cv_meansize.png)
+
+# Figure 3
+
+```{r fig3}
+
+make_plot <- function(data, title){
+  data %>% 
+    ggplot(aes(x = size_class,
+               y = p_obs, 
+               width = size_max-size_min)) +
+    facet_wrap(~species, ncol = 2, scales = "free") +
+    geom_vline(aes(xintercept = mean_size), lty = 2, linewidth = 1.5) +
+    geom_rect(aes(xmin = size_min, xmax = size_max, ymin = 0, ymax = p_obs), 
+              alpha = 0.2, 
+              col = "black",
+              fill = "grey70") + 
+    # geom_point(aes(col = name, y = value, alpha = alp)) +
+    geom_path(aes(col = name, y = value, alpha = alp, lty=lty), linewidth = 2) +
+    scale_alpha_identity()+
+    scale_linetype_identity() +
+    scale_colour_manual(values = c("p_norm" = rgb(181, 144, 19, maxColorValue=255), 
+                                   "p_lnorm" = rgb(29, 84, 128, maxColorValue=255)))+
+    theme_cowplot(20) +
+    scale_y_continuous(label = label_percent())+
+    scale_x_continuous(label = label_number()) +
+    labs(x = "Length class (cm)", 
+         y = "Proportion in length class") +
+    theme(legend.position = "none",
+          strip.background = element_rect(
+            colour = "black",
+            fill = "white"), 
+          strip.text = element_text(face = "italic"), 
+          plot.title = element_text(hjust = 0.5)) +
+    ggtitle(label = title)
+}
+
+
+
+fig3a <- 
+  fig3_data %>% 
+  filter(pref == "lnorm_pref") %>% 
+  make_plot("Strong preference for lognormal")
+
+fig3b <- 
+  fig3_data %>% 
+  filter(pref == "no_pref") %>% 
+  make_plot("No preference for normal or lognormal")
+
+fig3c <- 
+  fig3_data %>% 
+  filter(pref == "norm_pref") %>% 
+  make_plot("Strong preference for normal")
+
+ks_curve <- 
+  fig3_data_ks %>% 
+  pivot_longer(cols = contains("ks"), 
+               values_to = "ks",
+               names_to = "dist") %>% 
+  summarise(mean_ks = mean(ks), 
+            median_ks = median(ks), 
+            lwr_ks = quantile(ks, 0.025), 
+            upr_ks = quantile(ks, 0.875), 
+            .by = c(c, dist)) %>% 
+  ggplot(aes(x = c, 
+             y = mean_ks, 
+             color = dist)) +
+  geom_line(linewidth = 2, alpha = 0.8) +
+  scale_color_manual(values = c("norm_ks" = rgb(181, 144, 19, maxColorValue=255),
+                                "lnorm_ks" = rgb(29, 84, 128, maxColorValue=255), 
+                                "pref_ks" = "pink"),
+                     labels = c("norm_ks" = "Normal",
+                                "lnorm_ks" = "Lognormal",                                 "pref_ks" = "Preferred")) +
+  guides(color = guide_legend(override.aes = list(alpha = 1) ) ) +
+  scale_y_continuous() +
+  labs(x = "Assumed Coefficient of Variation", 
+       y = "Dissimilarity (K-S statistic)") +
+  theme_cowplot(20) +
+  theme(legend.position = c(0.95,0.05), 
+        legend.justification = c(1,0),
+        legend.title = element_blank(), 
+        plot.background = element_rect(color = "transparent")) 
+
+fig3 <-  
+  fig3a + 
+  fig3b + 
+  fig3c + 
+  ks_curve +
+  plot_annotation(tag_levels = 'A')
+
+ggsave(filename = "ms_figs/ks_curve.png",
+       plot = fig3,
+       height = 25,
+       width = 25*1.618,
+       units = "cm")
+
+```
+
+![Empirical body size distributions (grey bars) can be reconstructed from the mean body size of the population (vertical black dashed line) and assumed CV of 0.34. Panels A-C show randomly selected populations from one of three population groups for which body size distributions were best described by lognormal, normal or either of the two statistical distributions. Grey bars show observed data and lines show predicted distributions assuming either truncated normal or lognormal statistical distribution and CV of 0.34. Panel D shows that assuming CV of 0.34 provides the best fitting distributions with lowest median Kolmogorov-Smirnov (K-S) statistic across all populations regardless of the assumed statistical distribution (lognormal for all 3000 populations, truncated normal for all, or estimated using the best fitting distribution). Lower or higher CV values quickly reduced the predictive power, shown by higher K-S values.](ms_figs/ks_curve.png)
+
+# Figure 4
+
+```{r fig4}
+
+make_fig4 <- function(data, spp_select){
+  dat1 <- 
+    data %>% 
+    filter(species == spp_select) 
+  
+  dat1 %>% 
+    filter(name != "p_lnorm") %>% 
+    filter(name != "rls_obs") %>% 
+    mutate(species = fct_reorder(species, std_mk)) %>% 
+    ggplot(aes(x = size_class, 
+               y = value)) +
+    geom_rect(aes(xmin = size_min, 
+                  xmax = size_max, 
+                  ymin = 0, 
+                  ymax = value, 
+                  fill = size_10), 
+              col = "black",
+              data = dat1 %>% 
+                filter(name == "rls_obs") %>% 
+                mutate(size_10 = case_when(size_class >= 10 ~ "large", 
+                                           TRUE ~ "small"))) +
+    scale_fill_manual(values = c("large" = "grey70", 
+                                 "small" = "grey90"),
+                      labels = c("large" = "Observed (Length \U2265 10cm)", 
+                                 "small" = "Observed (Length \U003C 10cm)")) +
+    scale_color_manual(values = c("p_norm" = rgb(181, 144, 19, maxColorValue=255), 
+                                  "lbspr" = rgb(148, 31, 36, maxColorValue=255), 
+                                  "lbspr_mk15" = rgb(70, 172, 200, maxColorValue=255)),
+                       labels = c("lbspr" = "LBSPR (estimate)", 
+                                  "lbspr_mk15" = "LBSPR (M/k = 1.5, estimate)",
+                                  "p_norm" = "Normal (estimate)")) +
+    geom_vline(xintercept = 8.75, lty = 2) +
+    geom_path(aes(col = name), linewidth = 2, alpha = 0.8) +
+    geom_text(aes(x = Inf, y = Inf, label = paste("M/k =", std_mk, "\n", 
+                                                  "L\U221E =", std_linf, "cm")),
+              hjust = 1,
+              vjust = 1.2,
+              data = mk_text %>% filter(species == spp_select)) +
+    scale_x_continuous(limits = c(0, NA), label = label_number()) +
+    scale_y_continuous(label = label_percent()) +
+    facet_wrap(~fct_reorder(species, std_mk), scales = "free") +
+    labs(x = "Length class (cm)", 
+         y = "Proportion") +
+    theme_cowplot() +
+    theme(legend.position = "none", 
+          strip.background = element_rect(fill = "transparent"), 
+          strip.text = element_text(face = "italic"), 
+          axis.title.y = element_blank(), 
+          axis.title.x = element_blank())
+}
+
+ks_data <- 
+  fig4_data %>% 
+  pivot_wider(names_from = name, values_from = value)
+
+ks_fig_data <- 
+  ks_data %>% 
+  summarise(ks_norm = ks.test(x = rls_obs, 
+                              y = p_norm)$statistic,
+            ks_lnorm = ks.test(x = rls_obs, 
+                               y = p_lnorm)$statistic,
+            ks_lbspr = ks.test(x = rls_obs, 
+                               y = lbspr)$statistic,
+            ks_lbspr_mk15 = ks.test(x = rls_obs, 
+                                    y = lbspr_mk15)$statistic,
+            .by = species) %>% 
+  pivot_longer(cols = contains("ks_"))
+
+ks_fig_data_rmsmall <- 
+  ks_data %>% 
+  filter(size_class >= 10) %>% 
+  summarise(ks_norm = ks.test(x = p_norm, 
+                              y = rls_obs)$statistic,
+            ks_lnorm = ks.test(x = p_lnorm, 
+                               y = rls_obs)$statistic,
+            ks_lbspr = ks.test(x = lbspr, 
+                               y = rls_obs)$statistic,
+            ks_lbspr_mk15 = ks.test(x = rls_obs, 
+                                    y = lbspr_mk15)$statistic,
+            .by = species) %>% 
+  pivot_longer(cols = contains("ks_"))
+
+fig4_violins <-
+  ks_fig_data_rmsmall %>%
+  rename(rmsmall = value) %>%
+  left_join(ks_fig_data %>%
+              rename(withsmall = value)) %>%
+  pivot_longer(cols = contains("small"),
+               names_to = "inc_small") %>%
+  mutate(inc_small = case_when(inc_small == "rmsmall" ~ "Exluding sizes < 10cm",
+                               inc_small == "withsmall" ~ "All size classes")) %>%
+  filter(name != "ks_lnorm") %>%
+  ggplot(aes(y = value, x = name)) +
+  geom_violin()+
+  geom_boxplot(width = 0.1) +
+  facet_wrap(~inc_small, nrow=2) +
+  scale_x_discrete(labels = c("ks_lbspr" = "LBSPR",
+                              "ks_lbspr_mk15" = "LBSPR \n (M/k = 1.5)",
+                              "ks_norm" = "CV = 0.34")) +
+  labs(y = "Dissimilarity to observed") +
+  theme_cowplot(17) +
+  theme(legend.position = "none",
+        panel.grid.major.y = element_line(colour = "grey80"),
+        strip.background = element_rect(fill = "transparent", colour = "black"),
+        axis.title.x = element_blank())
+
+arranged_species <- fig4_data_sample %>% arrange(std_mk) %>% pull(species)  %>% unique()
+
+mk_text <- 
+  fig4_data_sample %>% 
+  filter(p_obs != 0) %>% 
+  summarise(max_x = max(size_class, na.rm = TRUE), 
+            max_y = max(c(p_obs, p_lbspr), na.rm = TRUE), 
+            std_mk = round(unique(std_mk), 2), 
+            std_linf = round(unique(std_linf),0), 
+            .by = species) 
+
+for(i in 1:length(arranged_species)){
+  
+  if(i==1) {
+    fig4_main <- make_fig4(fig4_data, 
+                           spp_select = arranged_species[i]) + 
+      theme(legend.position = "none")
+  } else if(i %in% c(6,7)) {
+    fig4_main <- 
+      fig4_main + 
+      make_fig4(fig4_data, 
+                spp_select = arranged_species[i]) + 
+      theme(axis.title.x = element_text())
+  } else if(i == max(length(arranged_species))) {
+    fig4_main <- 
+      fig4_main +
+      make_fig4(fig4_data, spp_select = arranged_species[i]) + 
+      theme(legend.position = "bottom")
+  } else {
+    fig4_main <- 
+      fig4_main + 
+      make_fig4(fig4_data, spp_select = arranged_species[i]) + 
+      theme(legend.position = "none")
+  }
+  
+}
+
+fig4_legend <- 
+  {{make_fig4(fig4_data, 
+              spp_select = arranged_species[i]) + 
+      theme(legend.position = "bottom", legend.title = element_blank(), legend.justification = 0.5) } %>% 
+      get_legend() %>% 
+      as_ggplot()}
+
+fig4 <- 
+  fig4_main + 
+  fig4_violins + 
+  fig4_legend +
+  plot_layout(design = 
+                "abc
+              deh
+              fgh
+              iii
+              ", heights = c(4,4,4,1)) +
+  plot_annotation(tag_levels = "A")
+
+
+ggsave(filename = "ms_figs/lbspr_comparison.png",
+       plot = fig4,
+       height = 20,
+       width = 20*1.618,
+       units = "cm")
+
+```
+
+![Simple one parameter model that assumes truncated normal distribution and CV = 0.34 matches observations similarly well or better than commonly used size-based methods with more parameters (LBSPR). Panels A-G shows observations (grey bars) and predictions (solid lines) for seven randomly selected (from 68 species with available life-history parameters). Predictions are shown for a simple method using truncated normal distribution (yellow) with a CV = 0.34 and from LBSPR using either empirically estimate M and k values from Prince et al.17 (red) or assuming a generic M/k ratio of 1.516. Panel H shows the dissimilarity (Kolmogorov-Smirnov statistic) between the prediction and the observed body size distribution for all 68 species using all size classes or removing individuals that may have observational sampling bias (less than 10cm in body length).](ms_figs/lbspr_comparison.png)
+
