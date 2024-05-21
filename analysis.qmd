@@ -26,22 +26,37 @@ library(scales)
 library(cowplot)
 library(patchwork)
 library(ggpubr)
+library(modelr)
 ```
 
 Loading the required data.
 
 ```{r data}
 
-fig1_data_fits <- read_csv("fig1_data_fits.csv")
-fig1_data_main <- read_csv("fig1_data_main.csv")
-fig2_data_pop  <- read_csv("fig2_data_pop.csv")
-fig2_data_spp  <- read_csv("fig2_data_spp.csv")
-fig3_data      <- read_csv("fig3_data.csv")
-fig3_data_ks   <- read_csv("fig3_data_ks.csv")
-fig4_data      <- read_csv("fig4_data.csv")
-fig4_data_sample <- read_csv("fig4_data_sample.csv")
+read_data <- function(str) read_csv(paste0("fig_data/", str), show_col_types = FALSE)
+
+# Data for main figures
+fig1_data_fits   <- read_data("fig1_data_fits.csv")
+fig1_data_main   <- read_data("fig1_data_main.csv")
+fig2_data_pop    <- read_data("fig2_data_pop.csv")
+fig2_data_spp    <- read_data("fig2_data_spp.csv")
+fig3_data        <- read_data("fig3_data.csv")
+fig3_data_ks     <- read_data("fig3_data_ks.csv")
+fig4_data        <- read_data("fig4_data.csv")
+fig4_data_sample <- read_data("fig4_data_sample.csv")
+
+# Data for supplementary figures
+ED_fig1_data <- read_data("ED_fig1_data.csv")
+ED_fig2_data <- read_data("ED_fig2_data.csv")
+ED_fig3_data <- read_data("ED_fig3_data.csv")
+ED_fig5_data <- read_data("ED_fig5_data.csv")
+ED_fig7_data <- read_data("ED_fig7_data.csv")
+ED_fig8_data <- read_data("ED_fig8_data.csv")
+ED_fig9_data <- read_data("ED_fig9_data.csv")
 
 ```
+
+# Main Figures
 
 ## Figure 1
 
@@ -666,3 +681,589 @@ ggsave(filename = "ms_figs/lbspr_comparison.png",
 
 ![Simple one parameter model that assumes truncated normal distribution and CV = 0.34 matches observations similarly well or better than commonly used size-based methods with more parameters (LBSPR). Panels A-G shows observations (grey bars) and predictions (solid lines) for seven randomly selected (from 68 species with available life-history parameters). Predictions are shown for a simple method using truncated normal distribution (yellow) with a CV = 0.34 and from LBSPR using either empirically estimate M and k values from Prince et al.17 (red) or assuming a generic M/k ratio of 1.516. Panel H shows the dissimilarity (Kolmogorov-Smirnov statistic) between the prediction and the observed body size distribution for all 68 species using all size classes or removing individuals that may have observational sampling bias (less than 10cm in body length).](ms_figs/lbspr_comparison.png)
 
+# SI Figures
+
+## ED Fig. 1
+
+```{r ed-fig1}
+
+
+logit_mod <-
+  ED_fig1_data %>% 
+  mutate(normal_better = as.numeric(normal_better)) %>% 
+  glm(normal_better ~ pop_mean_size, data = ., family = "binomial")
+
+logit_plot <- 
+  ED_fig1_data %>% 
+  ggplot(aes(
+    x = pop_mean_size,
+    y = normal_better %>% as.numeric)) +
+  geom_point(alpha = 0.3, pch = 3, size = 3) +
+  geom_smooth(method = "glm",
+              method.args = list(family = "binomial"),
+              col = "darkblue", fill = "darkblue") +
+  scale_x_continuous(label = label_number(suffix = "cm")) +
+  theme_cowplot(20) +
+  labs(
+    x = "Mean body length", 
+    y = "Probability Normal preferred"
+  )
+
+ggsave(filename = "ms_figs/logistic.png",
+       plot = logit_plot,
+       height = 15,
+       width = 15*1.618,
+       units = "cm")
+```
+
+![Populations with larger mean body lengths are usually better described by a truncated normal than a lognormal distribution. The blue line shows the logistic regression fit to the data. The populations include both visual census and cryptobenthic data.](ms_figs/logistic.png)
+
+## ED Fig. 2
+
+```{r ed-fig2}
+
+p_binning <- 
+  ED_fig2_data %>%
+  ggplot() +
+  aes(
+    x = mean_size,
+    xend = mean_size,
+    y = cont,
+    yend = binned
+  ) +
+  geom_hline(yintercept = median(ED_fig2_data$binned, na.rm = TRUE), lty = 1) +
+  geom_hline(yintercept = median(ED_fig2_data$cont, na.rm = TRUE), lty = "35") +
+  geom_segment(arrow = arrow(length = unit(0.3, "cm"))) +
+  scale_x_log10(label = label_number(suffix = "cm")) +
+  theme_cowplot(20) +
+  labs(x = "Mean body length (log)", 
+       y = "CV value (before and after binning)")
+
+
+ggsave(filename = "ms_figs/binning_effect.png",
+       plot = p_binning,
+       height = 15,
+       width = 15*1.618,
+       units = "cm")
+
+```
+
+![Binning the cryptobenthic data (median CV = 0.23, dotted horizontal line) into visual census bins results in a greater median CV value (median CV = 0.28, solid horizontal line). Arrows represent the change from the CV value (either normal or lognormal) of the continuous data to the CV value of the binned data. Note: To be binned into the same visual census bins (2.5cm, 5cm, 7.5cm etc.), cryptobenthic body lengths were multiplied by a constant (constant = 3) before binning.](ms_figs/binning_effect.png)
+## ED Fig. 3
+
+```{r ed-fig3}
+# Must have run the functions in Figure 2
+
+plot_ylim <- 
+  max(layer_scales(
+    main_plot(ED_fig3_data))$y$range$range)
+
+
+ppp <- 
+  main_plot(ED_fig3_data) + 
+  theme(axis.title.x = element_blank()) +
+  ylim(0, plot_ylim) +
+  annotate("text",
+           x = 1, 
+           hjust = 0, 
+           y = plot_ylim*0.95,
+           label = "Ecoregion-level",
+           size = 10) +
+  side_plot(ED_fig3_data %>% filter(col != "cbf_lnorm"), 
+            plot_ylim)  +
+  plot_layout(design = {"
+      AAAAAAB
+      AAAAAAB"
+  })
+
+leg <- 
+  ggpubr::as_ggplot(
+    get_legend(
+      main_plot(ED_fig3_data) +
+        theme(axis.title = element_text(), 
+              axis.text = element_text()) +
+        guides(colour = guide_legend(override.aes = list(size=5, stroke = 2),
+                                     nrow = 2,
+                                     byrow = TRUE,
+                                     title = element_blank()), 
+               pch = guide_legend(nrow = 2,
+                                  byrow = TRUE,
+                                  title = element_blank())) +
+        theme(legend.position = "bottom", 
+              legend.box = "vertical",
+              legend.justification = c(0.5,0.5),
+              legend.background = element_rect(color = "black"),
+              legend.margin=margin(5,5,5,6),
+              legend.title = element_text()))) 
+
+cc <- 
+  wrap_elements(ppp) +
+  labs(tag = "Coeffient of variation in body size") +
+  theme(
+    plot.tag = element_text(size = 20, angle = 90),
+    plot.tag.position = "left"
+  )
+
+p_simple <- 
+  cc + 
+  leg +
+  plot_layout(design = {"
+      AAAAAAA
+      AAAAAAA
+            #BBBBB#"
+  })
+
+ggsave(filename = "ms_figs/meansize_cv_ecoregion.png",
+       plot = p_simple,
+       height = 15,
+       width = 20*1.618,
+       units = "cm")
+
+```
+
+![Relationship between population mean body length and CV at the ecoregion-level in the visual census data and location level in the cryptobenthic data. Fisheries-targeted species and distributions deemed to be bimodal have been excluded. The median CV value is 0.35, 80% of CV values fall in the range of 0.23 to 0.51 and 95% of the CV values fall in the range of 0.19 and 0.56.](ms_figs/meansize_cv_ecoregion.png)
+
+## ED Fig. 4
+
+```{r ed-fig4}
+
+inc_fished <- FALSE
+inc_bimodal <- FALSE
+
+pop_data <- 
+  fig2_data_pop %>%
+  {if(inc_fished) . else filter(., !fished)} %>% 
+  {if(inc_bimodal) . else filter(., !bimodal)} 
+
+spp_data <- 
+  fig2_data_spp %>% 
+  {if(inc_fished) . else filter(., !fished)} %>% 
+  {if(inc_bimodal) . else filter(., !bimodal)}
+
+plot_ylim <- 
+  max(layer_scales(
+    main_plot(pop_data))$y$range$range,
+    layer_scales(
+      main_plot(spp_data))$y$range$range)
+
+
+ED_fig4_main <- 
+  main_plot(pop_data) + 
+  theme(axis.title.x = element_blank()) +
+  ylim(0, plot_ylim) +
+  annotate("text",
+           x = 1, 
+           hjust = 0, 
+           y = plot_ylim*0.95,
+           label = "Population-level",
+           size = 10) +
+  side_plot(pop_data %>% 
+              filter(col != "cbf_lnorm"), 
+            plot_ylim) + 
+  main_plot(spp_data) + ylim(0, plot_ylim) +
+  annotate("text", 
+           x = 1, 
+           hjust = 0, 
+           y = plot_ylim*0.95,
+           label = "Species-level",
+           size = 10) +
+  side_plot(spp_data %>% filter(col != "cbf_lnorm"), 
+            plot_ylim)  +
+  plot_layout(design = {"
+      AAAAAAB
+      AAAAAAB
+      CCCCCCD
+      CCCCCCD"
+  })
+
+ED_fig4_legend <-
+  ggpubr::as_ggplot(
+    ggpubr::get_legend(
+      main_plot(pop_data) +
+        theme(axis.title = element_text(), 
+              axis.text = element_text()) +
+        guides(colour = guide_legend(override.aes = list(size=5, stroke = 2),
+                                     nrow = 2,
+                                     byrow = TRUE,
+                                     title = element_blank()), 
+               pch = guide_legend(nrow = 2,
+                                  byrow = TRUE,
+                                  title = element_blank())) +
+        theme(legend.position = "bottom", 
+              legend.box = "vertical",
+              legend.justification = c(0.5,0.5),
+              legend.background = element_rect(color = "black"),
+              legend.margin=margin(5,5,5,6),
+              legend.title = element_text()), 
+      
+    )) 
+
+ED_fig4_yaxis <- 
+  wrap_elements(ED_fig4_main) +
+  labs(tag = "Coeffient of variation in body size") +
+  theme(
+    plot.tag = element_text(size = 20, angle = 90),
+    plot.tag.position = "left"
+  )
+
+ED_fig4 <- 
+  ED_fig4_yaxis + 
+  ED_fig4_legend +
+  plot_layout(design = {"
+      AAAAAAA
+      AAAAAAA
+      AAAAAAA
+      AAAAAAA
+            #BBBBB#"
+  })
+
+ggsave(filename = "ms_figs/cv_meansize_rmfished.png",
+       plot = ED_fig4,
+       height = 20,
+       width = 20*1.618,
+       units = "cm", 
+       create.dir = TRUE)
+
+```
+
+![Reconstruction of Fig. 2 of the main text but excluding species and genera that are potentially targeted by fishing. Excluding these species has almost no influence on the estimate of CV. At the population level the median CV value is 0.34, 80% of CV values fall in the range of 0.22 to 0.51 and 95% of the CV values fall in the range of 0.19 and 0.55. At the species-level the median CV value is 0.35, 80% of CV values fall in the range of 0.22 to 0.50 and 95% of the CV values fall in the range of 0.17 and 0.56.](ms_figs/cv_meansize_rmfished.png)
+
+## ED Fig. 5
+
+```{r ed-fig5}
+
+bimod_plot <- function(data, nrow, fill_col){
+  ggplot(data) +
+    geom_rect(aes(
+      xmin = size_min,
+      xmax = size_max,
+      ymax = n, 
+      ymin = 0
+    ), fill = fill_col, 
+    col = "black") +
+    facet_wrap(~pop_label, 
+               nrow = nrow,
+               scales = "free_y") + 
+    scale_x_continuous(labels = label_number(suffix = "cm")) +
+    labs(x = "Body length class", 
+         y = "Count") +
+    theme_cowplot() +
+    theme(strip.background = element_rect(fill = "white", colour = "black"), 
+          plot.title = element_text(hjust = 0.5)) 
+}
+
+p1 <- 
+  ED_fig5_data %>% 
+  filter(data == "rls", !is_bimodal) %>% 
+  bimod_plot(nrow = 4, 
+             fill_col = "#56B4E9") + 
+  ggtitle("Unimodal examples (n = 4 of 3,169)")
+p2 <- 
+  ED_fig5_data %>% 
+  filter(data == "rls", is_bimodal) %>% 
+  bimod_plot(nrow = 4, 
+             fill_col = "#56B4E9")  + 
+  ggtitle("Bimodal examples (n = 4 of 59)")
+
+p3 <- 
+  ED_fig5_data %>% 
+  filter(data == "cbf", !is_bimodal) %>% 
+  bimod_plot(nrow = 3, 
+             fill_col = "#E69F00") +
+  ggtitle("Unimodal examples (n = 3 of 133)")
+
+p4 <-   ED_fig5_data %>% 
+  filter(data == "cbf", is_bimodal) %>% 
+  bimod_plot(nrow = 3, 
+             fill_col = "#E69F00")  +
+  ggtitle("Bimodal distributions (n = 3 of 3)")
+
+bimod_dists <- 
+  p1 +
+  p2 + 
+  p3 + 
+  p4 + 
+  plot_layout(ncol= 2) +
+  plot_annotation(tag_levels = "A")
+
+
+ggsave(filename = "ms_figs/bimodal.png", 
+       plot = bimod_dists, 
+       height = 20, 
+       width = 15)
+```
+
+![Randomly selected examples of approximately unimodal (A, C) and bimodal (B, D) observed body length distributions in visual census sampling (blue, A, B) and cryptobenthic sampling (orange, C, D). Approximately bimodal shapes were found in 59 out of 3,089 (2%) of visual census, and 3 of 136 (2%) cryptobenthic population-level datasets. Bimodal distributions were removed from distribution-fitting analyses.](ms_figs/bimodal.png)
+
+## ED Fig. 6
+
+```{r ed-fig6}
+
+ED_fig6 <- 
+  fig2_data_spp %>% 
+  filter(!bimodal) %>% 
+  ggplot() + 
+  aes(
+    x = mean_size, 
+    y = cov_pref, 
+    pch = dat,
+  ) +
+  geom_point(alpha = 1, size = 2, col = "grey80") +
+  geom_point(alpha = 1, size = 2, col="black",
+             data = fig2_data_spp %>% 
+               filter(species %in% c("Scorpis aequipinnis", 
+                                     "Cheilodactylus spectabilis"))) +
+  geom_point(alpha = 0.4, size = 2, col="red", 
+             data = fig2_data_spp %>% 
+               filter(str_detect(species, "Eviota"))) +
+  geom_point(alpha = 1, size = 2, col="red",
+             data = fig2_data_spp %>% 
+               filter(str_detect(species, "Eviota queenslandica"))) +
+  scale_x_continuous(trans = "log10", 
+                     labels = label_number(suffix="cm")) +
+  scale_shape_manual(
+    values = c("rls" = 21, "cbf" = 24), 
+    labels = c("rls" = "Visual census",
+               "cbf" = "Cryptobenthic (exhaustive)")) +
+  scale_color_manual(
+    values = c("normal" = rgb(181, 144, 19, maxColorValue=255),
+               "lognormal" = rgb(29, 84, 128, maxColorValue=255)),
+    labels = c("normal" = "Normal preferred",
+               "lognormal" = "Lognormal preferred")) +
+  labs(x = "Mean body size (log)", 
+       y = "Coefficient of variation in body size") +
+  
+  theme_cowplot(20) +
+  theme(legend.position = "none") 
+
+ggsave(filename = "ms_figs/cv_meansize_spphighlight.png",
+       plot = ED_fig6,
+       height = 20,
+       width = 20*1.618,
+       units = "cm")
+
+```
+
+![Relationship between mean body length and coefficient of variation (CV), highlighting three species with known extreme life-histories. The two species in black text are known to be long-lived, slow growing species (*Scorpis aequipinus* and *Chirodactylus spectabilis*), yet their CV values fall in the center of the of the distribution of CV values. On the other hand, *Eviota* spp. and in particular, *E. queenslandica*, are known to be fast-growing and short-lived. *Eviota* spp. are on the lower end of the range of CV estimates.](ms_figs/cv_meansize_spphighlight.png)
+
+## ED Fig. 7
+
+```{r ed-fig7}
+
+
+ED_fig7_eq <- lm(log(mean_size) ~ log(std_linf), data = ED_fig7_data)
+
+ED_fig7 <-
+  ED_fig7_data %>% 
+  add_predictions(ED_fig7_eq) %>% 
+  ggplot(aes(x = std_linf, 
+             y = mean_size)) +
+  geom_point() +
+  geom_line(aes(y = exp(pred)), col = "red") +
+  theme_cowplot() +
+  scale_x_continuous(label = label_number(suffix = "cm")) +
+  scale_y_continuous(label = label_number(suffix = "cm")) +
+  labs(x = "Asymptotic length (literature)", 
+       y = "Mean length (observed)")
+
+ggsave(filename = "ms_figs/linf_lmu.png",
+       plot = ED_fig7,
+       height = 10,
+       width = 10*1.618,
+       units = "cm")
+
+```
+
+
+![A fitted linear model to predict mean population body length (from empirical body length distributions) from asymptotic body length (available from Prince et al.17). This fitted model was used to reconstruct the body length distribution when only asymptotic body length is known, which is often the case for many species or populations. Fitted model (red line): log(mean_length) = 0.37 + 0.78*log(asymptotic_length).](ms_figs/linf_lmu.png)
+
+## ED Fig. 8
+
+```{r ed-fig8}
+
+difference_plots_all_40cm <-
+  ED_fig8_data %>% 
+  mutate(obs_minus_exp = p_obs-p_lbspr) %>% 
+  ggplot(aes(x = size_class, 
+             y = obs_minus_exp)) +
+  geom_hline(yintercept = 0, col = "red") +
+  geom_path(alpha = 0.1, aes(group = species)) + 
+  geom_point(alpha = 0.1) +
+  stat_smooth() +
+  scale_x_continuous(breaks = c(fig4_data$size_class), 
+                     limits = c(0, 40)) +
+  scale_y_continuous(label = label_number())+
+  labs(x = "Visual census length classes (cm)", 
+       y = "Observed minus LBSPR") +
+  annotate(geom = "text", x = Inf, 
+           y = -Inf, 
+           label = "Observed < LBSPR", 
+           hjust = 1.1, 
+           vjust = -0.5, 
+           size = 8) +
+  annotate(geom = "text", 
+           x = Inf, 
+           y = Inf, 
+           label = "Observed > LBSPR", 
+           hjust = 1.1, 
+           vjust = 1.5, 
+           size = 8) +
+  theme_cowplot()
+
+
+ggsave(filename = "ms_figs/obs_minus_lbspr.png",
+       plot = difference_plots_all_40cm,
+       height = 15,
+       width = 15*1.618,
+       units = "cm")
+
+```
+
+![Observed proportion within a length bin minus expected proportion as predicted by the theoretical model LBSPR. LBSPR is parameterized by asymptotic length, mortality (M) and growth rate (k). Points below the red horizontal line indicate there is a lower observed proportion of individuals in the size bin than predicted by LBSPR. The x-axis has been truncated to 40cm to emphasize this region where observational sampling bias is most likely to occur.](ms_figs/obs_minus_lbspr.png)
+
+## ED Fig. 9
+
+```{r ed-fig9}
+
+
+ED_fig9 <-
+  ED_fig9_data %>% 
+  ggplot(aes(x = as.factor(mincount), y = cv_50, col = mod)) +
+  geom_violin() +
+  facet_wrap(datatype~., scales = "free_x") +
+  scale_y_continuous(limits = c(0, 1))+
+  geom_text(aes(label = paste("n =", max_n)), y = 0.0, show.legend = FALSE, col = "black", 
+            data = 
+              ED_fig9_data %>% 
+              count(datatype, mod, mincount) %>% 
+              summarise(max_n = max(n), 
+                        .by = c(datatype, mincount))) +
+  scale_color_manual(values = c("normal" = rgb(181, 144, 19, maxColorValue=255),
+                                "lognormal" = rgb(29, 84, 128, maxColorValue=255)), 
+                     labels = c("normal" = "Normal",
+                                "lognormal" = "Lognormal")) +
+  labs(x = "Minimum population size (# individuals)", 
+       y = "Median CV estimate") +
+  theme_cowplot(20) +
+  theme(legend.position = c(1,1), 
+        legend.justification = c(1,1.1),
+        legend.title = element_blank(), 
+        plot.margin = margin(10, 50, 10, 10), 
+        strip.background = element_rect(fill = "white", colour = "black"))
+
+ggsave(filename = "ms_figs/mincount_sensitivity.png",
+       plot = ED_fig9,
+       height = 15,
+       width = 25,
+       units = "cm")
+
+
+```
+
+![Changing the minimum sample size (individuals within a population) required for distribution fitting has minimal influence of the median estimate of the coefficient of variation (CV). CV values greater than one have been excluded from this figure.](ms_figs/mincount_sensitivity.png)
+
+## ED Fig. 10
+
+```{r ed-fig10}
+
+inc_bimodal <- TRUE
+inc_fished <- TRUE
+
+pop_data <- 
+  fig2_data_pop %>%
+  {if(inc_fished) . else filter(., !fished)} %>% 
+  {if(inc_bimodal) . else filter(., !bimodal)} 
+
+spp_data <- 
+  fig2_data_spp %>% 
+  {if(inc_fished) . else filter(., !fished)} %>% 
+  {if(inc_bimodal) . else filter(., !bimodal)}
+
+plot_ylim <- 
+  max(layer_scales(
+    main_plot(pop_data))$y$range$range,
+    layer_scales(
+      main_plot(spp_data))$y$range$range)
+
+
+ED_fig10_main <- 
+  main_plot(pop_data) + 
+  theme(axis.title.x = element_blank()) +
+  ylim(0, plot_ylim) +
+  annotate("text",
+           x = 1, 
+           hjust = 0, 
+           y = plot_ylim*0.95,
+           label = "Population-level",
+           size = 10) +
+  side_plot(pop_data %>% 
+              filter(col != "cbf_lnorm"), 
+            plot_ylim) + 
+  main_plot(spp_data) + ylim(0, plot_ylim) +
+  annotate("text", 
+           x = 1, 
+           hjust = 0, 
+           y = plot_ylim*0.95,
+           label = "Species-level",
+           size = 10) +
+  side_plot(spp_data %>% filter(col != "cbf_lnorm"), 
+            plot_ylim)  +
+  plot_layout(design = {"
+      AAAAAAB
+      AAAAAAB
+      CCCCCCD
+      CCCCCCD"
+  })
+
+ED_fig10_legend <-
+  ggpubr::as_ggplot(
+    ggpubr::get_legend(
+      main_plot(pop_data) +
+        theme(axis.title = element_text(), 
+              axis.text = element_text()) +
+        guides(colour = guide_legend(override.aes = list(size=5, stroke = 2),
+                                     nrow = 2,
+                                     byrow = TRUE,
+                                     title = element_blank()), 
+               pch = guide_legend(nrow = 2,
+                                  byrow = TRUE,
+                                  title = element_blank())) +
+        theme(legend.position = "bottom", 
+              legend.box = "vertical",
+              legend.justification = c(0.5,0.5),
+              legend.background = element_rect(color = "black"),
+              legend.margin=margin(5,5,5,6),
+              legend.title = element_text()), 
+      
+    )) 
+
+ED_fig10_yaxis <- 
+  wrap_elements(ED_fig10_main) +
+  labs(tag = "Coeffient of variation in body size") +
+  theme(
+    plot.tag = element_text(size = 20, angle = 90),
+    plot.tag.position = "left"
+  )
+
+ED_fig10 <- 
+  ED_fig10_yaxis + 
+  ED_fig10_legend +
+  plot_layout(design = {"
+      AAAAAAA
+      AAAAAAA
+      AAAAAAA
+      AAAAAAA
+            #BBBBB#"
+  })
+
+ggsave(filename = "ms_figs/cv_meansize_incbimod.png",
+       plot = ED_fig10,
+       height = 20,
+       width = 20*1.618,
+       units = "cm", 
+       create.dir = TRUE)
+
+
+```
+
+![Distributions deemed to be bimodal (red crosses, 2% of total populations) were excluded in Fig. 2 in the main text. Including these distributions has minor influence on the estimate of CV. At the population level the median CV value is 0.34, 80% of CV values fall in the range of 0.22 to 0.51 and 95% of the CV values fall in the range of 0.19 and 0.56. At the species-level the median CV value is 0.36, 80% of CV values fall in the range of 0.22 to 0.51 and 95% of the CV values fall in the range of 0.17 and 0.57.](ms_figs/cv_meansize_incbimod.png)
