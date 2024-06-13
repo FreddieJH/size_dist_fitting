@@ -16,8 +16,5 @@
 *.rds
 *.parquet
 *.xlsx
-*.png
-output/
 
-other/
-old/
+
