@@ -1,0 +1,165 @@
+population,size_class,n,n_sizebins,population_n,size_min,size_max,n_transects,p_obs,species,fished,lat,lon,pop_label,is_bimodal,pop_id,data,"str_replace_all(pop_label, ""cflatifasciata"", ""latifasciata"")"
+Trachinops taeniatus__-39_147,5,438,4,2188,3.75,6.25,5,0.2001828153564899,Trachinops taeniatus,FALSE,-39,147,"Trachinops taeniatus (-39°, 147°)",FALSE,679,rls,NA
+Trachinops taeniatus__-39_147,7.5,1194,4,2188,6.25,8.75,5,0.5457038391224863,Trachinops taeniatus,FALSE,-39,147,"Trachinops taeniatus (-39°, 147°)",FALSE,679,rls,NA
+Trachinops taeniatus__-39_147,10,551,4,2188,8.75,11.25,5,0.25182815356489946,Trachinops taeniatus,FALSE,-39,147,"Trachinops taeniatus (-39°, 147°)",FALSE,679,rls,NA
+Trachinops taeniatus__-39_147,12.5,5,4,2188,11.25,13.75,5,0.00228519195612431,Trachinops taeniatus,FALSE,-39,147,"Trachinops taeniatus (-39°, 147°)",FALSE,679,rls,NA
+Notolabrus tetricus__-33_134,2.5,1,12,1444,1.25,3.75,11,6.925207756232687e-4,Notolabrus tetricus,TRUE,-33,134,"Notolabrus tetricus (-33°, 134°)",FALSE,930,rls,NA
+Notolabrus tetricus__-33_134,5,1,12,1444,3.75,6.25,11,6.925207756232687e-4,Notolabrus tetricus,TRUE,-33,134,"Notolabrus tetricus (-33°, 134°)",FALSE,930,rls,NA
+Notolabrus tetricus__-33_134,7.5,32,12,1444,6.25,8.75,11,0.0221606648199446,Notolabrus tetricus,TRUE,-33,134,"Notolabrus tetricus (-33°, 134°)",FALSE,930,rls,NA
+Notolabrus tetricus__-33_134,10,31,12,1444,8.75,11.25,11,0.02146814404432133,Notolabrus tetricus,TRUE,-33,134,"Notolabrus tetricus (-33°, 134°)",FALSE,930,rls,NA
+Notolabrus tetricus__-33_134,12.5,90,12,1444,11.25,13.75,11,0.06232686980609418,Notolabrus tetricus,TRUE,-33,134,"Notolabrus tetricus (-33°, 134°)",FALSE,930,rls,NA
+Notolabrus tetricus__-33_134,15,204,12,1444,13.75,17.5,11,0.14127423822714685,Notolabrus tetricus,TRUE,-33,134,"Notolabrus tetricus (-33°, 134°)",FALSE,930,rls,NA
+Notolabrus tetricus__-33_134,20,348,12,1444,17.5,22.5,11,0.2409972299168975,Notolabrus tetricus,TRUE,-33,134,"Notolabrus tetricus (-33°, 134°)",FALSE,930,rls,NA
+Notolabrus tetricus__-33_134,25,347,12,1444,22.5,27.5,11,0.24030470914127425,Notolabrus tetricus,TRUE,-33,134,"Notolabrus tetricus (-33°, 134°)",FALSE,930,rls,NA
+Notolabrus tetricus__-33_134,30,168,12,1444,27.5,32.5,11,0.11634349030470914,Notolabrus tetricus,TRUE,-33,134,"Notolabrus tetricus (-33°, 134°)",FALSE,930,rls,NA
+Notolabrus tetricus__-33_134,35,139,12,1444,32.5,37.5,11,0.09626038781163436,Notolabrus tetricus,TRUE,-33,134,"Notolabrus tetricus (-33°, 134°)",FALSE,930,rls,NA
+Notolabrus tetricus__-33_134,40,69,12,1444,37.5,45,11,0.04778393351800554,Notolabrus tetricus,TRUE,-33,134,"Notolabrus tetricus (-33°, 134°)",FALSE,930,rls,NA
+Notolabrus tetricus__-33_134,50,14,12,1444,45,56.25,11,0.00969529085872576,Notolabrus tetricus,TRUE,-33,134,"Notolabrus tetricus (-33°, 134°)",FALSE,930,rls,NA
+Caesio cuning__-10_133,15,102,5,1285,13.75,17.5,6,0.07937743190661478,Caesio cuning,FALSE,-10,133,"Caesio cuning (-10°, 133°)",FALSE,1017,rls,NA
+Caesio cuning__-10_133,20,166,5,1285,17.5,22.5,6,0.12918287937743192,Caesio cuning,FALSE,-10,133,"Caesio cuning (-10°, 133°)",FALSE,1017,rls,NA
+Caesio cuning__-10_133,25,499,5,1285,22.5,27.5,6,0.3883268482490273,Caesio cuning,FALSE,-10,133,"Caesio cuning (-10°, 133°)",FALSE,1017,rls,NA
+Caesio cuning__-10_133,30,488,5,1285,27.5,32.5,6,0.3797665369649806,Caesio cuning,FALSE,-10,133,"Caesio cuning (-10°, 133°)",FALSE,1017,rls,NA
+Caesio cuning__-10_133,35,30,5,1285,32.5,37.5,6,0.02334630350194552,Caesio cuning,FALSE,-10,133,"Caesio cuning (-10°, 133°)",FALSE,1017,rls,NA
+Mugil cephalus__-30_153,15,16,4,370,13.75,17.5,3,0.04324324324324324,Mugil cephalus,TRUE,-30,153,"Mugil cephalus (-30°, 153°)",FALSE,2177,rls,NA
+Mugil cephalus__-30_153,20,39,4,370,17.5,22.5,3,0.1054054054054054,Mugil cephalus,TRUE,-30,153,"Mugil cephalus (-30°, 153°)",FALSE,2177,rls,NA
+Mugil cephalus__-30_153,25,311,4,370,22.5,27.5,3,0.8405405405405405,Mugil cephalus,TRUE,-30,153,"Mugil cephalus (-30°, 153°)",FALSE,2177,rls,NA
+Mugil cephalus__-30_153,30,4,4,370,27.5,32.5,3,0.01081081081081081,Mugil cephalus,TRUE,-30,153,"Mugil cephalus (-30°, 153°)",FALSE,2177,rls,NA
+Caesio cuning__-21_149,2.5,170,9,3431,1.25,3.75,9,0.04954823666569513,Caesio cuning,FALSE,-21,149,"Caesio cuning (-21°, 149°)",TRUE,14,rls,NA
+Caesio cuning__-21_149,5,910,9,3431,3.75,6.25,9,0.26522879626930923,Caesio cuning,FALSE,-21,149,"Caesio cuning (-21°, 149°)",TRUE,14,rls,NA
+Caesio cuning__-21_149,7.5,305,9,3431,6.25,8.75,9,0.08889536578257068,Caesio cuning,FALSE,-21,149,"Caesio cuning (-21°, 149°)",TRUE,14,rls,NA
+Caesio cuning__-21_149,10,80,9,3431,8.75,11.25,9,0.02331681725444476,Caesio cuning,FALSE,-21,149,"Caesio cuning (-21°, 149°)",TRUE,14,rls,NA
+Caesio cuning__-21_149,12.5,882,9,3431,11.25,13.75,9,0.25706791023025355,Caesio cuning,FALSE,-21,149,"Caesio cuning (-21°, 149°)",TRUE,14,rls,NA
+Caesio cuning__-21_149,15,743,9,3431,13.75,17.5,9,0.21655494025065575,Caesio cuning,FALSE,-21,149,"Caesio cuning (-21°, 149°)",TRUE,14,rls,NA
+Caesio cuning__-21_149,20,197,9,3431,17.5,22.5,9,0.05741766248907024,Caesio cuning,FALSE,-21,149,"Caesio cuning (-21°, 149°)",TRUE,14,rls,NA
+Caesio cuning__-21_149,25,128,9,3431,22.5,27.5,9,0.03730690760711163,Caesio cuning,FALSE,-21,149,"Caesio cuning (-21°, 149°)",TRUE,14,rls,NA
+Caesio cuning__-21_149,30,16,9,3431,27.5,32.5,9,0.00466336345088895,Caesio cuning,FALSE,-21,149,"Caesio cuning (-21°, 149°)",TRUE,14,rls,NA
+Pempheris multiradiata__-39_147,2.5,824,10,2133,1.25,3.75,75,0.3863103609939053,Pempheris multiradiata,FALSE,-39,147,"Pempheris multiradiata (-39°, 147°)",TRUE,18,rls,NA
+Pempheris multiradiata__-39_147,5,609,10,2133,3.75,6.25,75,0.28551336146272854,Pempheris multiradiata,FALSE,-39,147,"Pempheris multiradiata (-39°, 147°)",TRUE,18,rls,NA
+Pempheris multiradiata__-39_147,7.5,137,10,2133,6.25,8.75,75,0.06422878574777309,Pempheris multiradiata,FALSE,-39,147,"Pempheris multiradiata (-39°, 147°)",TRUE,18,rls,NA
+Pempheris multiradiata__-39_147,10,71,10,2133,8.75,11.25,75,0.03328645100796999,Pempheris multiradiata,FALSE,-39,147,"Pempheris multiradiata (-39°, 147°)",TRUE,18,rls,NA
+Pempheris multiradiata__-39_147,12.5,145,10,2133,11.25,13.75,75,0.06797937177684013,Pempheris multiradiata,FALSE,-39,147,"Pempheris multiradiata (-39°, 147°)",TRUE,18,rls,NA
+Pempheris multiradiata__-39_147,15,178,10,2133,13.75,17.5,75,0.08345053914674168,Pempheris multiradiata,FALSE,-39,147,"Pempheris multiradiata (-39°, 147°)",TRUE,18,rls,NA
+Pempheris multiradiata__-39_147,20,135,10,2133,17.5,22.5,75,0.06329113924050633,Pempheris multiradiata,FALSE,-39,147,"Pempheris multiradiata (-39°, 147°)",TRUE,18,rls,NA
+Pempheris multiradiata__-39_147,25,23,10,2133,22.5,27.5,75,0.01078293483356774,Pempheris multiradiata,FALSE,-39,147,"Pempheris multiradiata (-39°, 147°)",TRUE,18,rls,NA
+Pempheris multiradiata__-39_147,30,10,10,2133,27.5,32.5,75,0.0046882325363338,Pempheris multiradiata,FALSE,-39,147,"Pempheris multiradiata (-39°, 147°)",TRUE,18,rls,NA
+Pempheris multiradiata__-39_147,35,1,10,2133,32.5,37.5,75,4.6882325363338024e-4,Pempheris multiradiata,FALSE,-39,147,"Pempheris multiradiata (-39°, 147°)",TRUE,18,rls,NA
+Meuschenia australis__-43_148,2.5,3,11,1559,1.25,3.75,222,0.00192431045542014,Meuschenia australis,TRUE,-43,148,"Meuschenia australis (-43°, 148°)",TRUE,23,rls,NA
+Meuschenia australis__-43_148,5,65,11,1559,3.75,6.25,222,0.04169339320076972,Meuschenia australis,TRUE,-43,148,"Meuschenia australis (-43°, 148°)",TRUE,23,rls,NA
+Meuschenia australis__-43_148,7.5,340,11,1559,6.25,8.75,222,0.21808851828094933,Meuschenia australis,TRUE,-43,148,"Meuschenia australis (-43°, 148°)",TRUE,23,rls,NA
+Meuschenia australis__-43_148,10,29,11,1559,8.75,11.25,222,0.01860166773572803,Meuschenia australis,TRUE,-43,148,"Meuschenia australis (-43°, 148°)",TRUE,23,rls,NA
+Meuschenia australis__-43_148,12.5,42,11,1559,11.25,13.75,222,0.02694034637588197,Meuschenia australis,TRUE,-43,148,"Meuschenia australis (-43°, 148°)",TRUE,23,rls,NA
+Meuschenia australis__-43_148,15,190,11,1559,13.75,17.5,222,0.12187299550994228,Meuschenia australis,TRUE,-43,148,"Meuschenia australis (-43°, 148°)",TRUE,23,rls,NA
+Meuschenia australis__-43_148,20,227,11,1559,17.5,22.5,222,0.14560615779345734,Meuschenia australis,TRUE,-43,148,"Meuschenia australis (-43°, 148°)",TRUE,23,rls,NA
+Meuschenia australis__-43_148,25,371,11,1559,22.5,27.5,222,0.23797305965362411,Meuschenia australis,TRUE,-43,148,"Meuschenia australis (-43°, 148°)",TRUE,23,rls,NA
+Meuschenia australis__-43_148,30,225,11,1559,27.5,32.5,222,0.14432328415651058,Meuschenia australis,TRUE,-43,148,"Meuschenia australis (-43°, 148°)",TRUE,23,rls,NA
+Meuschenia australis__-43_148,35,59,11,1559,32.5,37.5,222,0.03784477228992944,Meuschenia australis,TRUE,-43,148,"Meuschenia australis (-43°, 148°)",TRUE,23,rls,NA
+Meuschenia australis__-43_148,40,8,11,1559,37.5,45,222,0.00513149454778704,Meuschenia australis,TRUE,-43,148,"Meuschenia australis (-43°, 148°)",TRUE,23,rls,NA
+Dinolestes lewini__-41_148,7.5,70,8,467,6.25,8.75,19,0.14989293361884368,Dinolestes lewini,TRUE,-41,148,"Dinolestes lewini (-41°, 148°)",TRUE,43,rls,NA
+Dinolestes lewini__-41_148,10,161,8,467,8.75,11.25,19,0.34475374732334046,Dinolestes lewini,TRUE,-41,148,"Dinolestes lewini (-41°, 148°)",TRUE,43,rls,NA
+Dinolestes lewini__-41_148,12.5,40,8,467,11.25,13.75,19,0.08565310492505353,Dinolestes lewini,TRUE,-41,148,"Dinolestes lewini (-41°, 148°)",TRUE,43,rls,NA
+Dinolestes lewini__-41_148,15,17,8,467,13.75,17.5,19,0.03640256959314775,Dinolestes lewini,TRUE,-41,148,"Dinolestes lewini (-41°, 148°)",TRUE,43,rls,NA
+Dinolestes lewini__-41_148,20,79,8,467,17.5,22.5,19,0.16916488222698073,Dinolestes lewini,TRUE,-41,148,"Dinolestes lewini (-41°, 148°)",TRUE,43,rls,NA
+Dinolestes lewini__-41_148,25,63,8,467,22.5,27.5,19,0.1349036402569593,Dinolestes lewini,TRUE,-41,148,"Dinolestes lewini (-41°, 148°)",TRUE,43,rls,NA
+Dinolestes lewini__-41_148,30,25,8,467,27.5,32.5,19,0.05353319057815846,Dinolestes lewini,TRUE,-41,148,"Dinolestes lewini (-41°, 148°)",TRUE,43,rls,NA
+Dinolestes lewini__-41_148,35,12,8,467,32.5,37.5,19,0.02569593147751606,Dinolestes lewini,TRUE,-41,148,"Dinolestes lewini (-41°, 148°)",TRUE,43,rls,NA
+Eviota occasa__Lizard,0.8,1,NA,156,0.75,0.8500000000000001,NA,0.00641025641025641,Eviota occasa,FALSE,NA,NA,Eviota occasa (Lizard),FALSE,4,cbf,Eviota occasa (Lizard)
+Eviota occasa__Lizard,0.9,10,NA,156,0.85,0.95,NA,0.0641025641025641,Eviota occasa,FALSE,NA,NA,Eviota occasa (Lizard),FALSE,4,cbf,Eviota occasa (Lizard)
+Eviota occasa__Lizard,1,26,NA,156,0.95,1.05,NA,0.16666666666666666,Eviota occasa,FALSE,NA,NA,Eviota occasa (Lizard),FALSE,4,cbf,Eviota occasa (Lizard)
+Eviota occasa__Lizard,1.1,38,NA,156,1.05,1.15,NA,0.2435897435897436,Eviota occasa,FALSE,NA,NA,Eviota occasa (Lizard),FALSE,4,cbf,Eviota occasa (Lizard)
+Eviota occasa__Lizard,1.2,37,NA,156,1.15,1.25,NA,0.23717948717948717,Eviota occasa,FALSE,NA,NA,Eviota occasa (Lizard),FALSE,4,cbf,Eviota occasa (Lizard)
+Eviota occasa__Lizard,1.3,31,NA,156,1.25,1.35,NA,0.1987179487179487,Eviota occasa,FALSE,NA,NA,Eviota occasa (Lizard),FALSE,4,cbf,Eviota occasa (Lizard)
+Eviota occasa__Lizard,1.4,13,NA,156,1.35,1.45,NA,0.08333333333333333,Eviota occasa,FALSE,NA,NA,Eviota occasa (Lizard),FALSE,4,cbf,Eviota occasa (Lizard)
+Helcogramma fuscopinna__GoO,2.3,1,NA,134,2.25,2.3499999999999996,NA,0.00746268656716417,Helcogramma fuscopinna,FALSE,NA,NA,Helcogramma fuscopinna (GoO),FALSE,7,cbf,Helcogramma fuscopinna (GoO)
+Helcogramma fuscopinna__GoO,2.4,9,NA,134,2.35,2.4499999999999997,NA,0.06716417910447761,Helcogramma fuscopinna,FALSE,NA,NA,Helcogramma fuscopinna (GoO),FALSE,7,cbf,Helcogramma fuscopinna (GoO)
+Helcogramma fuscopinna__GoO,2.5,11,NA,134,2.45,2.55,NA,0.08208955223880597,Helcogramma fuscopinna,FALSE,NA,NA,Helcogramma fuscopinna (GoO),FALSE,7,cbf,Helcogramma fuscopinna (GoO)
+Helcogramma fuscopinna__GoO,2.6,15,NA,134,2.5500000000000003,2.65,NA,0.11194029850746268,Helcogramma fuscopinna,FALSE,NA,NA,Helcogramma fuscopinna (GoO),FALSE,7,cbf,Helcogramma fuscopinna (GoO)
+Helcogramma fuscopinna__GoO,2.7,13,NA,134,2.6500000000000004,2.75,NA,0.09701492537313432,Helcogramma fuscopinna,FALSE,NA,NA,Helcogramma fuscopinna (GoO),FALSE,7,cbf,Helcogramma fuscopinna (GoO)
+Helcogramma fuscopinna__GoO,2.8,22,NA,134,2.75,2.8499999999999996,NA,0.16417910447761194,Helcogramma fuscopinna,FALSE,NA,NA,Helcogramma fuscopinna (GoO),FALSE,7,cbf,Helcogramma fuscopinna (GoO)
+Helcogramma fuscopinna__GoO,2.9,11,NA,134,2.85,2.9499999999999997,NA,0.08208955223880597,Helcogramma fuscopinna,FALSE,NA,NA,Helcogramma fuscopinna (GoO),FALSE,7,cbf,Helcogramma fuscopinna (GoO)
+Helcogramma fuscopinna__GoO,3,12,NA,134,2.95,3.05,NA,0.08955223880597014,Helcogramma fuscopinna,FALSE,NA,NA,Helcogramma fuscopinna (GoO),FALSE,7,cbf,Helcogramma fuscopinna (GoO)
+Helcogramma fuscopinna__GoO,3.1,8,NA,134,3.0500000000000003,3.15,NA,0.05970149253731343,Helcogramma fuscopinna,FALSE,NA,NA,Helcogramma fuscopinna (GoO),FALSE,7,cbf,Helcogramma fuscopinna (GoO)
+Helcogramma fuscopinna__GoO,3.2,6,NA,134,3.1500000000000004,3.25,NA,0.04477611940298507,Helcogramma fuscopinna,FALSE,NA,NA,Helcogramma fuscopinna (GoO),FALSE,7,cbf,Helcogramma fuscopinna (GoO)
+Helcogramma fuscopinna__GoO,3.3,5,NA,134,3.25,3.3499999999999996,NA,0.03731343283582089,Helcogramma fuscopinna,FALSE,NA,NA,Helcogramma fuscopinna (GoO),FALSE,7,cbf,Helcogramma fuscopinna (GoO)
+Helcogramma fuscopinna__GoO,3.4,7,NA,134,3.35,3.4499999999999997,NA,0.05223880597014925,Helcogramma fuscopinna,FALSE,NA,NA,Helcogramma fuscopinna (GoO),FALSE,7,cbf,Helcogramma fuscopinna (GoO)
+Helcogramma fuscopinna__GoO,3.5,5,NA,134,3.45,3.55,NA,0.03731343283582089,Helcogramma fuscopinna,FALSE,NA,NA,Helcogramma fuscopinna (GoO),FALSE,7,cbf,Helcogramma fuscopinna (GoO)
+Helcogramma fuscopinna__GoO,3.6,3,NA,134,3.5500000000000003,3.65,NA,0.02238805970149253,Helcogramma fuscopinna,FALSE,NA,NA,Helcogramma fuscopinna (GoO),FALSE,7,cbf,Helcogramma fuscopinna (GoO)
+Helcogramma fuscopinna__GoO,3.7,1,NA,134,3.65,3.75,NA,0.00746268656716417,Helcogramma fuscopinna,FALSE,NA,NA,Helcogramma fuscopinna (GoO),FALSE,7,cbf,Helcogramma fuscopinna (GoO)
+Helcogramma fuscopinna__GoO,3.8,1,NA,134,3.75,3.85,NA,0.00746268656716417,Helcogramma fuscopinna,FALSE,NA,NA,Helcogramma fuscopinna (GoO),FALSE,7,cbf,Helcogramma fuscopinna (GoO)
+Helcogramma fuscopinna__GoO,3.9,2,NA,134,3.85,3.95,NA,0.01492537313432835,Helcogramma fuscopinna,FALSE,NA,NA,Helcogramma fuscopinna (GoO),FALSE,7,cbf,Helcogramma fuscopinna (GoO)
+Helcogramma fuscopinna__GoO,4,1,NA,134,3.95,4.05,NA,0.00746268656716417,Helcogramma fuscopinna,FALSE,NA,NA,Helcogramma fuscopinna (GoO),FALSE,7,cbf,Helcogramma fuscopinna (GoO)
+Helcogramma fuscopinna__GoO,4.1,1,NA,134,4.05,4.1499999999999995,NA,0.00746268656716417,Helcogramma fuscopinna,FALSE,NA,NA,Helcogramma fuscopinna (GoO),FALSE,7,cbf,Helcogramma fuscopinna (GoO)
+Coryphopterus personatus__Belize,0.8,1,NA,115,0.75,0.8500000000000001,NA,0.00869565217391304,Coryphopterus personatus,FALSE,NA,NA,Coryphopterus personatus (Belize),FALSE,9,cbf,Coryphopterus personatus (Belize)
+Coryphopterus personatus__Belize,1,3,NA,115,0.95,1.05,NA,0.02608695652173913,Coryphopterus personatus,FALSE,NA,NA,Coryphopterus personatus (Belize),FALSE,9,cbf,Coryphopterus personatus (Belize)
+Coryphopterus personatus__Belize,1.1,1,NA,115,1.05,1.15,NA,0.00869565217391304,Coryphopterus personatus,FALSE,NA,NA,Coryphopterus personatus (Belize),FALSE,9,cbf,Coryphopterus personatus (Belize)
+Coryphopterus personatus__Belize,1.2,5,NA,115,1.15,1.25,NA,0.04347826086956521,Coryphopterus personatus,FALSE,NA,NA,Coryphopterus personatus (Belize),FALSE,9,cbf,Coryphopterus personatus (Belize)
+Coryphopterus personatus__Belize,1.3,3,NA,115,1.25,1.35,NA,0.02608695652173913,Coryphopterus personatus,FALSE,NA,NA,Coryphopterus personatus (Belize),FALSE,9,cbf,Coryphopterus personatus (Belize)
+Coryphopterus personatus__Belize,1.4,2,NA,115,1.35,1.45,NA,0.01739130434782608,Coryphopterus personatus,FALSE,NA,NA,Coryphopterus personatus (Belize),FALSE,9,cbf,Coryphopterus personatus (Belize)
+Coryphopterus personatus__Belize,1.5,1,NA,115,1.45,1.55,NA,0.00869565217391304,Coryphopterus personatus,FALSE,NA,NA,Coryphopterus personatus (Belize),FALSE,9,cbf,Coryphopterus personatus (Belize)
+Coryphopterus personatus__Belize,1.6,5,NA,115,1.55,1.65,NA,0.04347826086956521,Coryphopterus personatus,FALSE,NA,NA,Coryphopterus personatus (Belize),FALSE,9,cbf,Coryphopterus personatus (Belize)
+Coryphopterus personatus__Belize,1.8,7,NA,115,1.75,1.85,NA,0.06086956521739131,Coryphopterus personatus,FALSE,NA,NA,Coryphopterus personatus (Belize),FALSE,9,cbf,Coryphopterus personatus (Belize)
+Coryphopterus personatus__Belize,1.9,7,NA,115,1.85,1.95,NA,0.06086956521739131,Coryphopterus personatus,FALSE,NA,NA,Coryphopterus personatus (Belize),FALSE,9,cbf,Coryphopterus personatus (Belize)
+Coryphopterus personatus__Belize,2,8,NA,115,1.95,2.05,NA,0.06956521739130435,Coryphopterus personatus,FALSE,NA,NA,Coryphopterus personatus (Belize),FALSE,9,cbf,Coryphopterus personatus (Belize)
+Coryphopterus personatus__Belize,2.1,8,NA,115,2.0500000000000003,2.15,NA,0.06956521739130435,Coryphopterus personatus,FALSE,NA,NA,Coryphopterus personatus (Belize),FALSE,9,cbf,Coryphopterus personatus (Belize)
+Coryphopterus personatus__Belize,2.2,17,NA,115,2.1500000000000004,2.25,NA,0.14782608695652175,Coryphopterus personatus,FALSE,NA,NA,Coryphopterus personatus (Belize),FALSE,9,cbf,Coryphopterus personatus (Belize)
+Coryphopterus personatus__Belize,2.3,13,NA,115,2.25,2.3499999999999996,NA,0.11304347826086956,Coryphopterus personatus,FALSE,NA,NA,Coryphopterus personatus (Belize),FALSE,9,cbf,Coryphopterus personatus (Belize)
+Coryphopterus personatus__Belize,2.4,8,NA,115,2.35,2.4499999999999997,NA,0.06956521739130435,Coryphopterus personatus,FALSE,NA,NA,Coryphopterus personatus (Belize),FALSE,9,cbf,Coryphopterus personatus (Belize)
+Coryphopterus personatus__Belize,2.5,9,NA,115,2.45,2.55,NA,0.0782608695652174,Coryphopterus personatus,FALSE,NA,NA,Coryphopterus personatus (Belize),FALSE,9,cbf,Coryphopterus personatus (Belize)
+Coryphopterus personatus__Belize,2.6,3,NA,115,2.5500000000000003,2.65,NA,0.02608695652173913,Coryphopterus personatus,FALSE,NA,NA,Coryphopterus personatus (Belize),FALSE,9,cbf,Coryphopterus personatus (Belize)
+Coryphopterus personatus__Belize,2.7,2,NA,115,2.6500000000000004,2.75,NA,0.01739130434782608,Coryphopterus personatus,FALSE,NA,NA,Coryphopterus personatus (Belize),FALSE,9,cbf,Coryphopterus personatus (Belize)
+Coryphopterus personatus__Belize,2.8,5,NA,115,2.75,2.8499999999999996,NA,0.04347826086956521,Coryphopterus personatus,FALSE,NA,NA,Coryphopterus personatus (Belize),FALSE,9,cbf,Coryphopterus personatus (Belize)
+Coryphopterus personatus__Belize,2.9,4,NA,115,2.85,2.9499999999999997,NA,0.03478260869565217,Coryphopterus personatus,FALSE,NA,NA,Coryphopterus personatus (Belize),FALSE,9,cbf,Coryphopterus personatus (Belize)
+Coryphopterus personatus__Belize,3,2,NA,115,2.95,3.05,NA,0.01739130434782608,Coryphopterus personatus,FALSE,NA,NA,Coryphopterus personatus (Belize),FALSE,9,cbf,Coryphopterus personatus (Belize)
+Coryphopterus personatus__Belize,3.2,1,NA,115,3.1500000000000004,3.25,NA,0.00869565217391304,Coryphopterus personatus,FALSE,NA,NA,Coryphopterus personatus (Belize),FALSE,9,cbf,Coryphopterus personatus (Belize)
+Eviota afelei__Moorea,0.6,3,NA,665,0.5499999999999999,0.65,NA,0.00451127819548872,Eviota afelei,FALSE,NA,NA,Eviota afelei (Moorea),TRUE,1,cbf,Eviota afelei (Moorea)
+Eviota afelei__Moorea,0.7,3,NA,665,0.6499999999999999,0.75,NA,0.00451127819548872,Eviota afelei,FALSE,NA,NA,Eviota afelei (Moorea),TRUE,1,cbf,Eviota afelei (Moorea)
+Eviota afelei__Moorea,0.8,53,NA,665,0.75,0.8500000000000001,NA,0.07969924812030076,Eviota afelei,FALSE,NA,NA,Eviota afelei (Moorea),TRUE,1,cbf,Eviota afelei (Moorea)
+Eviota afelei__Moorea,0.9,102,NA,665,0.85,0.95,NA,0.15338345864661654,Eviota afelei,FALSE,NA,NA,Eviota afelei (Moorea),TRUE,1,cbf,Eviota afelei (Moorea)
+Eviota afelei__Moorea,1,56,NA,665,0.95,1.05,NA,0.08421052631578947,Eviota afelei,FALSE,NA,NA,Eviota afelei (Moorea),TRUE,1,cbf,Eviota afelei (Moorea)
+Eviota afelei__Moorea,1.1,40,NA,665,1.05,1.15,NA,0.06015037593984962,Eviota afelei,FALSE,NA,NA,Eviota afelei (Moorea),TRUE,1,cbf,Eviota afelei (Moorea)
+Eviota afelei__Moorea,1.2,44,NA,665,1.15,1.25,NA,0.06616541353383458,Eviota afelei,FALSE,NA,NA,Eviota afelei (Moorea),TRUE,1,cbf,Eviota afelei (Moorea)
+Eviota afelei__Moorea,1.3,73,NA,665,1.25,1.35,NA,0.10977443609022557,Eviota afelei,FALSE,NA,NA,Eviota afelei (Moorea),TRUE,1,cbf,Eviota afelei (Moorea)
+Eviota afelei__Moorea,1.4,128,NA,665,1.35,1.45,NA,0.1924812030075188,Eviota afelei,FALSE,NA,NA,Eviota afelei (Moorea),TRUE,1,cbf,Eviota afelei (Moorea)
+Eviota afelei__Moorea,1.5,84,NA,665,1.45,1.55,NA,0.1263157894736842,Eviota afelei,FALSE,NA,NA,Eviota afelei (Moorea),TRUE,1,cbf,Eviota afelei (Moorea)
+Eviota afelei__Moorea,1.6,42,NA,665,1.55,1.65,NA,0.06315789473684211,Eviota afelei,FALSE,NA,NA,Eviota afelei (Moorea),TRUE,1,cbf,Eviota afelei (Moorea)
+Eviota afelei__Moorea,1.7,16,NA,665,1.65,1.75,NA,0.02406015037593985,Eviota afelei,FALSE,NA,NA,Eviota afelei (Moorea),TRUE,1,cbf,Eviota afelei (Moorea)
+Eviota afelei__Moorea,1.8,14,NA,665,1.75,1.85,NA,0.02105263157894736,Eviota afelei,FALSE,NA,NA,Eviota afelei (Moorea),TRUE,1,cbf,Eviota afelei (Moorea)
+Eviota afelei__Moorea,1.9,4,NA,665,1.85,1.95,NA,0.00601503759398496,Eviota afelei,FALSE,NA,NA,Eviota afelei (Moorea),TRUE,1,cbf,Eviota afelei (Moorea)
+Eviota afelei__Moorea,2,2,NA,665,1.95,2.05,NA,0.00300751879699248,Eviota afelei,FALSE,NA,NA,Eviota afelei (Moorea),TRUE,1,cbf,Eviota afelei (Moorea)
+Eviota afelei__Moorea,2.2,1,NA,665,2.1500000000000004,2.25,NA,0.00150375939849624,Eviota afelei,FALSE,NA,NA,Eviota afelei (Moorea),TRUE,1,cbf,Eviota afelei (Moorea)
+Eviota albolineata__Moorea,1,2,NA,181,0.95,1.05,NA,0.01104972375690607,Eviota albolineata,FALSE,NA,NA,Eviota albolineata (Moorea),TRUE,2,cbf,Eviota albolineata (Moorea)
+Eviota albolineata__Moorea,1.1,1,NA,181,1.05,1.15,NA,0.00552486187845303,Eviota albolineata,FALSE,NA,NA,Eviota albolineata (Moorea),TRUE,2,cbf,Eviota albolineata (Moorea)
+Eviota albolineata__Moorea,1.3,1,NA,181,1.25,1.35,NA,0.00552486187845303,Eviota albolineata,FALSE,NA,NA,Eviota albolineata (Moorea),TRUE,2,cbf,Eviota albolineata (Moorea)
+Eviota albolineata__Moorea,1.4,4,NA,181,1.35,1.45,NA,0.02209944751381215,Eviota albolineata,FALSE,NA,NA,Eviota albolineata (Moorea),TRUE,2,cbf,Eviota albolineata (Moorea)
+Eviota albolineata__Moorea,1.5,5,NA,181,1.45,1.55,NA,0.02762430939226519,Eviota albolineata,FALSE,NA,NA,Eviota albolineata (Moorea),TRUE,2,cbf,Eviota albolineata (Moorea)
+Eviota albolineata__Moorea,1.6,20,NA,181,1.55,1.65,NA,0.11049723756906076,Eviota albolineata,FALSE,NA,NA,Eviota albolineata (Moorea),TRUE,2,cbf,Eviota albolineata (Moorea)
+Eviota albolineata__Moorea,1.7,11,NA,181,1.65,1.75,NA,0.06077348066298342,Eviota albolineata,FALSE,NA,NA,Eviota albolineata (Moorea),TRUE,2,cbf,Eviota albolineata (Moorea)
+Eviota albolineata__Moorea,1.8,11,NA,181,1.75,1.85,NA,0.06077348066298342,Eviota albolineata,FALSE,NA,NA,Eviota albolineata (Moorea),TRUE,2,cbf,Eviota albolineata (Moorea)
+Eviota albolineata__Moorea,1.9,15,NA,181,1.85,1.95,NA,0.08287292817679558,Eviota albolineata,FALSE,NA,NA,Eviota albolineata (Moorea),TRUE,2,cbf,Eviota albolineata (Moorea)
+Eviota albolineata__Moorea,2,15,NA,181,1.95,2.05,NA,0.08287292817679558,Eviota albolineata,FALSE,NA,NA,Eviota albolineata (Moorea),TRUE,2,cbf,Eviota albolineata (Moorea)
+Eviota albolineata__Moorea,2.1,20,NA,181,2.0500000000000003,2.15,NA,0.11049723756906076,Eviota albolineata,FALSE,NA,NA,Eviota albolineata (Moorea),TRUE,2,cbf,Eviota albolineata (Moorea)
+Eviota albolineata__Moorea,2.2,29,NA,181,2.1500000000000004,2.25,NA,0.16022099447513813,Eviota albolineata,FALSE,NA,NA,Eviota albolineata (Moorea),TRUE,2,cbf,Eviota albolineata (Moorea)
+Eviota albolineata__Moorea,2.3,21,NA,181,2.25,2.3499999999999996,NA,0.1160220994475138,Eviota albolineata,FALSE,NA,NA,Eviota albolineata (Moorea),TRUE,2,cbf,Eviota albolineata (Moorea)
+Eviota albolineata__Moorea,2.4,6,NA,181,2.35,2.4499999999999997,NA,0.03314917127071823,Eviota albolineata,FALSE,NA,NA,Eviota albolineata (Moorea),TRUE,2,cbf,Eviota albolineata (Moorea)
+Eviota albolineata__Moorea,2.5,8,NA,181,2.45,2.55,NA,0.04419889502762431,Eviota albolineata,FALSE,NA,NA,Eviota albolineata (Moorea),TRUE,2,cbf,Eviota albolineata (Moorea)
+Eviota albolineata__Moorea,2.6,6,NA,181,2.5500000000000003,2.65,NA,0.03314917127071823,Eviota albolineata,FALSE,NA,NA,Eviota albolineata (Moorea),TRUE,2,cbf,Eviota albolineata (Moorea)
+Eviota albolineata__Moorea,2.7,3,NA,181,2.6500000000000004,2.75,NA,0.01657458563535911,Eviota albolineata,FALSE,NA,NA,Eviota albolineata (Moorea),TRUE,2,cbf,Eviota albolineata (Moorea)
+Eviota albolineata__Moorea,2.8,2,NA,181,2.75,2.8499999999999996,NA,0.01104972375690607,Eviota albolineata,FALSE,NA,NA,Eviota albolineata (Moorea),TRUE,2,cbf,Eviota albolineata (Moorea)
+Eviota albolineata__Moorea,2.9,1,NA,181,2.85,2.9499999999999997,NA,0.00552486187845303,Eviota albolineata,FALSE,NA,NA,Eviota albolineata (Moorea),TRUE,2,cbf,Eviota albolineata (Moorea)
+Trimma capostriatum__Lizard,1.1,4,NA,82,1.05,1.15,NA,0.04878048780487805,Trimma capostriatum,FALSE,NA,NA,Trimma capostriatum (Lizard),TRUE,3,cbf,Trimma capostriatum (Lizard)
+Trimma capostriatum__Lizard,1.2,16,NA,82,1.15,1.25,NA,0.1951219512195122,Trimma capostriatum,FALSE,NA,NA,Trimma capostriatum (Lizard),TRUE,3,cbf,Trimma capostriatum (Lizard)
+Trimma capostriatum__Lizard,1.3,5,NA,82,1.25,1.35,NA,0.06097560975609756,Trimma capostriatum,FALSE,NA,NA,Trimma capostriatum (Lizard),TRUE,3,cbf,Trimma capostriatum (Lizard)
+Trimma capostriatum__Lizard,1.4,3,NA,82,1.35,1.45,NA,0.03658536585365853,Trimma capostriatum,FALSE,NA,NA,Trimma capostriatum (Lizard),TRUE,3,cbf,Trimma capostriatum (Lizard)
+Trimma capostriatum__Lizard,1.5,1,NA,82,1.45,1.55,NA,0.01219512195121951,Trimma capostriatum,FALSE,NA,NA,Trimma capostriatum (Lizard),TRUE,3,cbf,Trimma capostriatum (Lizard)
+Trimma capostriatum__Lizard,1.6,5,NA,82,1.55,1.65,NA,0.06097560975609756,Trimma capostriatum,FALSE,NA,NA,Trimma capostriatum (Lizard),TRUE,3,cbf,Trimma capostriatum (Lizard)
+Trimma capostriatum__Lizard,1.7,4,NA,82,1.65,1.75,NA,0.04878048780487805,Trimma capostriatum,FALSE,NA,NA,Trimma capostriatum (Lizard),TRUE,3,cbf,Trimma capostriatum (Lizard)
+Trimma capostriatum__Lizard,1.8,6,NA,82,1.75,1.85,NA,0.07317073170731707,Trimma capostriatum,FALSE,NA,NA,Trimma capostriatum (Lizard),TRUE,3,cbf,Trimma capostriatum (Lizard)
+Trimma capostriatum__Lizard,1.9,8,NA,82,1.85,1.95,NA,0.0975609756097561,Trimma capostriatum,FALSE,NA,NA,Trimma capostriatum (Lizard),TRUE,3,cbf,Trimma capostriatum (Lizard)
+Trimma capostriatum__Lizard,2,9,NA,82,1.95,2.05,NA,0.1097560975609756,Trimma capostriatum,FALSE,NA,NA,Trimma capostriatum (Lizard),TRUE,3,cbf,Trimma capostriatum (Lizard)
+Trimma capostriatum__Lizard,2.1,5,NA,82,2.0500000000000003,2.15,NA,0.06097560975609756,Trimma capostriatum,FALSE,NA,NA,Trimma capostriatum (Lizard),TRUE,3,cbf,Trimma capostriatum (Lizard)
+Trimma capostriatum__Lizard,2.2,3,NA,82,2.1500000000000004,2.25,NA,0.03658536585365853,Trimma capostriatum,FALSE,NA,NA,Trimma capostriatum (Lizard),TRUE,3,cbf,Trimma capostriatum (Lizard)
+Trimma capostriatum__Lizard,2.3,3,NA,82,2.25,2.3499999999999996,NA,0.03658536585365853,Trimma capostriatum,FALSE,NA,NA,Trimma capostriatum (Lizard),TRUE,3,cbf,Trimma capostriatum (Lizard)
+Trimma capostriatum__Lizard,2.5,4,NA,82,2.45,2.55,NA,0.04878048780487805,Trimma capostriatum,FALSE,NA,NA,Trimma capostriatum (Lizard),TRUE,3,cbf,Trimma capostriatum (Lizard)
+Trimma capostriatum__Lizard,2.7,2,NA,82,2.6500000000000004,2.75,NA,0.02439024390243902,Trimma capostriatum,FALSE,NA,NA,Trimma capostriatum (Lizard),TRUE,3,cbf,Trimma capostriatum (Lizard)
+Trimma capostriatum__Lizard,2.8,2,NA,82,2.75,2.8499999999999996,NA,0.02439024390243902,Trimma capostriatum,FALSE,NA,NA,Trimma capostriatum (Lizard),TRUE,3,cbf,Trimma capostriatum (Lizard)
+Trimma capostriatum__Lizard,2.9,1,NA,82,2.85,2.9499999999999997,NA,0.01219512195121951,Trimma capostriatum,FALSE,NA,NA,Trimma capostriatum (Lizard),TRUE,3,cbf,Trimma capostriatum (Lizard)
+Trimma capostriatum__Lizard,3.1,1,NA,82,3.0500000000000003,3.15,NA,0.01219512195121951,Trimma capostriatum,FALSE,NA,NA,Trimma capostriatum (Lizard),TRUE,3,cbf,Trimma capostriatum (Lizard)
