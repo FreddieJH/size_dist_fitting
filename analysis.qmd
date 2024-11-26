@@ -20,6 +20,7 @@ The following code will reconstruct the figures from the manuscript: Heather *et
 ## Setup
 
 Loading the required packages.
+
 ```{r packages}
 library(tidyverse)
 library(scales)
@@ -33,26 +34,28 @@ Loading the required data.
 
 ```{r data}
 
-read_data <- function(str) read_csv(paste0("fig_data/", str), show_col_types = FALSE)
+
+norm_colour <- rgb(181, 144, 19, maxColorValue=255)
+lnorm_colour <- rgb(29, 84, 128, maxColorValue=255)
 
 # Data for main figures
-fig1_data_fits   <- read_data("fig1_data_fits.csv")
-fig1_data_main   <- read_data("fig1_data_main.csv")
-fig2_data_pop    <- read_data("fig2_data_pop.csv")
-fig2_data_spp    <- read_data("fig2_data_spp.csv")
-fig3_data        <- read_data("fig3_data.csv")
-fig3_data_ks     <- read_data("fig3_data_ks.csv")
-fig4_data        <- read_data("fig4_data.csv")
-fig4_data_sample <- read_data("fig4_data_sample.csv")
+fig1_data   <- read_csv("fig_data/obsdata_population_scaled.csv")
+fig1b_data   <- read_parquet("fig_data/fig1b_data.parquet")
+fig2_data_pop    <- read_csv("fig_data/fig2_data_pop.csv")
+fig2_data_spp    <- read_csv("fig_data/fig2_data_spp.csv")
+fig3_data        <- read_csv("fig_data/fig3_data.csv")
+fig3_data_ks     <- read_csv("fig_data/fig3_data_ks.csv")
+fig4_data        <- read_csv("fig_data/fig4_data.csv")
+fig4_data_sample <- read_csv("fig_data/fig4_data_sample.csv")
 
 # Data for supplementary figures
-SI_fig1_data <- read_data("figS1_data.csv")
-SI_fig3_data <- read_data("figS3_data.csv")
-SI_fig4_data <- read_data("figS4_data.csv")
-SI_fig5_data <- read_data("figS5_data.csv")
-SI_fig7_data <- read_data("figS7_data.csv")
-SI_fig9_data <- read_data("figS9_data.csv")
-SI_fig10_data <- read_data("figS10_data.csv")
+SI_fig1_data <- read_csv("fig_data/figS1_data.csv")
+SI_fig3_data <- read_csv("fig_data/figS3_data.csv")
+SI_fig4_data <- read_csv("fig_data/figS4_data.csv")
+SI_fig5_data <- read_csv("fig_data/figS5_data.csv")
+SI_fig7_data <- read_csv("fig_data/figS7_data.csv")
+SI_fig9_data <- read_csv("fig_data/figS9_data.csv")
+SI_fig10_data <- read_csv("fig_data/figS10_data.csv")
 
 
 ```
@@ -63,144 +66,164 @@ SI_fig10_data <- read_data("figS10_data.csv")
 
 ```{r fig1}
 
-fig1a <-
-  fig1_data_fits %>% 
-  bind_rows(tibble(col = "dummy_var")) %>% # needed for legend
-  ggplot(aes(x = scaled_size, 
-             y = scaled_n, 
-             group = file)) +
-  geom_line(aes(y = scaled_n, 
-                group = population, 
-                colour = col),
-            alpha = 0.1, 
-            data = fig1_data_main %>% 
-              mutate(col = case_when(
-                normal_better ~ rgb(181, 144, 19, 
-                                    maxColorValue=255), 
-                !normal_better ~ rgb(29, 84, 128, 
-                                     maxColorValue=255), 
-                TRUE ~ "grey80"),
-                lty = case_when(normal_better ~ "solid", 
-                                !normal_better ~ "solid", 
-                                TRUE ~ "dashed"),
-                lwd = case_when(normal_better ~ 2, 
-                                !normal_better ~ 2, 
-                                TRUE ~ 0.5)) ) +
-  geom_line(col = "black", lwd = 3, 
-            data = fig1_data_fits %>% 
-              filter(file %in% c("normal", "lognormal"))) +
-  geom_line(aes(col = col,
-                lty = lty,
-                linewidth = lwd)) +
-  scale_x_continuous(label = label_number(suffix = "x")) +
-  scale_color_identity(labels = c(
-    "Observed (Normal preferred)", 
-    "Observed (Lognormal preferred)",
-    "Normal fit",
-    "Lognormal fit", 
-    "13 protist species"
-  ), 
-  guide = "legend") +
-  scale_linetype_identity() +
-  scale_linewidth_identity() +
-  theme_cowplot(20) +
+fig1_model_fits <- 
+  tibble(size = seq(0, 200, by = 0.1), 
+         n = dnorm(size, mean = 9.33, sd = 3.84),
+         max_n = max(n), 
+         scaled_n = n/max(n),
+         mean_size = weighted.mean(size,w = scaled_n),
+         scaled_size = size/mean_size,
+         dist = "normal") %>% 
+  bind_rows(
+    tibble(size = seq(0, 200, by = 0.1), 
+           n = dlnorm(size, mean = 2.19, sd = 0.357),
+           max_n = max(n), 
+           scaled_n = n/max(n),
+           mean_size = weighted.mean(size,w = scaled_n),
+           scaled_size = size/mean_size,
+           dist = "lognormal")
+  ) %>% 
+  mutate(col = case_when(
+    dist == "normal" ~ norm_colour, 
+    dist == "lognormal" ~ lnorm_colour), 
+    lty = "solid", 
+    lwd = 2)
+
+fig1_data_gg <- 
+  fig1_data %>%
+  mutate(col = case_when(
+    normal_better ~ norm_colour,
+    !normal_better ~ lnorm_colour,
+    TRUE ~ "grey80"), 
+    lwd = 1, 
+    alpha = 0.03, 
+    type = "obs") %>% 
+  select(scaled_n, scaled_size, col, lwd, population, alpha, type) %>% 
+  bind_rows(fig1_model_fits %>% mutate(population = dist, 
+                                       alpha = 1, 
+                                       type = "fit") %>% 
+              select(scaled_n, scaled_size, col, lwd, alpha, type)) %>% 
+  bind_rows(tibble(scaled_size = 0, 
+                   scaled_n = 0, 
+                   lwd = 1, 
+                   alpha = 0,
+                   type = "dummy",
+                   col = "red"))
+fig1a <-  
+  ggplot(fig1_data_gg) +
+  aes(x = scaled_size, 
+      y = scaled_n,
+      col = col, 
+      linewidth = lwd, 
+      alpha = alpha) +
+  geom_line(aes(group = population), 
+            data = . %>% filter(type == "obs")) +
+  geom_line(aes(group = col), 
+            col = "black", 
+            linewidth = 3, 
+            data = . %>% filter(type != "obs")) +
+  geom_line(data = . %>% filter(type != "obs")) +
+  scale_linewidth_identity() + 
+  scale_alpha_identity() + 
+  scale_color_identity(guide = "legend", 
+                       labels = c(
+                         "Observed (Normal preferred)", 
+                         "Observed (Lognormal preferred)",
+                         "Normal fit (median)",
+                         "Lognormal fit (median)")) + 
+  scale_x_continuous(label = label_number(suffix = "x"), 
+                     expand = c(0.01,0),
+                     limit = c(NA, 4)) +
+  
+  labs(
+    x = "Body length relative to mean length",
+    y = "Abundance relative to max"
+  ) +
+  theme_classic(20) +
   theme(legend.position = c(1,1), 
         legend.justification = c(1,1),
         legend.title = element_blank(), 
-        plot.margin = margin(10, 20, 10, 10)) +
-  labs(
-    x = "Body size relative to mean size",
-    y = "Abundance relative to max"
-  ) +
+        plot.margin = margin(10, 20, 10, 10), 
+        legend.background = element_rect(fill = "transparent")) +
   guides(col = guide_legend(
-    override.aes = list(lty = c(1, 1, 1, 1, 2), 
-                        linewidth = c(0.3, 0.3, 3, 3, 0.5), 
-                        colour = c(rgb(181, 144, 19, maxColorValue=255),
-                                   rgb(29, 84, 128, maxColorValue=255),
-                                   rgb(181, 144, 19, maxColorValue=255),
-                                   rgb(29, 84, 128, maxColorValue=255),
-                                   "black"), 
-                        alpha = 1), 
+    override.aes = list(colour = c(norm_colour,
+                                   lnorm_colour,
+                                   norm_colour,
+                                   lnorm_colour),
+                        linewidth = c(1,1,3,3)), 
     label.position = "left"))
 
-# getting a random selection of species
-out <- c()
-for(i in 1:10) {
-  set.seed(1)
-  out <- c(out, sample(((320*(i-1))+1):((320*(i-1)+1)+320), 1))
-}
+saveRDS(fig1a, "fig_data/fig1a.rds")
 
-range_bodysizes <- 
-  fig1_data_main %>% 
-  filter(population %in% {fig1_data_main %>% filter(model_fit) %>% pull(population)}) %>% 
-  select(population, mean_size) %>% 
-  distinct() %>% 
-  arrange(mean_size) %>% 
-  rownames_to_column("size_num") %>% 
-  filter(size_num %in% out)
-
-set.seed(1)
-cbf_samples <- 
-  fig1_data_main %>% 
-  filter(population_n > 100) %>% 
-  filter(dat=="cbf") %>% 
-  select(population, mean_size) %>% 
-  distinct() %>% 
-  arrange(mean_size) %>% 
-  rownames_to_column("size_num") %>% 
-  filter(size_num %in% sample(1:nrow(.), 2))
-
-extra <- 
-  tibble(species = c(range_bodysizes$population, 
-                     cbf_samples$population) %>% 
-           str_extract(pattern = ".*(?=__)")) %>% 
-  filter(species %in% {fig1_data_main %>% filter(vector_icon) %>% pull(species)})
-
-fig1b <-
-  fig1_data_main %>% 
-  filter(population %in% c(range_bodysizes$population, cbf_samples$population)) %>%
-  mutate(highlight_spp = species %in% extra$species) %>% 
-  ggplot() +
-  geom_line(aes(x = scaled_size, 
-                y = scaled_n,
-                col = dat,
-                group = population),
-            alpha = 0.5, 
-            linewidth = 1) +
-  geom_line(aes(x = scaled_size,
-                y = scaled_n,
-                col = dat,
-                group = population),
-            data = . %>% filter(highlight_spp),
-            linewidth = 1.5) +
-  scale_x_continuous(label = label_number(suffix = "x")) +
-  scale_color_manual(values = c("rls" = "#56B4E9",
-                                "cbf" = "#E69F00"),
-                     labels = c("rls" = "Visual census",
-                                "cbf" = "Cryptobenthic specimen collection")) +
-  theme_cowplot(20) +
-  theme(legend.position = c(1,1), 
-        legend.justification = c(1,1),
-        legend.title = element_blank()) +
-  labs(
-    x = "Body size relative to mean size",
+fig1b <- 
+  fig1b_data %>% 
+  pivot_longer(
+    cols = starts_with("scaled"),
+    names_to = c(".value", "dist"),
+    names_sep = "_", 
+    names_prefix = "scaled_"
+  ) %>% 
+  mutate(dist = case_when(dist == "norm" ~ "normal", 
+                          dist == "lnorm" ~ "lognormal")) %>%
+  filter(dist == better_dist) %>% 
+  ggplot(aes(x = size, y = n, group = population, col = dist)) +
+  geom_line(alpha = 0.03) +
+    geom_line(aes(x = scaled_size, 
+      y = scaled_n, group = col), data = fig1_data_gg %>% filter(type != "obs"), inherit.aes = FALSE) +
+  scale_x_continuous(label = label_number(suffix = "x"), 
+                     expand = c(0.01,0),
+                     limit = c(NA, 4)) +
+  scale_color_manual(guide = "legend", 
+                     values = c("normal" = norm_colour, 
+                                "lognormal" = lnorm_colour),
+                     labels = c("normal" = "Normal fit (population-level)", 
+                                "lognormal" = "Lognormal fit (population-level)")) +
+   labs(
+    x = "Body length relative to mean length",
     y = "Abundance relative to max"
   ) +
-  guides(col = guide_legend(label.position = "left"))
+  theme_classic(20) +
+  theme(legend.position = c(1,1), 
+        legend.justification = c(1,1),
+        legend.title = element_blank(), 
+        plot.margin = margin(10, 20, 10, 10), 
+        legend.background = element_rect(fill = "transparent")) +
+  guides(col = guide_legend(
+    override.aes = list(linewidth = c(1,1), 
+                        alpha = c(1,1)), 
+    label.position = "left"))
 
-fig1 <- 
-  fig1a + 
-  fig1b + 
-  plot_layout(ncol = 1) +
-  plot_annotation(tag_levels = 'A')
+
 
 ggsave(filename = "ms_figs/scaling_distributions.png",
-       plot = fig1,
+       plot = fig1a,
        height = 25,
        width = 30,
        units = "cm", 
        create.dir = TRUE)
 
+
+fig1 <- 
+  wrap_elements(
+    fig1a + theme(axis.text.x = element_blank(),
+                  axis.title = element_blank()) + 
+      fig1b + theme(axis.title.y = element_blank()) +
+      plot_layout(ncol = 1) +
+      theme(plot.margin = margin(5.5, 5.5, 5.5, 0))
+  ) +
+  labs(tag = "Abundance relative to max") +
+  theme(
+    plot.tag = element_text(size = 20, angle = 90),
+    plot.tag.position = "left"
+  ) 
+
+
+ggsave(filename = "ms_figs/scaling_distributions_v2.png",
+       plot = fig1,
+       height = 20,
+       width = 20,
+       units = "cm", 
+       create.dir = TRUE)
 
 ```
 
@@ -423,11 +446,13 @@ make_plot <- function(data, title){
               col = "black",
               fill = "grey70") + 
     # geom_point(aes(col = name, y = value, alpha = alp)) +
-    geom_path(aes(col = name, y = value, alpha = alp, lty=lty), linewidth = 2) +
+    geom_path(aes(y = p_lnorm), linewidth = 2, 
+              col = lnorm_colour) +
+    geom_path(aes(y = p_norm), linewidth = 2, 
+              col = norm_colour) +
     scale_alpha_identity()+
     scale_linetype_identity() +
-    scale_colour_manual(values = c("p_norm" = rgb(181, 144, 19, maxColorValue=255), 
-                                   "p_lnorm" = rgb(29, 84, 128, maxColorValue=255)))+
+    # scale_colour_manual()+
     theme_cowplot(20) +
     scale_y_continuous(label = label_percent())+
     scale_x_continuous(label = label_number()) +
@@ -440,6 +465,34 @@ make_plot <- function(data, title){
           strip.text = element_text(face = "italic"), 
           plot.title = element_text(hjust = 0.5)) +
     ggtitle(label = title)
+}
+
+Neopomacentrus azysron
+fig3_data_all %>% filter(species == "Neopomacentrus azysron") %>% view()
+fig3_data_all <- read_csv("fig_data/fig3_data_all.csv")
+for(spp in unique(fig3_data_all$species)){
+  for(dat in c("rls", "cbf")){
+    
+    spp_data <- 
+      fig3_data_all %>% 
+      filter(species == spp) %>% 
+      filter(data == dat)
+    
+    if(nrow(spp_data) == 0) next
+    
+    make_plot(data = spp_data, 
+              title = paste0(
+                "data = ", dat,
+                "mu = ", unique(spp_data$mu) %>% round(1),
+                ", sigma = ", unique(spp_data$sd)%>% round(1), 
+                ", meanlog = ", unique(spp_data$meanlog)%>% round(1), 
+                ", sdlog = ", unique(spp_data$sdlog)%>% round(1)
+              )) %>% 
+      ggsave(filename = paste0("ms_figs/spp_dists/", dat, "_", spp, ".png"),
+             height = 20,
+             width = 20*1.618,
+             units = "cm")
+  }
 }
 
 
@@ -473,8 +526,8 @@ ks_curve <-
              y = mean_ks, 
              color = dist)) +
   geom_line(linewidth = 2, alpha = 0.8) +
-  scale_color_manual(values = c("norm_ks" = rgb(181, 144, 19, maxColorValue=255),
-                                "lnorm_ks" = rgb(29, 84, 128, maxColorValue=255), 
+  scale_color_manual(values = c("norm_ks" = norm_colour,
+                                "lnorm_ks" = lnorm_colour, 
                                 "pref_ks" = "pink"),
                      labels = c("norm_ks" = "Normal",
                                 "lnorm_ks" = "Lognormal",                                 "pref_ks" = "Preferred")) +
@@ -534,7 +587,7 @@ make_fig4 <- function(data, spp_select){
                                  "small" = "grey90"),
                       labels = c("large" = "Observed (Length \U2265 10cm)", 
                                  "small" = "Observed (Length \U003C 10cm)")) +
-    scale_color_manual(values = c("p_norm" = rgb(181, 144, 19, maxColorValue=255), 
+    scale_color_manual(values = c("p_norm" = norm_colour, 
                                   "lbspr" = rgb(148, 31, 36, maxColorValue=255), 
                                   "lbspr_mk15" = rgb(70, 172, 200, maxColorValue=255)),
                        labels = c("lbspr" = "LBSPR (estimate)", 
@@ -700,8 +753,8 @@ SI_fig1 <-
               count(datatype, mod, mincount) %>% 
               summarise(max_n = max(n), 
                         .by = c(datatype, mincount))) +
-  scale_color_manual(values = c("normal" = rgb(181, 144, 19, maxColorValue=255),
-                                "lognormal" = rgb(29, 84, 128, maxColorValue=255)), 
+  scale_color_manual(values = c("normal" = norm_colour,
+                                "lognormal" = lnorm_colour), 
                      labels = c("normal" = "Normal",
                                 "lognormal" = "Lognormal")) +
   labs(x = "Minimum population size (# individuals)", 
@@ -1137,8 +1190,8 @@ SI_fig8 <-
     labels = c("rls" = "Visual census",
                "cbf" = "Cryptobenthic (exhaustive)")) +
   scale_color_manual(
-    values = c("normal" = rgb(181, 144, 19, maxColorValue=255),
-               "lognormal" = rgb(29, 84, 128, maxColorValue=255)),
+    values = c("normal" = norm_colour,
+               "lognormal" = lnorm_colour),
     labels = c("normal" = "Normal preferred",
                "lognormal" = "Lognormal preferred")) +
   labs(x = "Mean body size (log)", 
