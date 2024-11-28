@@ -15,7 +15,7 @@ execute:
 
 ## About
 
-The following code will reconstruct the figures from the manuscript: Heather *et al.* (Submitted) "Consistency in species body size distributions across marine fishes". 
+The following code will reconstruct the figures from the manuscript: Heather *et al.* (Submitted) "Consistency in species body size distributions across marine fishes".
 
 ## Setup
 
@@ -227,8 +227,7 @@ ggsave(filename = "ms_figs/scaling_distributions_v2.png",
 
 ```
 
-![Observed body length distributions across 3,228 fish populations show a similar unimodal shape. A) Observed individual body length distributions shown in thin solid lines with the median parameter estimates from normal-preferred and lognormal-preferred model fits shown as thick yellow and dark blue lines, respectively. Dashed lines in (A) show scaled body size (cell diameter) distributions of 13 freshwater protist species extracted from Giometto et al. (2013). B) A random selection of 12 populations for visualisation purposes; three species have been highlighted (thicker lines) to indicate that each line represents a population-level body length distribution. Binned body length data were normalized to the bin width to allow comparison with continuous body length data. Abundance density (y-axis) is scaled to the maximum abundance density of the population, and body size (x-axis) is scaled to the mean body size of the population.
-The estimated CV values for fish length were consistent across three different spatial scales: population-level (Fig. 2), metapopulation or ecoregion-level20 (Extended Data Fig. 3), and the entire species-level (Fig. 2). The results were also similar when species that may be targeted by recreational or commercial fisheries (12% of total, n = 97 species) were removed from the analysis (Extended Data Fig. 4). Naturally, over short temporal and fine spatial scales, local recruitment and mortality events might increase the variability of size distributions and produce multimodal size frequencies, such as sometimes seen in fisheries samples, especially from highly seasonal species21,22. Multi-modality is likely to be rarer when body size data encompasses multiple sampling events and when seasonality is weaker, as is the case for our data. Only about 2% of coral reef and temperate rocky reef populations in our dataset revealed multiple peaks in body length frequencies (Extended Data Figs. 5).](ms_figs/scaling_distributions.png)
+![Observed body length distributions across 3,228 fish populations show a similar unimodal shape. A) Observed individual body length distributions shown in thin solid lines with the median parameter estimates from normal-preferred and lognormal-preferred model fits shown as thick yellow and dark blue lines, respectively. Dashed lines in (A) show scaled body size (cell diameter) distributions of 13 freshwater protist species extracted from Giometto et al. (2013). B) A random selection of 12 populations for visualisation purposes; three species have been highlighted (thicker lines) to indicate that each line represents a population-level body length distribution. Binned body length data were normalized to the bin width to allow comparison with continuous body length data. Abundance density (y-axis) is scaled to the maximum abundance density of the population, and body size (x-axis) is scaled to the mean body size of the population. The estimated CV values for fish length were consistent across three different spatial scales: population-level (Fig. 2), metapopulation or ecoregion-level20 (Extended Data Fig. 3), and the entire species-level (Fig. 2). The results were also similar when species that may be targeted by recreational or commercial fisheries (12% of total, n = 97 species) were removed from the analysis (Extended Data Fig. 4). Naturally, over short temporal and fine spatial scales, local recruitment and mortality events might increase the variability of size distributions and produce multimodal size frequencies, such as sometimes seen in fisheries samples, especially from highly seasonal species21,22. Multi-modality is likely to be rarer when body size data encompasses multiple sampling events and when seasonality is weaker, as is the case for our data. Only about 2% of coral reef and temperate rocky reef populations in our dataset revealed multiple peaks in body length frequencies (Extended Data Figs. 5).](ms_figs/scaling_distributions.png)
 
 # Figure 2
 
@@ -1156,8 +1155,7 @@ ggsave(filename = "ms_figs/linf_lmu.png",
 
 ```
 
-
-![A fitted linear model to predict mean population body length (from empirical body length distributions) from asymptotic body length (available from Prince et al.17). This fitted model was used to reconstruct the body length distribution when only asymptotic body length is known, which is often the case for many species or populations. Fitted model (red line): log(mean_length) = 0.37 + 0.78*log(asymptotic_length).](ms_figs/linf_lmu.png)
+![A fitted linear model to predict mean population body length (from empirical body length distributions) from asymptotic body length (available from Prince et al.17). This fitted model was used to reconstruct the body length distribution when only asymptotic body length is known, which is often the case for many species or populations. Fitted model (red line): log(mean_length) = 0.37 + 0.78\*log(asymptotic_length).](ms_figs/linf_lmu.png)
 
 ## SI Fig. 8
 
@@ -1278,7 +1276,6 @@ ggsave(filename = "ms_figs/bimodal.png",
 
 ![Randomly selected examples of approximately unimodal (A, C) and bimodal (B, D) observed body length distributions in visual census sampling (blue, A, B) and cryptobenthic sampling (orange, C, D). Approximately bimodal shapes were found in 59 out of 3,089 (2%) of visual census, and 3 of 136 (2%) cryptobenthic population-level datasets. Bimodal distributions were removed from distribution-fitting analyses.](ms_figs/bimodal.png)
 
-
 ## SI Fig. 10
 
 ```{r si-fig10}
@@ -1322,5 +1319,3 @@ ggsave(filename = "ms_figs/obs_minus_lbspr.png",
 ```
 
 ![Observed proportion within a length bin minus expected proportion as predicted by the theoretical model LBSPR. LBSPR is parameterized by asymptotic length, mortality (M) and growth rate (k). Points below the red horizontal line indicate there is a lower observed proportion of individuals in the size bin than predicted by LBSPR. The x-axis has been truncated to 40cm to emphasize this region where observational sampling bias is most likely to occur.](ms_figs/obs_minus_lbspr.png)
-
-
