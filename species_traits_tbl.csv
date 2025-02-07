@@ -1,0 +1,815 @@
+species,source,family,class,guild,trophic,lmax,better_dist,bimodal,fished
+Abudefduf bengalensis,rls,Pomacentridae,Actinopterygii,tropical,Planktivore,17,normal,FALSE,FALSE
+Abudefduf sexfasciatus,rls,Pomacentridae,Actinopterygii,tropical,Planktivore,16,normal,FALSE,FALSE
+Abudefduf vaigiensis,rls,Pomacentridae,Actinopterygii,tropical,Planktivore,20,normal,FALSE,FALSE
+Abudefduf whitleyi,rls,Pomacentridae,Actinopterygii,tropical,Planktivore,14,normal,FALSE,FALSE
+Acanthaluteres brownii,rls,Monacanthidae,Actinopterygii,temperate,Omnivore,55,normal,FALSE,TRUE
+Acanthaluteres spilomelanurus,rls,Monacanthidae,Actinopterygii,temperate,Omnivore,14,normal,FALSE,FALSE
+Acanthaluteres vittiger,rls,Monacanthidae,Actinopterygii,temperate,Omnivore,35,normal,FALSE,TRUE
+Acanthistius ocellatus,rls,Serranidae,Actinopterygii,temperate,Higher carnivore,64,normal,FALSE,FALSE
+Acanthochromis polyacanthus,rls,Pomacentridae,Actinopterygii,tropical,Planktivore,14,normal,FALSE,FALSE
+Acanthopagrus australis,rls,Sparidae,Actinopterygii,temperate,Benthic invertivore,66,lognormal,FALSE,TRUE
+Acanthurus albipectoralis,rls,Acanthuridae,Actinopterygii,tropical,Browsing herbivore,33,normal,FALSE,FALSE
+Acanthurus auranticavus,rls,Acanthuridae,Actinopterygii,tropical,Browsing herbivore,45,normal,FALSE,FALSE
+Acanthurus blochii,rls,Acanthuridae,Actinopterygii,tropical,Browsing herbivore,45,normal,FALSE,FALSE
+Acanthurus dussumieri,rls,Acanthuridae,Actinopterygii,tropical,Browsing herbivore,54,normal,FALSE,FALSE
+Acanthurus grammoptilus,rls,Acanthuridae,Actinopterygii,tropical,Browsing herbivore,35,normal,FALSE,FALSE
+Acanthurus lineatus,rls,Acanthuridae,Actinopterygii,tropical,Browsing herbivore,38,normal,FALSE,FALSE
+Acanthurus nigricans,rls,Acanthuridae,Actinopterygii,tropical,Browsing herbivore,21.3,normal,FALSE,FALSE
+Acanthurus nigricauda,rls,Acanthuridae,Actinopterygii,tropical,Browsing herbivore,40,normal,FALSE,FALSE
+Acanthurus nigrofuscus,rls,Acanthuridae,Actinopterygii,tropical,Browsing herbivore,21,lognormal,FALSE,FALSE
+Acanthurus nigroris,rls,Acanthuridae,Actinopterygii,tropical,Browsing herbivore,25,normal,FALSE,FALSE
+Acanthurus olivaceus,rls,Acanthuridae,Actinopterygii,tropical,Browsing herbivore,35,normal,FALSE,FALSE
+Acanthurus pyroferus,rls,Acanthuridae,Actinopterygii,tropical,Browsing herbivore,25,normal,FALSE,FALSE
+Acanthurus thompsoni,rls,Acanthuridae,Actinopterygii,tropical,Planktivore,27,normal,FALSE,FALSE
+Acanthurus triostegus,rls,Acanthuridae,Actinopterygii,tropical,Browsing herbivore,27,normal,FALSE,FALSE
+Acanthurus xanthopterus,rls,Acanthuridae,Actinopterygii,tropical,Browsing herbivore,70,normal,FALSE,FALSE
+Achoerodus gouldii,rls,Labridae,Actinopterygii,temperate,Benthic invertivore,175,lognormal,FALSE,TRUE
+Achoerodus viridis,rls,Labridae,Actinopterygii,temperate,Benthic invertivore,100,normal,FALSE,TRUE
+Aethaloperca rogaa,rls,Serranidae,Actinopterygii,tropical,Higher carnivore,60,normal,FALSE,FALSE
+Afurcagobius tamarensis,rls,Gobiidae,Actinopterygii,temperate,Benthic invertivore,11,normal,FALSE,FALSE
+Aldrichetta forsteri,rls,Mugilidae,Actinopterygii,temperate,Browsing herbivore,50,normal,TRUE,TRUE
+Alepes vari,rls,Carangidae,Actinopterygii,tropical,Higher carnivore,56,normal,FALSE,FALSE
+Ambassis jacksoniensis,rls,Ambassidae,Actinopterygii,temperate,Planktivore,7,normal,FALSE,FALSE
+Amblyeleotris steinitzi,rls,Gobiidae,Actinopterygii,tropical,Benthic invertivore,13,normal,FALSE,FALSE
+Amblyglyphidodon aureus,rls,Pomacentridae,Actinopterygii,tropical,Omnivore,13,normal,FALSE,FALSE
+Amblyglyphidodon curacao,rls,Pomacentridae,Actinopterygii,tropical,Omnivore,11,normal,FALSE,FALSE
+Amblyglyphidodon leucogaster,rls,Pomacentridae,Actinopterygii,tropical,Omnivore,13,normal,FALSE,FALSE
+Amblyglyphidodon ternatensis,rls,Pomacentridae,Actinopterygii,tropical,Omnivore,10,normal,FALSE,FALSE
+Amblygobius decussatus,rls,Gobiidae,Actinopterygii,tropical,Omnivore,9.5,normal,FALSE,FALSE
+Amblygobius nocturnus,rls,Gobiidae,Actinopterygii,tropical,Omnivore,10,normal,FALSE,FALSE
+Amblygobius phalaena,rls,Gobiidae,Actinopterygii,tropical,Omnivore,15,lognormal,FALSE,FALSE
+Amphichaetodon howensis,rls,Chaetodontidae,Actinopterygii,temperate,Benthic invertivore,20,normal,FALSE,FALSE
+Amphiprion akindynos,rls,Pomacentridae,Actinopterygii,tropical,Omnivore,9,normal,FALSE,FALSE
+Amphiprion chrysopterus,rls,Pomacentridae,Actinopterygii,tropical,Omnivore,17,normal,FALSE,FALSE
+Amphiprion clarkii,rls,Pomacentridae,Actinopterygii,tropical,Planktivore,15,normal,FALSE,FALSE
+Amphiprion latezonatus,rls,Pomacentridae,Actinopterygii,temperate,Omnivore,14,normal,FALSE,FALSE
+Amphiprion mccullochi,rls,Pomacentridae,Actinopterygii,temperate,Omnivore,12,normal,FALSE,FALSE
+Amphiprion melanopus,rls,Pomacentridae,Actinopterygii,tropical,Omnivore,12,normal,FALSE,FALSE
+Amphiprion perideraion,rls,Pomacentridae,Actinopterygii,tropical,Omnivore,10,normal,FALSE,FALSE
+Anampses caeruleopunctatus,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,42,normal,FALSE,FALSE
+Anampses elegans,rls,Labridae,Actinopterygii,temperate,Benthic invertivore,30,normal,FALSE,FALSE
+Anampses femininus,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,24,normal,FALSE,FALSE
+Anampses geographicus,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,31,lognormal,FALSE,FALSE
+Anampses meleagrides,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,22,lognormal,FALSE,FALSE
+Anampses neoguinaicus,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,20,normal,FALSE,FALSE
+Anampses twistii,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,18,normal,FALSE,FALSE
+Anoplocapros inermis,rls,Ostraciidae,Actinopterygii,temperate,Benthic invertivore,37,normal,FALSE,FALSE
+Aphareus furca,rls,Lutjanidae,Actinopterygii,tropical,Higher carnivore,70,normal,FALSE,FALSE
+Aplodactylus arctidens,rls,Aplodactylidae,Actinopterygii,temperate,Browsing herbivore,65,normal,FALSE,TRUE
+Aplodactylus etheridgii,rls,Aplodactylidae,Actinopterygii,temperate,Browsing herbivore,45,normal,FALSE,FALSE
+Aplodactylus lophodon,rls,Aplodactylidae,Actinopterygii,temperate,Browsing herbivore,45,normal,FALSE,FALSE
+Apogon capricornis,rls,Apogonidae,Actinopterygii,tropical,Benthic invertivore,5.8,normal,FALSE,FALSE
+Apogon victoriae,rls,Apogonidae,Actinopterygii,temperate,Benthic invertivore,14,normal,FALSE,FALSE
+Aprion virescens,rls,Lutjanidae,Actinopterygii,tropical,Higher carnivore,112,normal,FALSE,FALSE
+Aracana aurita,rls,Ostraciidae,Actinopterygii,temperate,Benthic invertivore,25,lognormal,FALSE,FALSE
+Arothron nigropunctatus,rls,Tetraodontidae,Actinopterygii,tropical,Omnivore,33,normal,FALSE,FALSE
+Arripis georgianus,rls,Arripidae,Actinopterygii,temperate,Higher carnivore,41,normal,FALSE,TRUE
+Arripis trutta,rls,Arripidae,Actinopterygii,temperate,Higher carnivore,89,normal,TRUE,TRUE
+Arripis truttaceus,rls,Arripidae,Actinopterygii,temperate,Higher carnivore,96,normal,FALSE,TRUE
+Atrosalarias holomelas,rls,Blenniidae,Actinopterygii,tropical,Browsing herbivore,11,normal,FALSE,FALSE
+Atule mate,rls,Carangidae,Actinopterygii,tropical,Higher carnivore,30,normal,FALSE,FALSE
+Atypichthys latus,rls,Kyphosidae,Actinopterygii,temperate,Benthic invertivore,30,normal,FALSE,FALSE
+Atypichthys strigatus,rls,Kyphosidae,Actinopterygii,temperate,Planktivore,25,lognormal,FALSE,FALSE
+Aulostomus chinensis,rls,Aulostomidae,Actinopterygii,tropical,Higher carnivore,80,normal,FALSE,FALSE
+Austrolabrus maculatus,rls,Labridae,Actinopterygii,temperate,Benthic invertivore,17,normal,FALSE,FALSE
+Balistapus undulatus,rls,Balistidae,Actinopterygii,tropical,Benthic invertivore,30,normal,FALSE,FALSE
+Balistoides conspicillum,rls,Balistidae,Actinopterygii,tropical,Benthic invertivore,50,normal,FALSE,FALSE
+Bathystethus cultratus,rls,Kyphosidae,Actinopterygii,temperate,Benthic invertivore,30,lognormal,FALSE,FALSE
+Bathytoshia brevicaudata,rls,Dasyatidae,Elasmobranchii,temperate,Benthic invertivore,430,normal,FALSE,FALSE
+Bodianus axillaris,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,20,normal,FALSE,FALSE
+Bodianus frenchii,rls,Labridae,Actinopterygii,temperate,Benthic invertivore,49,normal,FALSE,FALSE
+Bodianus mesothorax,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,25,normal,FALSE,FALSE
+Bolbometopon muricatum,rls,Scaridae,Actinopterygii,tropical,Excavator,130,normal,FALSE,FALSE
+Brachaluteres jacksonianus,rls,Monacanthidae,Actinopterygii,temperate,Browsing herbivore,10,normal,FALSE,FALSE
+Caesio caerulaurea,rls,Caesionidae,Actinopterygii,tropical,Planktivore,35,normal,FALSE,FALSE
+Caesio cuning,rls,Caesionidae,Actinopterygii,tropical,Planktivore,60,normal,FALSE,FALSE
+Caesio lunaris,rls,Caesionidae,Actinopterygii,tropical,Planktivore,40,normal,FALSE,FALSE
+Caesio teres,rls,Caesionidae,Actinopterygii,tropical,Planktivore,40,lognormal,FALSE,FALSE
+Caesioperca lepidoptera,rls,Serranidae,Actinopterygii,temperate,Planktivore,30,normal,FALSE,FALSE
+Caesioperca rasor,rls,Serranidae,Actinopterygii,temperate,Planktivore,26,normal,FALSE,FALSE
+Caesioscorpis theagenes,rls,Serranidae,Actinopterygii,temperate,Planktivore,16,lognormal,FALSE,FALSE
+Cantherhines pardalis,rls,Monacanthidae,Actinopterygii,tropical,Benthic invertivore,25,normal,FALSE,FALSE
+Canthigaster bennetti,rls,Tetraodontidae,Actinopterygii,tropical,Browsing herbivore,10,lognormal,FALSE,FALSE
+Canthigaster callisterna,rls,Tetraodontidae,Actinopterygii,temperate,Omnivore,23,lognormal,FALSE,FALSE
+Canthigaster papua,rls,Tetraodontidae,Actinopterygii,tropical,Omnivore,10,normal,FALSE,FALSE
+Canthigaster valentini,rls,Tetraodontidae,Actinopterygii,tropical,Omnivore,11,lognormal,FALSE,FALSE
+Carangoides fulvoguttatus,rls,Carangidae,Actinopterygii,tropical,Higher carnivore,120,lognormal,FALSE,FALSE
+Carangoides orthogrammus,rls,Carangidae,Actinopterygii,tropical,Higher carnivore,75,normal,FALSE,FALSE
+Carangoides plagiotaenia,rls,Carangidae,Actinopterygii,tropical,Higher carnivore,50,normal,FALSE,FALSE
+Caranx ignobilis,rls,Carangidae,Actinopterygii,tropical,Higher carnivore,170,normal,FALSE,FALSE
+Caranx lugubris,rls,Carangidae,Actinopterygii,tropical,Higher carnivore,100,normal,FALSE,FALSE
+Caranx melampygus,rls,Carangidae,Actinopterygii,tropical,Higher carnivore,117,normal,FALSE,TRUE
+Caranx papuensis,rls,Carangidae,Actinopterygii,tropical,Higher carnivore,88,normal,TRUE,FALSE
+Caranx sexfasciatus,rls,Carangidae,Actinopterygii,tropical,Higher carnivore,120,normal,FALSE,TRUE
+Carcharhinus amblyrhynchos,rls,Carcharhinidae,Elasmobranchii,tropical,Higher carnivore,255,normal,FALSE,FALSE
+Carcharhinus galapagensis,rls,Carcharhinidae,Elasmobranchii,tropical,Higher carnivore,370,lognormal,FALSE,FALSE
+Centroberyx lineatus,rls,Berycidae,Actinopterygii,temperate,Higher carnivore,46,normal,FALSE,FALSE
+Centropogon australis,rls,Scorpaenidae,Actinopterygii,temperate,Benthic invertivore,15,lognormal,FALSE,FALSE
+Centropyge bicolor,rls,Pomacanthidae,Actinopterygii,tropical,Omnivore,11,normal,FALSE,FALSE
+Centropyge bispinosa,rls,Pomacanthidae,Actinopterygii,tropical,Omnivore,10,normal,FALSE,FALSE
+Centropyge eibli,rls,Pomacanthidae,Actinopterygii,tropical,Omnivore,15,normal,FALSE,FALSE
+Centropyge flavissima,rls,Pomacanthidae,Actinopterygii,tropical,Browsing herbivore,14,lognormal,FALSE,FALSE
+Centropyge heraldi,rls,Pomacanthidae,Actinopterygii,tropical,Browsing herbivore,10,normal,FALSE,FALSE
+Centropyge tibicen,rls,Pomacanthidae,Actinopterygii,tropical,Browsing herbivore,19,lognormal,FALSE,FALSE
+Centropyge vrolikii,rls,Pomacanthidae,Actinopterygii,tropical,Browsing herbivore,12,normal,FALSE,FALSE
+Cephalopholis argus,rls,Serranidae,Actinopterygii,tropical,Higher carnivore,60,normal,FALSE,FALSE
+Cephalopholis boenak,rls,Serranidae,Actinopterygii,tropical,Higher carnivore,30,normal,FALSE,FALSE
+Cephalopholis cyanostigma,rls,Serranidae,Actinopterygii,tropical,Higher carnivore,40,normal,FALSE,FALSE
+Cephalopholis miniata,rls,Serranidae,Actinopterygii,tropical,Higher carnivore,45,normal,FALSE,FALSE
+Cephalopholis urodeta,rls,Serranidae,Actinopterygii,tropical,Higher carnivore,28,normal,FALSE,FALSE
+Cephaloscyllium laticeps,rls,Scyliorhinidae,Elasmobranchii,temperate,Higher carnivore,150,normal,FALSE,FALSE
+Cetoscarus bicolor,rls,Scaridae,Actinopterygii,tropical,Excavator,90,normal,TRUE,FALSE
+Cetoscarus ocellatus,rls,Scaridae,Actinopterygii,tropical,Scraping herbivore,90,normal,FALSE,FALSE
+Chaetodon adiergastos,rls,Chaetodontidae,Actinopterygii,tropical,Corallivore,20,normal,FALSE,FALSE
+Chaetodon assarius,rls,Chaetodontidae,Actinopterygii,tropical,Benthic invertivore,13,normal,FALSE,FALSE
+Chaetodon aureofasciatus,rls,Chaetodontidae,Actinopterygii,tropical,Corallivore,12.5,normal,FALSE,FALSE
+Chaetodon auriga,rls,Chaetodontidae,Actinopterygii,tropical,Corallivore,23,normal,FALSE,FALSE
+Chaetodon baronessa,rls,Chaetodontidae,Actinopterygii,tropical,Corallivore,16,normal,FALSE,FALSE
+Chaetodon citrinellus,rls,Chaetodontidae,Actinopterygii,tropical,Corallivore,13,normal,FALSE,FALSE
+Chaetodon ephippium,rls,Chaetodontidae,Actinopterygii,tropical,Corallivore,30,normal,FALSE,FALSE
+Chaetodon flavirostris,rls,Chaetodontidae,Actinopterygii,tropical,Corallivore,20,normal,FALSE,FALSE
+Chaetodon guentheri,rls,Chaetodontidae,Actinopterygii,temperate,Corallivore,22,normal,FALSE,FALSE
+Chaetodon kleinii,rls,Chaetodontidae,Actinopterygii,tropical,Corallivore,15,normal,FALSE,FALSE
+Chaetodon lineolatus,rls,Chaetodontidae,Actinopterygii,tropical,Corallivore,30,normal,FALSE,FALSE
+Chaetodon lunula,rls,Chaetodontidae,Actinopterygii,tropical,Corallivore,20,normal,FALSE,FALSE
+Chaetodon lunulatus,rls,Chaetodontidae,Actinopterygii,tropical,Benthic invertivore,14,normal,FALSE,FALSE
+Chaetodon melannotus,rls,Chaetodontidae,Actinopterygii,tropical,Benthic invertivore,18,normal,FALSE,FALSE
+Chaetodon mertensii,rls,Chaetodontidae,Actinopterygii,tropical,Benthic invertivore,12.5,normal,FALSE,FALSE
+Chaetodon meyeri,rls,Chaetodontidae,Actinopterygii,tropical,Corallivore,20,normal,FALSE,FALSE
+Chaetodon ornatissimus,rls,Chaetodontidae,Actinopterygii,tropical,Corallivore,20,normal,FALSE,FALSE
+Chaetodon pelewensis,rls,Chaetodontidae,Actinopterygii,tropical,Corallivore,12.5,normal,FALSE,FALSE
+Chaetodon plebeius,rls,Chaetodontidae,Actinopterygii,tropical,Corallivore,15,normal,FALSE,FALSE
+Chaetodon punctatofasciatus,rls,Chaetodontidae,Actinopterygii,tropical,Benthic invertivore,12,normal,FALSE,FALSE
+Chaetodon rainfordi,rls,Chaetodontidae,Actinopterygii,tropical,Corallivore,15,normal,FALSE,FALSE
+Chaetodon speculum,rls,Chaetodontidae,Actinopterygii,tropical,Corallivore,18,normal,FALSE,FALSE
+Chaetodon tricinctus,rls,Chaetodontidae,Actinopterygii,temperate,Benthic invertivore,15,normal,FALSE,FALSE
+Chaetodon trifascialis,rls,Chaetodontidae,Actinopterygii,tropical,Corallivore,18,normal,FALSE,FALSE
+Chaetodon ulietensis,rls,Chaetodontidae,Actinopterygii,tropical,Benthic invertivore,15,normal,FALSE,FALSE
+Chaetodon unimaculatus,rls,Chaetodontidae,Actinopterygii,tropical,Benthic invertivore,20,normal,FALSE,FALSE
+Chaetodon vagabundus,rls,Chaetodontidae,Actinopterygii,tropical,Corallivore,23,normal,FALSE,FALSE
+Chaetodontoplus duboulayi,rls,Pomacanthidae,Actinopterygii,tropical,Benthic invertivore,28,normal,FALSE,FALSE
+Chaetodontoplus meredithi,rls,Pomacanthidae,Actinopterygii,tropical,Benthic invertivore,25,normal,FALSE,FALSE
+Cheilinus chlorourus,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,45,lognormal,FALSE,FALSE
+Cheilinus fasciatus,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,40,normal,FALSE,FALSE
+Cheilinus oxycephalus,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,17,normal,FALSE,FALSE
+Cheilinus trilobatus,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,45,normal,FALSE,FALSE
+Cheilinus undulatus,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,229,normal,FALSE,FALSE
+Cheilio inermis,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,50,normal,FALSE,FALSE
+Cheilodipterus artus,rls,Apogonidae,Actinopterygii,tropical,Planktivore,18.7,normal,FALSE,FALSE
+Cheilodipterus macrodon,rls,Apogonidae,Actinopteri,tropical,Planktivore,25,normal,FALSE,FALSE
+Chelmon marginalis,rls,Chaetodontidae,Actinopterygii,tropical,Corallivore,18,normal,FALSE,FALSE
+Chelmon rostratus,rls,Chaetodontidae,Actinopterygii,tropical,Benthic invertivore,20,normal,FALSE,FALSE
+Chelmonops curiosus,rls,Chaetodontidae,Actinopterygii,temperate,Benthic invertivore,26,normal,FALSE,FALSE
+Chelmonops truncatus,rls,Chaetodontidae,Actinopterygii,temperate,Benthic invertivore,22,normal,FALSE,FALSE
+Chironemus maculosus,rls,Chironemidae,Actinopterygii,temperate,Benthic invertivore,35,normal,FALSE,FALSE
+Chironemus marmoratus,rls,Chironemidae,Actinopterygii,temperate,Benthic invertivore,40,normal,FALSE,FALSE
+Chlorurus bleekeri,rls,Scaridae,Actinopterygii,tropical,Excavator,49,normal,FALSE,FALSE
+Chlorurus microrhinos,rls,Labridae,Actinopterygii,tropical,Excavator,70,normal,TRUE,TRUE
+Chlorurus sordidus,rls,Scaridae,Actinopterygii,tropical,Excavator,40,normal,FALSE,FALSE
+Choerodon cauteroma,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,36,normal,FALSE,FALSE
+Choerodon cyanodus,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,70,normal,FALSE,TRUE
+Choerodon fasciatus,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,30,normal,FALSE,FALSE
+Choerodon rubescens,rls,Labridae,Actinopterygii,temperate,Benthic invertivore,90,normal,FALSE,TRUE
+Choerodon schoenleinii,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,100,normal,FALSE,TRUE
+Choerodon vitta,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,20,normal,FALSE,FALSE
+Chromis alpha,rls,Pomacentridae,Actinopterygii,tropical,Planktivore,8.5,normal,FALSE,FALSE
+Chromis analis,rls,Pomacentridae,Actinopterygii,tropical,Planktivore,17,normal,FALSE,FALSE
+Chromis atripectoralis,rls,Pomacentridae,Actinopterygii,tropical,Planktivore,12,lognormal,FALSE,FALSE
+Chromis chrysura,rls,Pomacentridae,Actinopterygii,tropical,Planktivore,14,lognormal,FALSE,FALSE
+Chromis cinerascens,rls,Pomacentridae,Actinopterygii,tropical,Planktivore,13,normal,FALSE,FALSE
+Chromis hypsilepis,rls,Pomacentridae,Actinopterygii,temperate,Planktivore,16,normal,FALSE,FALSE
+Chromis kennensis,rls,Pomacentridae,Actinopterygii,tropical,Planktivore,16,normal,FALSE,FALSE
+Chromis klunzingeri,rls,Pomacentridae,Actinopterygii,temperate,Planktivore,12,normal,FALSE,FALSE
+Chromis nitida,rls,Pomacentridae,Actinopterygii,tropical,Planktivore,7,normal,FALSE,FALSE
+Chromis ternatensis,rls,Pomacentridae,Actinopterygii,tropical,Planktivore,10,normal,FALSE,FALSE
+Chromis weberi,rls,Pomacentridae,Actinopterygii,tropical,Planktivore,13.5,normal,FALSE,FALSE
+Chromis westaustralis,rls,Pomacentridae,Actinopterygii,temperate,Planktivore,8.5,normal,FALSE,FALSE
+Chromis xanthochira,rls,Pomacentridae,Actinopterygii,tropical,Planktivore,14,normal,FALSE,FALSE
+Chromis xanthura,rls,Pomacentridae,Actinopterygii,tropical,Planktivore,15,normal,FALSE,FALSE
+Chrysiptera biocellata,rls,Pomacentridae,Actinopterygii,tropical,Algal farmer,12.5,normal,FALSE,FALSE
+Chrysiptera caesifrons,rls,Pomacentridae,Actinopterygii,tropical,Browsing herbivore,7,normal,FALSE,FALSE
+Chrysiptera flavipinnis,rls,Pomacentridae,Actinopterygii,tropical,Omnivore,8,normal,FALSE,FALSE
+Chrysiptera notialis,rls,Pomacentridae,Actinopterygii,temperate,Omnivore,9,normal,FALSE,FALSE
+Cirrhilabrus exquisitus,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,12,lognormal,FALSE,FALSE
+Cirrhilabrus laboutei,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,12,normal,FALSE,FALSE
+Cirrhilabrus lineatus,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,12,normal,FALSE,FALSE
+Cirrhilabrus punctatus,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,13,lognormal,FALSE,FALSE
+Cirrhilabrus randalli,rls,Labridae,Actinopterygii,tropical,Planktivore,11.2,normal,FALSE,FALSE
+Cirrhilabrus scottorum,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,13,normal,FALSE,FALSE
+Cirrhilabrus temminckii,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,9.9,normal,FALSE,FALSE
+Cirrhitichthys aprinus,rls,Cirrhitidae,Actinopterygii,temperate,Benthic invertivore,13,normal,FALSE,FALSE
+Cirrhitichthys falco,rls,Cirrhitidae,Actinopterygii,tropical,Benthic invertivore,7,normal,FALSE,FALSE
+Cirrhitichthys oxycephalus,rls,Cirrhitidae,Actinopterygii,tropical,Benthic invertivore,10,normal,FALSE,FALSE
+Cirripectes alboapicalis,rls,Blenniidae,Actinopterygii,temperate,Browsing herbivore,12.3,lognormal,FALSE,FALSE
+Cirripectes chelomatus,rls,Blenniidae,Actinopterygii,tropical,Browsing herbivore,12,normal,FALSE,FALSE
+Cirripectes filamentosus,rls,Blenniidae,Actinopterygii,tropical,Browsing herbivore,9,normal,FALSE,FALSE
+Cirripectes hutchinsi,rls,Blenniidae,Actinopterygii,temperate,Browsing herbivore,10.6,normal,FALSE,FALSE
+Cirripectes stigmaticus,rls,Blenniidae,Actinopterygii,tropical,Browsing herbivore,13,normal,FALSE,FALSE
+Coris auricularis,rls,Labridae,Actinopterygii,temperate,Benthic invertivore,40,lognormal,FALSE,TRUE
+Coris aurilineata,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,14,lognormal,FALSE,FALSE
+Coris aygula,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,120,normal,FALSE,FALSE
+Coris batuensis,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,17,normal,FALSE,FALSE
+Coris bulbifrons,rls,Labridae,Actinopterygii,temperate,Benthic invertivore,95,normal,FALSE,TRUE
+Coris caudimacula,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,20,normal,FALSE,FALSE
+Coris dorsomacula,rls,Labridae,Actinopterygii,temperate,Benthic invertivore,20,normal,FALSE,FALSE
+Coris gaimard,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,40,normal,FALSE,FALSE
+Coris picta,rls,Labridae,Actinopterygii,temperate,Benthic invertivore,25,normal,FALSE,FALSE
+Coris pictoides,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,15,normal,FALSE,FALSE
+Coris sandeyeri,rls,Labridae,Actinopterygii,temperate,Benthic invertivore,25,lognormal,FALSE,FALSE
+Ctenochaetus binotatus,rls,Acanthuridae,Actinopterygii,tropical,Browsing herbivore,22,lognormal,FALSE,FALSE
+Ctenochaetus cyanocheilus,rls,Acanthuridae,Actinopterygii,tropical,Browsing herbivore,16,normal,FALSE,FALSE
+Ctenochaetus striatus,rls,Acanthuridae,Actinopterygii,tropical,Browsing herbivore,26,normal,FALSE,FALSE
+Ctenochaetus truncatus,rls,Acanthuridae,Actinopterygii,tropical,Browsing herbivore,16,normal,FALSE,FALSE
+Ctenogobiops pomastictus,rls,Gobiidae,Actinopterygii,tropical,Benthic invertivore,8,normal,FALSE,FALSE
+Dactylophora nigricans,rls,Cheilodactylidae,Actinopterygii,temperate,Benthic invertivore,120,normal,FALSE,TRUE
+Dascyllus aruanus,rls,Pomacentridae,Actinopterygii,tropical,Omnivore,10,normal,FALSE,FALSE
+Dascyllus reticulatus,rls,Pomacentridae,Actinopterygii,tropical,Planktivore,9,normal,FALSE,FALSE
+Dascyllus trimaculatus,rls,Pomacentridae,Actinopterygii,tropical,Planktivore,11,normal,FALSE,FALSE
+Decapterus macarellus,rls,Carangidae,Actinopterygii,tropical,Higher carnivore,46,normal,FALSE,FALSE
+Decapterus muroadsi,rls,Carangidae,Actinopterygii,temperate,Planktivore,50,normal,FALSE,FALSE
+Diagramma pictum,rls,Haemulidae,Actinopterygii,tropical,Benthic invertivore,90,normal,FALSE,FALSE
+Dicotylichthys punctulatus,rls,Diodontidae,Actinopterygii,temperate,Benthic invertivore,43,normal,FALSE,FALSE
+Diodon nicthemerus,rls,Diodontidae,Actinopterygii,temperate,Benthic invertivore,40,lognormal,FALSE,FALSE
+Diploprion bifasciatum,rls,Serranidae,Actinopterygii,tropical,Benthic invertivore,25,normal,FALSE,FALSE
+Diproctacanthus xanthurus,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,10,normal,FALSE,FALSE
+Dischistodus darwiniensis,rls,Pomacentridae,Actinopterygii,tropical,Algal farmer,10.3,normal,FALSE,FALSE
+Dischistodus melanotus,rls,Pomacentridae,Actinopterygii,tropical,Algal farmer,16,normal,FALSE,FALSE
+Dischistodus perspicillatus,rls,Pomacentridae,Actinopterygii,tropical,Algal farmer,18,normal,FALSE,FALSE
+Dischistodus prosopotaenia,rls,Pomacentridae,Actinopterygii,tropical,Algal farmer,17,normal,FALSE,FALSE
+Dischistodus pseudochrysopoecilus,rls,Pomacentridae,Actinopterygii,tropical,Algal farmer,18,normal,FALSE,FALSE
+Dotalabrus alleni,rls,Labridae,Actinopterygii,temperate,Benthic invertivore,10,lognormal,FALSE,FALSE
+Dotalabrus aurantiacus,rls,Labridae,Actinopterygii,temperate,Benthic invertivore,15,normal,FALSE,FALSE
+Elagatis bipinnulata,rls,Carangidae,Actinopterygii,tropical,Higher carnivore,180,normal,FALSE,FALSE
+Engraulis australis,rls,Engraulidae,Actinopterygii,temperate,Planktivore,15,normal,FALSE,FALSE
+Enoplosus armatus,rls,Enoplosidae,Actinopterygii,temperate,Benthic invertivore,50,lognormal,FALSE,TRUE
+Epibulus insidiator,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,54,normal,FALSE,FALSE
+Epinephelides armatus,rls,Serranidae,Actinopterygii,temperate,Higher carnivore,56,lognormal,FALSE,TRUE
+Epinephelus fasciatus,rls,Serranidae,Actinopterygii,tropical,Benthic invertivore,40,normal,FALSE,TRUE
+Epinephelus merra,rls,Serranidae,Actinopterygii,tropical,Higher carnivore,31,normal,FALSE,FALSE
+Epinephelus quoyanus,rls,Serranidae,Actinopterygii,tropical,Higher carnivore,40,normal,FALSE,FALSE
+Epinephelus rivulatus,rls,Serranidae,NA,tropical,Higher carnivore,46,normal,FALSE,FALSE
+Epinephelus undulatostriatus,rls,Serranidae,Actinopterygii,temperate,Higher carnivore,61,normal,FALSE,FALSE
+Eubalichthys bucephalus,rls,Monacanthidae,Actinopterygii,temperate,Browsing herbivore,50,normal,FALSE,TRUE
+Eubalichthys gunnii,rls,Monacanthidae,Actinopterygii,temperate,Browsing herbivore,60,normal,FALSE,FALSE
+Eubalichthys mosaicus,rls,Monacanthidae,Actinopterygii,temperate,Browsing herbivore,60,normal,FALSE,FALSE
+Eupetrichthys angustipes,rls,Labridae,Actinopterygii,temperate,Benthic invertivore,20,normal,FALSE,FALSE
+Fistularia commersonii,rls,Fistulariidae,Actinopterygii,tropical,Higher carnivore,160,normal,FALSE,FALSE
+Forcipiger flavissimus,rls,Chaetodontidae,Actinopterygii,tropical,Benthic invertivore,22,normal,FALSE,FALSE
+Forsterygion varium,rls,Tripterygiidae,Actinopterygii,temperate,Benthic invertivore,15,lognormal,FALSE,FALSE
+Fusigobius neophytus,rls,Gobiidae,Actinopterygii,tropical,Omnivore,7.5,normal,FALSE,FALSE
+Gerres subfasciatus,rls,Gerreidae,Actinopterygii,temperate,Benthic invertivore,22,normal,FALSE,FALSE
+Girella cyanea,rls,Kyphosidae,Actinopterygii,temperate,Browsing herbivore,76,normal,FALSE,FALSE
+Girella elevata,rls,Kyphosidae,Actinopterygii,temperate,Browsing herbivore,76,lognormal,FALSE,TRUE
+Girella tricuspidata,rls,Kyphosidae,Actinopterygii,temperate,Browsing herbivore,71,normal,FALSE,TRUE
+Girella zebra,rls,Kyphosidae,Actinopterygii,temperate,Browsing herbivore,54,normal,FALSE,TRUE
+Glaucosoma magnificum,rls,Glaucosomatidae,Actinopterygii,tropical,Benthic invertivore,32,normal,FALSE,FALSE
+Gnathanodon speciosus,rls,Carangidae,Actinopterygii,tropical,Benthic invertivore,120,normal,FALSE,FALSE
+Gnathodentex aureolineatus,rls,Lethrinidae,Actinopterygii,tropical,Benthic invertivore,30,normal,FALSE,FALSE
+Gnatholepis anjerensis,rls,Gobiidae,Actinopterygii,tropical,Omnivore,8.4,normal,FALSE,FALSE
+Gnatholepis cauerensis,rls,Gobiidae,Actinopterygii,tropical,Omnivore,9,normal,FALSE,FALSE
+Gomphosus varius,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,30,normal,FALSE,FALSE
+Gymnothorax prasinus,rls,Muraenidae,Actinopterygii,temperate,Benthic invertivore,97,normal,FALSE,FALSE
+Haletta semifasciata,rls,Odacidae,Actinopterygii,temperate,Omnivore,41,normal,FALSE,FALSE
+Halichoeres biocellatus,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,12,normal,FALSE,FALSE
+Halichoeres brownfieldi,rls,Labridae,Actinopterygii,temperate,Benthic invertivore,15,lognormal,FALSE,FALSE
+Halichoeres chloropterus,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,19,normal,FALSE,FALSE
+Halichoeres chrysus,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,12,normal,FALSE,FALSE
+Halichoeres erdmanni,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,18,lognormal,FALSE,FALSE
+Halichoeres hartzfeldii,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,18,normal,FALSE,FALSE
+Halichoeres hortulanus,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,27,normal,FALSE,FALSE
+Halichoeres margaritaceus,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,12.5,normal,FALSE,FALSE
+Halichoeres marginatus,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,18,normal,FALSE,FALSE
+Halichoeres melanochir,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,18,normal,FALSE,FALSE
+Halichoeres melanurus,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,12,normal,FALSE,FALSE
+Halichoeres miniatus,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,12,normal,FALSE,FALSE
+Halichoeres nebulosus,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,12,lognormal,FALSE,FALSE
+Halichoeres nigrescens,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,14,lognormal,FALSE,FALSE
+Halichoeres prosopeion,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,13,normal,FALSE,FALSE
+Halichoeres trimaculatus,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,27,normal,FALSE,FALSE
+Hemiglyphidodon plagiometopon,rls,Pomacentridae,Actinopterygii,tropical,Planktivore,18,normal,FALSE,FALSE
+Hemigymnus fasciatus,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,80,normal,FALSE,TRUE
+Hemigymnus melapterus,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,90,lognormal,FALSE,TRUE
+Hemitaurichthys polylepis,rls,Chaetodontidae,Actinopterygii,tropical,Planktivore,18,normal,FALSE,FALSE
+Heniochus acuminatus,rls,Chaetodontidae,Actinopterygii,tropical,Planktivore,25,normal,FALSE,FALSE
+Heniochus chrysostomus,rls,Chaetodontidae,Actinopterygii,tropical,Benthic invertivore,18,normal,FALSE,FALSE
+Heniochus varius,rls,Chaetodontidae,Actinopterygii,tropical,Benthic invertivore,19,normal,FALSE,FALSE
+Heterodontus portusjacksoni,rls,Heterodontidae,Elasmobranchii,temperate,Benthic invertivore,165,normal,FALSE,TRUE
+Heteroscarus acroptilus,rls,Odacidae,Actinopterygii,temperate,Omnivore,40,normal,FALSE,FALSE
+Hippocampus abdominalis,rls,Syngnathidae,Actinopterygii,temperate,Benthic invertivore,35,lognormal,FALSE,FALSE
+Hipposcarus longiceps,rls,Scaridae,Actinopterygii,tropical,Scraping herbivore,60,normal,FALSE,FALSE
+Hologymnosus annulatus,rls,Labridae,Actinopterygii,tropical,Higher carnivore,40,normal,FALSE,FALSE
+Hyperlophus vittatus,rls,Clupeidae,Actinopterygii,temperate,Planktivore,10,normal,FALSE,FALSE
+Hypoplectrodes nigroruber,rls,Serranidae,Actinopterygii,temperate,Benthic invertivore,30,normal,FALSE,FALSE
+Hyporhamphus australis,rls,Hemiramphidae,Actinopterygii,temperate,Omnivore,39.8,normal,FALSE,TRUE
+Hyporhamphus melanochir,rls,Hemiramphidae,Actinopterygii,temperate,Omnivore,52,normal,FALSE,TRUE
+Istigobius decoratus,rls,Gobiidae,Actinopterygii,tropical,Omnivore,13,lognormal,FALSE,FALSE
+Istigobius hoesei,rls,Gobiidae,Actinopterygii,temperate,Browsing herbivore,6,normal,FALSE,FALSE
+Istigobius rigilius,rls,Gobiidae,Actinopterygii,tropical,Omnivore,10,normal,FALSE,FALSE
+Koumansetta rainfordi,rls,Gobiidae,Actinopterygii,tropical,Omnivore,9,lognormal,FALSE,FALSE
+Kyphosus bigibbus,rls,Kyphosidae,Actinopterygii,tropical,Browsing herbivore,75,normal,FALSE,FALSE
+Kyphosus cinerascens,rls,Kyphosidae,Actinopterygii,tropical,Browsing herbivore,50,normal,FALSE,FALSE
+Kyphosus cornelii,rls,Kyphosidae,Actinopterygii,temperate,Browsing herbivore,70,normal,FALSE,TRUE
+Kyphosus sectatrix,rls,Kyphosidae,Actinopterygii,tropical,Browsing herbivore,76,normal,FALSE,FALSE
+Kyphosus sydneyanus,rls,Kyphosidae,Actinopterygii,temperate,Browsing herbivore,86,normal,FALSE,TRUE
+Kyphosus vaigiensis,rls,Kyphosidae,Actinopterygii,tropical,Browsing herbivore,90,normal,FALSE,FALSE
+Labracinus lineatus,rls,Pseudochromidae,Actinopterygii,tropical,Benthic invertivore,25,normal,FALSE,FALSE
+Labracoglossa nitida,rls,Kyphosidae,Actinopterygii,temperate,Planktivore,20,normal,FALSE,FALSE
+Labrichthys unilineatus,rls,Labridae,Actinopterygii,tropical,Corallivore,17.5,lognormal,FALSE,FALSE
+Labroides bicolor,rls,Labridae,Actinopterygii,tropical,Cleaner,15,lognormal,FALSE,FALSE
+Labroides dimidiatus,rls,Labridae,Actinopterygii,tropical,Cleaner,14,lognormal,FALSE,FALSE
+Labroides pectoralis,rls,Labridae,Actinopterygii,tropical,Cleaner,11,lognormal,FALSE,FALSE
+Labropsis australis,rls,Labridae,Actinopterygii,tropical,Corallivore,10.5,normal,FALSE,FALSE
+Latridopsis forsteri,rls,Latridae,Actinopterygii,temperate,Benthic invertivore,65,normal,FALSE,TRUE
+Latropiscis purpurissatus,rls,Aulopidae,Actinopterygii,temperate,Higher carnivore,69,normal,FALSE,FALSE
+Leptatherina presbyteroides,rls,Atherinidae,Actinopterygii,temperate,Browsing herbivore,11,normal,FALSE,FALSE
+Lethrinus atkinsoni,rls,Lethrinidae,Actinopterygii,tropical,Benthic invertivore,50,normal,FALSE,FALSE
+Lethrinus erythropterus,rls,Lethrinidae,Actinopterygii,tropical,Benthic invertivore,50,normal,FALSE,FALSE
+Lethrinus laticaudis,rls,Lethrinidae,Actinopterygii,tropical,Higher carnivore,56,normal,FALSE,FALSE
+Lethrinus lentjan,rls,Lethrinidae,Actinopterygii,tropical,Higher carnivore,52,normal,FALSE,FALSE
+Lethrinus nebulosus,rls,Lethrinidae,Actinopterygii,tropical,Benthic invertivore,87,normal,FALSE,TRUE
+Lethrinus obsoletus,rls,Lethrinidae,Actinopterygii,tropical,Benthic invertivore,60,normal,TRUE,FALSE
+Lethrinus olivaceus,rls,Lethrinidae,Actinopterygii,tropical,Higher carnivore,100,normal,FALSE,FALSE
+Lotella rhacina,rls,Moridae,Actinopterygii,temperate,Higher carnivore,50,normal,FALSE,FALSE
+Lutjanus argentimaculatus,rls,Lutjanidae,Actinopterygii,tropical,Higher carnivore,150,normal,FALSE,TRUE
+Lutjanus bohar,rls,Lutjanidae,Actinopterygii,tropical,Higher carnivore,90,normal,FALSE,TRUE
+Lutjanus carponotatus,rls,Lutjanidae,Actinopterygii,tropical,Higher carnivore,40,normal,FALSE,TRUE
+Lutjanus decussatus,rls,Lutjanidae,Actinopterygii,tropical,Higher carnivore,35,normal,FALSE,FALSE
+Lutjanus erythropterus,rls,Lutjanidae,Actinopterygii,tropical,Higher carnivore,81.6,normal,FALSE,TRUE
+Lutjanus fulviflamma,rls,Lutjanidae,Actinopterygii,tropical,Higher carnivore,35,normal,FALSE,TRUE
+Lutjanus fulvus,rls,Lutjanidae,Actinopterygii,tropical,Higher carnivore,40,normal,FALSE,FALSE
+Lutjanus gibbus,rls,Lutjanidae,Actinopterygii,tropical,Higher carnivore,50,normal,FALSE,FALSE
+Lutjanus kasmira,rls,Lutjanidae,Actinopterygii,tropical,Benthic invertivore,40,normal,FALSE,TRUE
+Lutjanus lemniscatus,rls,Lutjanidae,Actinopterygii,tropical,Higher carnivore,65,normal,FALSE,FALSE
+Lutjanus lutjanus,rls,Lutjanidae,Actinopterygii,tropical,Higher carnivore,35,normal,FALSE,FALSE
+Lutjanus monostigma,rls,Lutjanidae,Actinopterygii,tropical,Higher carnivore,60,normal,FALSE,FALSE
+Lutjanus quinquelineatus,rls,Lutjanidae,Actinopterygii,tropical,Benthic invertivore,38,normal,FALSE,TRUE
+Lutjanus russellii,rls,Lutjanidae,Actinopterygii,tropical,Higher carnivore,50,normal,FALSE,FALSE
+Lutjanus vitta,rls,Lutjanidae,Actinopterygii,tropical,Higher carnivore,40,normal,FALSE,TRUE
+Macolor macularis,rls,Lutjanidae,Actinopterygii,tropical,Benthic invertivore,60,normal,FALSE,FALSE
+Macolor niger,rls,Lutjanidae,Actinopterygii,tropical,Benthic invertivore,75,normal,FALSE,FALSE
+Macropharyngodon choati,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,7.6,normal,FALSE,FALSE
+Macropharyngodon meleagris,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,15,normal,FALSE,FALSE
+Macropharyngodon negrosensis,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,12,normal,FALSE,FALSE
+Macropharyngodon ornatus,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,13,lognormal,FALSE,FALSE
+Mecaenichthys immaculatus,rls,Pomacentridae,Actinopterygii,temperate,Planktivore,15,normal,FALSE,FALSE
+Meiacanthus atrodorsalis,rls,Blenniidae,Actinopterygii,tropical,Benthic invertivore,11,lognormal,FALSE,FALSE
+Meiacanthus grammistes,rls,Blenniidae,Actinopterygii,tropical,Benthic invertivore,11,lognormal,FALSE,FALSE
+Meiacanthus lineatus,rls,Blenniidae,Actinopterygii,tropical,Benthic invertivore,9.5,normal,FALSE,FALSE
+Meiacanthus phaeus,rls,Blenniidae,Actinopterygii,tropical,Browsing herbivore,8.458333333,lognormal,FALSE,FALSE
+Melichthys niger,rls,Balistidae,Actinopterygii,tropical,Planktivore,50,lognormal,FALSE,FALSE
+Melichthys vidua,rls,Balistidae,Actinopterygii,tropical,Benthic invertivore,40,normal,FALSE,FALSE
+Mendosoma lineatum,rls,Latridae,Actinopterygii,temperate,Benthic invertivore,40,normal,FALSE,FALSE
+Meuschenia australis,rls,Monacanthidae,Actinopterygii,temperate,Browsing herbivore,32,normal,TRUE,TRUE
+Meuschenia flavolineata,rls,Monacanthidae,Actinopterygii,temperate,Browsing herbivore,30,normal,FALSE,TRUE
+Meuschenia freycineti,rls,Monacanthidae,Actinopterygii,temperate,Browsing herbivore,60,normal,FALSE,TRUE
+Meuschenia galii,rls,Monacanthidae,Actinopterygii,temperate,Browsing herbivore,35,normal,FALSE,TRUE
+Meuschenia hippocrepis,rls,Monacanthidae,Actinopterygii,temperate,Browsing herbivore,51,normal,FALSE,TRUE
+Meuschenia scaber,rls,Monacanthidae,Actinopterygii,temperate,Benthic invertivore,31,normal,FALSE,FALSE
+Meuschenia trachylepis,rls,Monacanthidae,Actinopterygii,temperate,Browsing herbivore,40,normal,FALSE,TRUE
+Meuschenia venusta,rls,Monacanthidae,Actinopterygii,temperate,Browsing herbivore,21,normal,FALSE,FALSE
+Microcanthus strigatus,rls,Kyphosidae,Actinopterygii,temperate,Planktivore,16,normal,FALSE,FALSE
+Monacanthus chinensis,rls,Monacanthidae,Actinopterygii,tropical,Browsing herbivore,38,lognormal,FALSE,FALSE
+Monodactylus argenteus,rls,Monodactylidae,Actinopterygii,temperate,Benthic invertivore,27,normal,FALSE,FALSE
+Monotaxis grandoculis,rls,Lethrinidae,Actinopterygii,tropical,Benthic invertivore,60,normal,FALSE,FALSE
+Monotaxis heterodon,rls,Lethrinidae,Actinopterygii,tropical,Benthic invertivore,60,normal,FALSE,FALSE
+Mugil cephalus,rls,Mugilidae,Actinopterygii,temperate,Omnivore,100,normal,FALSE,TRUE
+Mulloidichthys flavolineatus,rls,Mullidae,Actinopterygii,tropical,Benthic invertivore,43,normal,FALSE,FALSE
+Mulloidichthys vanicolensis,rls,Mullidae,Actinopterygii,tropical,Benthic invertivore,38,normal,FALSE,FALSE
+Myripristis berndti,rls,Holocentridae,Actinopterygii,tropical,Planktivore,30,normal,FALSE,FALSE
+Myripristis hexagona,rls,Holocentridae,Actinopterygii,tropical,Planktivore,30,normal,FALSE,FALSE
+Myripristis kuntee,rls,Holocentridae,Actinopterygii,tropical,Planktivore,26,normal,FALSE,FALSE
+Myripristis murdjan,rls,Holocentridae,Actinopterygii,tropical,Planktivore,60,normal,FALSE,FALSE
+Myripristis violacea,rls,Holocentridae,Actinopterygii,tropical,Planktivore,35,normal,FALSE,FALSE
+Myripristis vittata,rls,Holocentridae,Actinopterygii,tropical,Planktivore,25,normal,FALSE,FALSE
+Naso annulatus,rls,Acanthuridae,Actinopterygii,tropical,Browsing herbivore,100,normal,FALSE,FALSE
+Naso brachycentron,rls,Acanthuridae,Actinopterygii,tropical,Omnivore,90,normal,FALSE,FALSE
+Naso brevirostris,rls,Acanthuridae,Actinopterygii,tropical,Omnivore,60,normal,FALSE,FALSE
+Naso caesius,rls,Acanthuridae,Actinopterygii,tropical,Omnivore,45.6,normal,FALSE,FALSE
+Naso hexacanthus,rls,Acanthuridae,Actinopterygii,tropical,Planktivore,75,normal,FALSE,FALSE
+Naso lituratus,rls,Acanthuridae,Actinopterygii,tropical,Browsing herbivore,46,normal,FALSE,FALSE
+Naso tonganus,rls,Acanthuridae,Actinopterygii,tropical,Browsing herbivore,60,normal,FALSE,FALSE
+Naso unicornis,rls,Acanthuridae,Actinopterygii,tropical,Browsing herbivore,70,normal,FALSE,FALSE
+Naso vlamingii,rls,Acanthuridae,Actinopterygii,tropical,Omnivore,60,normal,FALSE,FALSE
+Neatypus obliquus,rls,Kyphosidae,Actinopterygii,temperate,Browsing herbivore,24,lognormal,FALSE,FALSE
+Nelusetta ayraud,rls,Monacanthidae,Actinopterygii,temperate,Browsing herbivore,71,normal,FALSE,TRUE
+Nemadactylus douglasii,rls,Cheilodactylidae,Actinopterygii,temperate,Benthic invertivore,74,lognormal,FALSE,TRUE
+Nemadactylus macropterus,rls,Cheilodactylidae,Actinopterygii,temperate,Benthic invertivore,70,normal,FALSE,TRUE
+Nemadactylus valenciennesi,rls,Cheilodactylidae,Actinopterygii,temperate,Benthic invertivore,90,normal,FALSE,TRUE
+Nemateleotris magnifica,rls,Microdesmidae,Actinopterygii,tropical,Planktivore,9,normal,FALSE,FALSE
+Neoglyphidodon melas,rls,Pomacentridae,Actinopterygii,tropical,Browsing herbivore,18,normal,FALSE,FALSE
+Neoglyphidodon nigroris,rls,Pomacentridae,Actinopterygii,tropical,Algal farmer,13,normal,FALSE,FALSE
+Neoglyphidodon polyacanthus,rls,Pomacentridae,Actinopterygii,temperate,Omnivore,12,normal,FALSE,FALSE
+Neoniphon sammara,rls,Holocentridae,Actinopterygii,tropical,Benthic invertivore,32,normal,FALSE,FALSE
+Neoodax balteatus,rls,Odacidae,Actinopterygii,temperate,Omnivore,14,normal,FALSE,FALSE
+Neopomacentrus bankieri,rls,Pomacentridae,Actinopterygii,tropical,Planktivore,8,normal,FALSE,FALSE
+Notocirrhitus splendens,rls,Cirrhitidae,Actinopterygii,temperate,Benthic invertivore,20,normal,FALSE,FALSE
+Notolabrus fucicola,rls,Labridae,Actinopterygii,temperate,Benthic invertivore,40,normal,FALSE,TRUE
+Notolabrus gymnogenis,rls,Labridae,Actinopterygii,temperate,Benthic invertivore,49,lognormal,FALSE,TRUE
+Notolabrus inscriptus,rls,Labridae,Actinopterygii,temperate,Benthic invertivore,50,normal,FALSE,FALSE
+Notolabrus parilus,rls,Labridae,Actinopterygii,temperate,Benthic invertivore,49,lognormal,FALSE,TRUE
+Notolabrus tetricus,rls,Labridae,Actinopterygii,temperate,Benthic invertivore,50,normal,FALSE,TRUE
+Odonus niger,rls,Balistidae,Actinopterygii,tropical,Planktivore,50,normal,FALSE,FALSE
+Olisthops cyanomelas,rls,Odacidae,Actinopterygii,temperate,Browsing herbivore,55,normal,FALSE,TRUE
+Ophthalmolepis lineolatus,rls,Labridae,Actinopterygii,temperate,Benthic invertivore,41,normal,FALSE,TRUE
+Optivus agastos,rls,Trachichthyidae,Actinopterygii,temperate,Benthic invertivore,12,normal,FALSE,FALSE
+Orectolobus halei,rls,Orectolobidae,Elasmobranchii,temperate,Higher carnivore,300,normal,FALSE,FALSE
+Orectolobus maculatus,rls,Orectolobidae,Elasmobranchii,temperate,Higher carnivore,320,normal,FALSE,FALSE
+Orectolobus ornatus,rls,Orectolobidae,Elasmobranchii,temperate,Higher carnivore,290,lognormal,FALSE,FALSE
+Ostorhinchus compressus,rls,Apogonidae,Actinopterygii,tropical,Benthic invertivore,12,normal,FALSE,FALSE
+Ostorhinchus nigrofasciatus,rls,Apogonidae,Actinopterygii,tropical,Benthic invertivore,11,normal,FALSE,FALSE
+Ostorhinchus norfolcensis,rls,Apogonidae,Actinopterygii,temperate,Benthic invertivore,15,normal,FALSE,FALSE
+Ostorhinchus rueppellii,rls,Apogonidae,Actinopterygii,tropical,Benthic invertivore,12,normal,FALSE,FALSE
+Ostorhinchus wassinki,rls,Apogonidae,Actinopterygii,tropical,Benthic invertivore,7,normal,FALSE,FALSE
+Ostracion cubicus,rls,Ostraciidae,Actinopterygii,tropical,Benthic invertivore,45,normal,FALSE,FALSE
+Ostracion meleagris,rls,Ostraciidae,Actinopterygii,tropical,Benthic invertivore,25,normal,FALSE,FALSE
+Oxycheilinus bimaculatus,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,15,lognormal,FALSE,FALSE
+Oxycheilinus digramma,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,40,normal,FALSE,FALSE
+Oxycheilinus unifasciatus,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,46,lognormal,FALSE,FALSE
+Oxymonacanthus longirostris,rls,Monacanthidae,Actinopterygii,tropical,Corallivore,12,lognormal,FALSE,FALSE
+Parablennius serratolineatus,rls,Blenniidae,Actinopterygii,temperate,Browsing herbivore,12.5,normal,FALSE,FALSE
+Parablennius tasmanianus,rls,Blenniidae,Actinopterygii,temperate,Browsing herbivore,13,normal,FALSE,FALSE
+Paracaesio xanthura,rls,Lutjanidae,Actinopterygii,tropical,Planktivore,50,normal,FALSE,FALSE
+Paracanthurus hepatus,rls,Acanthuridae,Actinopterygii,tropical,Omnivore,31,normal,FALSE,FALSE
+Paracirrhites arcatus,rls,Cirrhitidae,Actinopterygii,tropical,Benthic invertivore,20,lognormal,FALSE,FALSE
+Paracirrhites forsteri,rls,Cirrhitidae,Actinopterygii,tropical,Higher carnivore,22,lognormal,FALSE,FALSE
+Paraluteres prionurus,rls,Monacanthidae,Actinopterygii,tropical,Omnivore,11,normal,FALSE,FALSE
+Parapercis australis,rls,Pinguipedidae,Actinopterygii,tropical,Benthic invertivore,24,normal,FALSE,FALSE
+Parapercis clathrata,rls,Pinguipedidae,Actinopterygii,tropical,Benthic invertivore,24,normal,FALSE,FALSE
+Parapercis haackei,rls,Pinguipedidae,Actinopterygii,temperate,Benthic invertivore,11,normal,FALSE,FALSE
+Parapercis queenslandica,rls,Pinguipedidae,Actinopterygii,tropical,Benthic invertivore,29,normal,FALSE,FALSE
+Parapercis ramsayi,rls,Pinguipedidae,Actinopterygii,temperate,Benthic invertivore,20,normal,FALSE,FALSE
+Paraplesiops meleagris,rls,Plesiopidae,Actinopterygii,temperate,Benthic invertivore,36,normal,FALSE,FALSE
+Parapriacanthus elongatus,rls,Pempheridae,Actinopterygii,temperate,Benthic invertivore,14,lognormal,FALSE,FALSE
+Parequula melbournensis,rls,Gerreidae,Actinopterygii,temperate,Benthic invertivore,22,normal,FALSE,FALSE
+Parma mccullochi,rls,Pomacentridae,Actinopterygii,temperate,Browsing herbivore,30,normal,FALSE,FALSE
+Parma microlepis,rls,Pomacentridae,Actinopterygii,temperate,Browsing herbivore,20,normal,FALSE,FALSE
+Parma occidentalis,rls,Pomacentridae,Actinopterygii,temperate,Browsing herbivore,30,normal,FALSE,FALSE
+Parma oligolepis,rls,Pomacentridae,Actinopterygii,temperate,Algal farmer,20,normal,FALSE,FALSE
+Parma polylepis,rls,Pomacentridae,Actinopterygii,temperate,Algal farmer,21,normal,FALSE,FALSE
+Parma unifasciata,rls,Pomacentridae,Actinopterygii,temperate,Browsing herbivore,20,normal,FALSE,FALSE
+Parma victoriae,rls,Pomacentridae,Actinopterygii,temperate,Browsing herbivore,25,normal,FALSE,FALSE
+Parupeneus barberinoides,rls,Mullidae,Actinopterygii,tropical,Benthic invertivore,30,lognormal,FALSE,TRUE
+Parupeneus barberinus,rls,Mullidae,Actinopterygii,tropical,Benthic invertivore,60,normal,TRUE,FALSE
+Parupeneus chrysopleuron,rls,Mullidae,Actinopterygii,tropical,Benthic invertivore,55,normal,FALSE,FALSE
+Parupeneus ciliatus,rls,Mullidae,Actinopterygii,tropical,Benthic invertivore,38,normal,TRUE,FALSE
+Parupeneus crassilabris,rls,Mullidae,Actinopterygii,tropical,Benthic invertivore,35,normal,TRUE,TRUE
+Parupeneus cyclostomus,rls,Mullidae,Actinopterygii,tropical,Higher carnivore,50,lognormal,FALSE,FALSE
+Parupeneus indicus,rls,Mullidae,Actinopterygii,tropical,Benthic invertivore,45,normal,FALSE,FALSE
+Parupeneus multifasciatus,rls,Mullidae,Actinopterygii,tropical,Benthic invertivore,35,lognormal,FALSE,TRUE
+Parupeneus pleurostigma,rls,Mullidae,Actinopterygii,tropical,Benthic invertivore,33,normal,FALSE,FALSE
+Parupeneus spilurus,rls,Mullidae,Actinopterygii,temperate,Benthic invertivore,47,lognormal,FALSE,TRUE
+Pelates octolineatus,rls,Terapontidae,Actinopterygii,temperate,Benthic invertivore,28,normal,FALSE,FALSE
+Pelates quadrilineatus,rls,Terapontidae,Actinopterygii,temperate,Benthic invertivore,30,normal,FALSE,FALSE
+Pelates sexlineatus,rls,Terapontidae,Actinopterygii,temperate,Benthic invertivore,20,normal,FALSE,FALSE
+Pelsartia humeralis,rls,Terapontidae,Actinopterygii,temperate,Benthic invertivore,38,normal,FALSE,FALSE
+Pempheris affinis,rls,Pempheridae,Actinopterygii,temperate,Benthic invertivore,17,normal,FALSE,FALSE
+Pempheris analis,rls,Pempheridae,Actinopterygii,tropical,Benthic invertivore,20,normal,FALSE,FALSE
+Pempheris compressa,rls,Pempheridae,Actinopterygii,temperate,Benthic invertivore,20,normal,FALSE,FALSE
+Pempheris klunzingeri,rls,Pempheridae,Actinopterygii,temperate,Benthic invertivore,21,normal,FALSE,FALSE
+Pempheris molucca,rls,Pempheridae,Actinopterygii,tropical,Benthic invertivore,15,normal,FALSE,FALSE
+Pempheris multiradiata,rls,Pempheridae,Actinopterygii,temperate,Benthic invertivore,28,lognormal,FALSE,FALSE
+Pempheris ornata,rls,Pempheridae,Actinopterygii,temperate,Benthic invertivore,7.5,normal,FALSE,FALSE
+Pempheris oualensis,rls,Pempheridae,Actinopterygii,tropical,Benthic invertivore,20,normal,FALSE,FALSE
+Pempheris schwenkii,rls,Pempheridae,Actinopterygii,tropical,Benthic invertivore,15,normal,FALSE,FALSE
+Pentaceropsis recurvirostris,rls,Pentacerotidae,Actinopterygii,temperate,Benthic invertivore,61,normal,FALSE,FALSE
+Pentapodus paradiseus,rls,Nemipteridae,Actinopterygii,tropical,Benthic invertivore,30,lognormal,FALSE,FALSE
+Pentapodus porosus,rls,Nemipteridae,Actinopterygii,tropical,Benthic invertivore,27,normal,FALSE,FALSE
+Pentapodus vitta,rls,Nemipteridae,Actinopterygii,tropical,Benthic invertivore,31,normal,FALSE,FALSE
+Pervagor janthinosoma,rls,Monacanthidae,Actinopterygii,tropical,Omnivore,13,lognormal,FALSE,FALSE
+Pictichromis paccagnellae,rls,Pseudochromidae,Actinopterygii,tropical,Benthic invertivore,7,normal,FALSE,FALSE
+Pictilabrus laticlavius,rls,Labridae,Actinopterygii,temperate,Benthic invertivore,30,normal,FALSE,TRUE
+Pictilabrus viridis,rls,Labridae,Actinopterygii,temperate,Benthic invertivore,14,lognormal,FALSE,FALSE
+Plagiotremus laudandus,rls,Blenniidae,Actinopterygii,tropical,Cleaner,8,normal,FALSE,FALSE
+Plagiotremus rhinorhynchos,rls,Blenniidae,Actinopterygii,tropical,Cleaner,12,lognormal,FALSE,FALSE
+Plagiotremus tapeinosoma,rls,Blenniidae,Actinopterygii,tropical,Cleaner,14,lognormal,FALSE,FALSE
+Platax teira,rls,Ephippidae,Actinopterygii,tropical,Benthic invertivore,70,normal,FALSE,FALSE
+Plectorhinchus chaetodonoides,rls,Haemulidae,Actinopterygii,tropical,Benthic invertivore,72,normal,FALSE,FALSE
+Plectorhinchus flavomaculatus,rls,Haemulidae,Actinopterygii,tropical,Benthic invertivore,60,normal,FALSE,TRUE
+Plectorhinchus multivittatus,rls,Haemulidae,Actinopterygii,tropical,Benthic invertivore,50,normal,FALSE,FALSE
+Plectorhinchus picus,rls,Haemulidae,Actinopterygii,tropical,Benthic invertivore,84,normal,FALSE,FALSE
+Plectroglyphidodon dickii,rls,Pomacentridae,Actinopterygii,tropical,Benthic invertivore,11,lognormal,FALSE,FALSE
+Plectroglyphidodon johnstonianus,rls,Pomacentridae,Actinopterygii,tropical,Benthic invertivore,14,lognormal,FALSE,FALSE
+Plectropomus laevis,rls,Serranidae,Actinopterygii,tropical,Higher carnivore,125,normal,FALSE,TRUE
+Plectropomus leopardus,rls,Serranidae,Actinopterygii,tropical,Higher carnivore,120,normal,TRUE,TRUE
+Plectropomus maculatus,rls,Serranidae,Actinopterygii,tropical,Higher carnivore,100,normal,FALSE,TRUE
+Plotosus lineatus,rls,Plotosidae,Actinopterygii,tropical,Benthic invertivore,35,lognormal,FALSE,FALSE
+Pomacanthus imperator,rls,Pomacanthidae,Actinopterygii,tropical,Omnivore,40,normal,FALSE,FALSE
+Pomacanthus semicirculatus,rls,Pomacanthidae,Actinopterygii,tropical,Omnivore,40,normal,FALSE,FALSE
+Pomacanthus sexstriatus,rls,Pomacanthidae,Actinopterygii,tropical,Benthic invertivore,46,normal,FALSE,FALSE
+Pomacentrus adelus,rls,Pomacentridae,Actinopterygii,tropical,Omnivore,8.5,normal,FALSE,FALSE
+Pomacentrus alexanderae,rls,Pomacentridae,Actinopterygii,tropical,Omnivore,9,normal,FALSE,FALSE
+Pomacentrus amboinensis,rls,Pomacentridae,Actinopterygii,tropical,Omnivore,9,normal,FALSE,FALSE
+Pomacentrus australis,rls,Pomacentridae,Actinopterygii,tropical,Omnivore,8,normal,FALSE,FALSE
+Pomacentrus bankanensis,rls,Pomacentridae,Actinopterygii,tropical,Omnivore,9,normal,FALSE,FALSE
+Pomacentrus brachialis,rls,Pomacentridae,Actinopterygii,tropical,Omnivore,8,normal,FALSE,FALSE
+Pomacentrus chrysurus,rls,Pomacentridae,Actinopterygii,tropical,Omnivore,9,normal,FALSE,FALSE
+Pomacentrus coelestis,rls,Pomacentridae,Actinopterygii,tropical,Omnivore,9,lognormal,FALSE,FALSE
+Pomacentrus grammorhynchus,rls,Pomacentridae,Actinopterygii,tropical,Algal farmer,9,normal,FALSE,FALSE
+Pomacentrus imitator,rls,Pomacentridae,Actinopterygii,tropical,Omnivore,11,lognormal,FALSE,FALSE
+Pomacentrus lepidogenys,rls,Pomacentridae,Actinopterygii,tropical,Omnivore,9,lognormal,FALSE,FALSE
+Pomacentrus milleri,rls,Pomacentridae,Actinopterygii,tropical,Omnivore,7.5,normal,FALSE,FALSE
+Pomacentrus moluccensis,rls,Pomacentridae,Actinopterygii,tropical,Omnivore,9,normal,FALSE,FALSE
+Pomacentrus nagasakiensis,rls,Pomacentridae,Actinopterygii,tropical,Omnivore,10,normal,FALSE,FALSE
+Pomacentrus nigromanus,rls,Pomacentridae,Actinopterygii,tropical,Browsing herbivore,9,normal,FALSE,FALSE
+Pomacentrus philippinus,rls,Pomacentridae,Actinopterygii,tropical,Omnivore,10,normal,FALSE,FALSE
+Pomacentrus reidi,rls,Pomacentridae,Actinopterygii,tropical,Omnivore,9,normal,FALSE,FALSE
+Pomacentrus vaiuli,rls,Pomacentridae,Actinopterygii,tropical,Omnivore,10,normal,FALSE,FALSE
+Pomacentrus wardi,rls,Pomacentridae,Actinopterygii,tropical,Algal farmer,8,normal,FALSE,FALSE
+Pomatomus saltatrix,rls,Pomatomidae,Actinopterygii,temperate,Higher carnivore,130,normal,FALSE,TRUE
+Priacanthus blochii,rls,Priacanthidae,Actinopterygii,tropical,Higher carnivore,35,normal,FALSE,FALSE
+Priacanthus hamrur,rls,Priacanthidae,Actinopterygii,tropical,Benthic invertivore,45,normal,FALSE,FALSE
+Prionurus maculatus,rls,Acanthuridae,Actinopterygii,temperate,Browsing herbivore,45,normal,FALSE,TRUE
+Prionurus microlepidotus,rls,Acanthuridae,Actinopterygii,temperate,Browsing herbivore,70,normal,FALSE,TRUE
+Psammoperca waigiensis,rls,Latidae,Actinopterygii,tropical,Benthic invertivore,47,normal,FALSE,TRUE
+Pseudanthias dispar,rls,Serranidae,Actinopterygii,tropical,Planktivore,9.5,normal,FALSE,FALSE
+Pseudanthias fasciatus,rls,Serranidae,Actinopterygii,temperate,Planktivore,13,normal,FALSE,FALSE
+Pseudanthias hypselosoma,rls,Serranidae,Actinopterygii,tropical,Planktivore,19,normal,FALSE,FALSE
+Pseudanthias pascalus,rls,Serranidae,Actinopterygii,tropical,Planktivore,20,normal,FALSE,FALSE
+Pseudanthias pictilis,rls,Serranidae,Actinopterygii,temperate,Planktivore,13.5,normal,FALSE,FALSE
+Pseudanthias rubrizonatus,rls,Serranidae,Actinopterygii,temperate,Planktivore,12,normal,FALSE,FALSE
+Pseudanthias squamipinnis,rls,Serranidae,Actinopterygii,tropical,Planktivore,15,normal,FALSE,FALSE
+Pseudanthias tuka,rls,Serranidae,Actinopterygii,tropical,Planktivore,12,lognormal,FALSE,FALSE
+Pseudocaranx georgianus,rls,Carangidae,Actinopterygii,temperate,Benthic invertivore,55,normal,FALSE,TRUE
+Pseudocaranx wrighti,rls,Carangidae,Actinopterygii,temperate,Benthic invertivore,70,normal,FALSE,TRUE
+Pseudocheilinus evanidus,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,8,normal,FALSE,FALSE
+Pseudocheilinus hexataenia,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,10,lognormal,FALSE,FALSE
+Pseudocheilinus octotaenia,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,14,lognormal,FALSE,FALSE
+Pseudochromis fuscus,rls,Pseudochromidae,Actinopterygii,tropical,Benthic invertivore,10,normal,FALSE,FALSE
+Pseudocoris yamashiroi,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,16,normal,FALSE,FALSE
+Pseudogoniistius nigripes,rls,Cheilodactylidae,Actinopterygii,temperate,Benthic invertivore,41,normal,FALSE,FALSE
+Pseudolabrus biserialis,rls,Labridae,Actinopterygii,temperate,Benthic invertivore,25,normal,FALSE,FALSE
+Pseudolabrus guentheri,rls,Labridae,Actinopterygii,temperate,Benthic invertivore,18,normal,FALSE,TRUE
+Pseudolabrus luculentus,rls,Labridae,Actinopterygii,temperate,Benthic invertivore,25,normal,FALSE,FALSE
+Pseudolabrus rubicundus,rls,Labridae,Actinopterygii,temperate,Benthic invertivore,28,normal,FALSE,FALSE
+Pseudophycis bachus,rls,Moridae,Actinopterygii,temperate,Higher carnivore,90,normal,FALSE,FALSE
+Ptereleotris microlepis,rls,Microdesmidae,Actinopterygii,tropical,Planktivore,13,normal,FALSE,FALSE
+Ptereleotris monoptera,rls,Microdesmidae,Actinopterygii,temperate,Planktivore,12,normal,FALSE,FALSE
+Ptereleotris zebra,rls,Microdesmidae,Actinopterygii,tropical,Planktivore,12,normal,FALSE,FALSE
+Pterocaesio digramma,rls,Caesionidae,Actinopterygii,tropical,Planktivore,30,normal,FALSE,FALSE
+Pterocaesio marri,rls,Caesionidae,Actinopterygii,tropical,Planktivore,35,normal,FALSE,FALSE
+Pterocaesio pisang,rls,Caesionidae,Actinopterygii,tropical,Planktivore,21,normal,FALSE,FALSE
+Pterocaesio tile,rls,Caesionidae,Actinopterygii,tropical,Planktivore,30,normal,FALSE,FALSE
+Pterocaesio trilineata,rls,Caesionidae,Actinopterygii,tropical,Planktivore,20,normal,FALSE,FALSE
+Pygoplites diacanthus,rls,Pomacanthidae,Actinopterygii,tropical,Benthic invertivore,25,normal,FALSE,FALSE
+Rhabdosargus sarba,rls,Sparidae,Actinopterygii,temperate,Benthic invertivore,80,lognormal,FALSE,TRUE
+Salarias fasciatus,rls,Blenniidae,Actinopterygii,tropical,Browsing herbivore,14,lognormal,FALSE,FALSE
+Sarda australis,rls,Scombridae,Actinopterygii,temperate,Higher carnivore,180,normal,FALSE,TRUE
+Sardinops neopilchardus,rls,Clupeidae,Actinopterygii,temperate,Planktivore,25,normal,FALSE,FALSE
+Sargocentron caudimaculatum,rls,Holocentridae,Actinopterygii,tropical,Benthic invertivore,25,normal,FALSE,FALSE
+Sargocentron rubrum,rls,Holocentridae,Actinopterygii,tropical,Benthic invertivore,32,normal,FALSE,FALSE
+Sargocentron spiniferum,rls,Holocentridae,Actinopterygii,tropical,Benthic invertivore,51,normal,FALSE,FALSE
+Scarus altipinnis,rls,Scaridae,Actinopterygii,tropical,Scraping herbivore,60,normal,FALSE,FALSE
+Scarus chameleon,rls,Scaridae,Actinopterygii,tropical,Scraping herbivore,31,normal,FALSE,FALSE
+Scarus dimidiatus,rls,Scaridae,Actinopterygii,tropical,Scraping herbivore,40,normal,FALSE,FALSE
+Scarus flavipectoralis,rls,Scaridae,Actinopterygii,tropical,Scraping herbivore,40,normal,FALSE,FALSE
+Scarus forsteni,rls,Scaridae,Actinopterygii,tropical,Scraping herbivore,55,normal,FALSE,FALSE
+Scarus frenatus,rls,Scaridae,Actinopterygii,tropical,Scraping herbivore,47,normal,FALSE,FALSE
+Scarus ghobban,rls,Scaridae,Actinopterygii,tropical,Scraping herbivore,90,lognormal,FALSE,FALSE
+Scarus globiceps,rls,Scaridae,Actinopterygii,tropical,Scraping herbivore,27,normal,FALSE,FALSE
+Scarus longipinnis,rls,Scaridae,Actinopterygii,tropical,Scraping herbivore,40,lognormal,FALSE,FALSE
+Scarus niger,rls,Scaridae,Actinopterygii,tropical,Scraping herbivore,40,normal,FALSE,FALSE
+Scarus oviceps,rls,Scaridae,Actinopterygii,tropical,Scraping herbivore,35,normal,FALSE,FALSE
+Scarus prasiognathos,rls,Scaridae,Actinopterygii,tropical,Scraping herbivore,70,normal,TRUE,FALSE
+Scarus psittacus,rls,Scaridae,Actinopterygii,tropical,Scraping herbivore,30,normal,FALSE,FALSE
+Scarus rivulatus,rls,Scaridae,Actinopterygii,tropical,Scraping herbivore,40,normal,FALSE,FALSE
+Scarus rubroviolaceus,rls,Scaridae,Actinopterygii,tropical,Scraping herbivore,70,normal,FALSE,FALSE
+Scarus schlegeli,rls,Scaridae,Actinopterygii,tropical,Scraping herbivore,40,normal,FALSE,FALSE
+Schuettea scalaripinnis,rls,Monodactylidae,Actinopterygii,temperate,Planktivore,20,normal,FALSE,FALSE
+Schuettea woodwardi,rls,Monodactylidae,Actinopterygii,temperate,Planktivore,24,normal,FALSE,FALSE
+Scobinichthys granulatus,rls,Monacanthidae,Actinopterygii,temperate,Browsing herbivore,30,normal,FALSE,TRUE
+Scolopsis bilineata,rls,Nemipteridae,Actinopterygii,tropical,Benthic invertivore,23,normal,FALSE,FALSE
+Scolopsis lineata,rls,Nemipteridae,Actinopterygii,tropical,Benthic invertivore,23,normal,FALSE,FALSE
+Scolopsis margaritifer,rls,Nemipteridae,Actinopterygii,tropical,Benthic invertivore,28,normal,FALSE,FALSE
+Scolopsis monogramma,rls,Nemipteridae,Actinopterygii,tropical,Benthic invertivore,31,normal,FALSE,FALSE
+Scomber australasicus,rls,Scombridae,Actinopterygii,temperate,Higher carnivore,50,normal,FALSE,TRUE
+Scomberoides lysan,rls,Carangidae,Actinopterygii,tropical,Higher carnivore,110,normal,FALSE,FALSE
+Scorpaena cardinalis,rls,Scorpaenidae,Actinopterygii,temperate,Benthic invertivore,40,normal,FALSE,FALSE
+Scorpaena jacksoniensis,rls,Scorpaenidae,Actinopterygii,temperate,Benthic invertivore,40,normal,FALSE,FALSE
+Scorpis aequipinnis,rls,Kyphosidae,Actinopterygii,temperate,Planktivore,56,normal,FALSE,TRUE
+Scorpis georgiana,rls,Kyphosidae,Actinopterygii,temperate,Planktivore,46,normal,FALSE,TRUE
+Scorpis lineolata,rls,Kyphosidae,Actinopterygii,temperate,Planktivore,37,normal,FALSE,TRUE
+Scorpis violacea,rls,Kyphosidae,Actinopterygii,temperate,Planktivore,34.5,normal,FALSE,FALSE
+Selaroides leptolepis,rls,Carangidae,Actinopterygii,tropical,Planktivore,22,normal,FALSE,FALSE
+Selenotoca multifasciata,rls,Scatophagidae,Actinopterygii,temperate,Benthic invertivore,40,normal,FALSE,FALSE
+Seriola hippos,rls,Carangidae,Actinopterygii,temperate,Higher carnivore,150,normal,FALSE,FALSE
+Seriola lalandi,rls,Carangidae,Actinopterygii,temperate,Higher carnivore,250,normal,FALSE,TRUE
+Seriolella brama,rls,Centrolophidae,Actinopterygii,temperate,Planktivore,76,normal,FALSE,TRUE
+Serranocirrhitus latus,rls,Serranidae,Actinopterygii,tropical,Benthic invertivore,13,normal,FALSE,FALSE
+Siganus argenteus,rls,Siganidae,Actinopterygii,tropical,Browsing herbivore,40,normal,FALSE,FALSE
+Siganus corallinus,rls,Siganidae,Actinopterygii,tropical,Browsing herbivore,35,normal,FALSE,FALSE
+Siganus doliatus,rls,Siganidae,Actinopterygii,tropical,Browsing herbivore,25,normal,FALSE,FALSE
+Siganus fuscescens,rls,Siganidae,Actinopterygii,tropical,Browsing herbivore,40,normal,FALSE,FALSE
+Siganus lineatus,rls,Siganidae,Actinopterygii,tropical,Browsing herbivore,43,normal,FALSE,FALSE
+Siganus puellus,rls,Siganidae,Actinopterygii,tropical,Browsing herbivore,38,normal,FALSE,FALSE
+Siganus punctatus,rls,Siganidae,Actinopterygii,tropical,Browsing herbivore,40,normal,FALSE,FALSE
+Siganus virgatus,rls,Siganidae,Actinopterygii,tropical,Browsing herbivore,30,normal,FALSE,FALSE
+Siganus vulpinus,rls,Siganidae,Actinopterygii,tropical,Browsing herbivore,25,normal,FALSE,FALSE
+Sillaginodes punctatus,rls,Sillaginidae,Actinopterygii,temperate,Benthic invertivore,72,normal,FALSE,TRUE
+Sillago ciliata,rls,Sillaginidae,Actinopterygii,temperate,Benthic invertivore,51,normal,FALSE,TRUE
+Siphonognathus attenuatus,rls,Odacidae,Actinopterygii,temperate,Omnivore,14,normal,FALSE,FALSE
+Siphonognathus beddomei,rls,Odacidae,Actinopterygii,temperate,Omnivore,14,normal,FALSE,FALSE
+Siphonognathus caninis,rls,Odacidae,Actinopterygii,temperate,Omnivore,10,normal,FALSE,FALSE
+Sphyraena flavicauda,rls,Sphyraenidae,Actinopterygii,tropical,Higher carnivore,60,normal,FALSE,FALSE
+Sphyraena novaehollandiae,rls,Sphyraenidae,Actinopterygii,temperate,Higher carnivore,110,normal,FALSE,TRUE
+Sphyraena obtusata,rls,Sphyraenidae,Actinopterygii,tropical,Higher carnivore,55,normal,FALSE,TRUE
+Stegastes apicalis,rls,Pomacentridae,Actinopterygii,tropical,Algal farmer,15,normal,FALSE,FALSE
+Stegastes fasciolatus,rls,Pomacentridae,Actinopterygii,tropical,Algal farmer,15,normal,FALSE,FALSE
+Stegastes gascoynei,rls,Pomacentridae,Actinopterygii,tropical,Algal farmer,15,normal,FALSE,FALSE
+Stegastes insularis,rls,Pomacentridae,Actinopterygii,tropical,Algal farmer,11,normal,FALSE,FALSE
+Stegastes nigricans,rls,Pomacentridae,Actinopterygii,tropical,Algal farmer,14,normal,FALSE,FALSE
+Stegastes obreptus,rls,Pomacentridae,Actinopterygii,tropical,Algal farmer,12,normal,FALSE,FALSE
+Stegastes punctatus,rls,Pomacentridae,Actinopterygii,tropical,Algal farmer,12.75416667,lognormal,FALSE,FALSE
+Stethojulis bandanensis,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,15,lognormal,FALSE,FALSE
+Stethojulis interrupta,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,13,lognormal,FALSE,FALSE
+Stethojulis strigiventer,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,15,lognormal,FALSE,FALSE
+Suezichthys cyanolaemus,rls,Labridae,Actinopterygii,temperate,Benthic invertivore,12,normal,FALSE,FALSE
+Sufflamen chrysopterum,rls,Balistidae,Actinopterygii,tropical,Benthic invertivore,30,normal,FALSE,FALSE
+Sufflamen fraenatum,rls,Balistidae,Actinopterygii,tropical,Benthic invertivore,38,normal,FALSE,FALSE
+Symphorus nematophorus,rls,Lutjanidae,Actinopterygii,tropical,Higher carnivore,100,normal,FALSE,FALSE
+Synodus variegatus,rls,Synodontidae,Actinopterygii,tropical,Higher carnivore,40,lognormal,FALSE,FALSE
+Taeniamia biguttata,rls,Apogonidae,Actinopterygii,tropical,Planktivore,11,normal,FALSE,FALSE
+Taeniamia leai,rls,Apogonidae,Actinopterygii,tropical,Planktivore,9,normal,FALSE,FALSE
+Tetractenos glaber,rls,Tetraodontidae,Actinopterygii,temperate,Benthic invertivore,16,normal,FALSE,FALSE
+Thalassoma amblycephalum,rls,Labridae,Actinopterygii,tropical,Planktivore,16,normal,FALSE,FALSE
+Thalassoma hardwicke,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,20,normal,FALSE,FALSE
+Thalassoma jansenii,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,20,lognormal,FALSE,FALSE
+Thalassoma lunare,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,25,normal,FALSE,FALSE
+Thalassoma lutescens,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,30,normal,FALSE,FALSE
+Thalassoma nigrofasciatum,rls,Labridae,Actinopterygii,tropical,Planktivore,20,normal,FALSE,FALSE
+Thalassoma purpureum,rls,Labridae,Actinopterygii,tropical,Benthic invertivore,46,normal,FALSE,FALSE
+Thalassoma quinquevittatum,rls,Labridae,Actinopterygii,tropical,Planktivore,17,lognormal,FALSE,FALSE
+Thalassoma septemfasciatum,rls,Labridae,Actinopterygii,temperate,Planktivore,31,normal,FALSE,FALSE
+Thyrsites atun,rls,Gempylidae,Actinopterygii,temperate,Higher carnivore,200,normal,TRUE,FALSE
+Tilodon sexfasciatus,rls,Kyphosidae,Actinopterygii,temperate,Benthic invertivore,40,normal,FALSE,FALSE
+Trachichthys australis,rls,Trachichthyidae,Actinopterygii,temperate,Planktivore,18,normal,FALSE,FALSE
+Trachinops brauni,rls,Plesiopidae,Actinopterygii,temperate,Benthic invertivore,8,normal,FALSE,FALSE
+Trachinops caudimaculatus,rls,Plesiopidae,Actinopterygii,temperate,Benthic invertivore,15,lognormal,FALSE,FALSE
+Trachinops noarlungae,rls,Plesiopidae,Actinopterygii,temperate,Benthic invertivore,15,lognormal,FALSE,FALSE
+Trachinops taeniatus,rls,Plesiopidae,Actinopterygii,temperate,Benthic invertivore,10,normal,FALSE,FALSE
+Trachurus declivis,rls,Carangidae,Actinopterygii,temperate,Higher carnivore,64,normal,FALSE,TRUE
+Trachurus novaezelandiae,rls,Carangidae,Actinopterygii,temperate,Higher carnivore,50,normal,FALSE,TRUE
+Trachypoma macracanthus,rls,Serranidae,Actinopterygii,temperate,Higher carnivore,22,normal,FALSE,FALSE
+Triaenodon obesus,rls,Carcharhinidae,Elasmobranchii,tropical,Higher carnivore,213,normal,FALSE,FALSE
+Trinorfolkia clarkei,rls,Tripterygiidae,Actinopterygii,temperate,Benthic invertivore,8,normal,FALSE,FALSE
+Trygonoptera testacea,rls,Urolophidae,Elasmobranchii,temperate,Benthic invertivore,47,normal,FALSE,FALSE
+Trygonorrhina fasciata,rls,Rhinobatidae,Elasmobranchii,temperate,Benthic invertivore,126,normal,FALSE,FALSE
+Upeneichthys lineatus,rls,Mullidae,Actinopterygii,temperate,Benthic invertivore,31,lognormal,FALSE,TRUE
+Upeneichthys vlamingii,rls,Mullidae,Actinopterygii,temperate,Benthic invertivore,35,normal,FALSE,TRUE
+Upeneus tragula,rls,Mullidae,Actinopterygii,tropical,Benthic invertivore,30,normal,FALSE,FALSE
+Urolophus cruciatus,rls,Urolophidae,Elasmobranchii,temperate,Benthic invertivore,50,normal,FALSE,FALSE
+Valenciennea alleni,rls,Gobiidae,Actinopterygii,tropical,Benthic invertivore,7.4,normal,FALSE,FALSE
+Valenciennea muralis,rls,Gobiidae,Actinopterygii,tropical,Benthic invertivore,16,normal,FALSE,FALSE
+Valenciennea strigata,rls,Gobiidae,Actinopterygii,tropical,Benthic invertivore,18,lognormal,FALSE,FALSE
+Vincentia conspersa,rls,Apogonidae,Actinopterygii,temperate,Benthic invertivore,14,normal,FALSE,FALSE
+Zanclus cornutus,rls,Zanclidae,Actinopterygii,tropical,Benthic invertivore,23,normal,FALSE,FALSE
+Zebrasoma scopas,rls,Acanthuridae,Actinopterygii,tropical,Browsing herbivore,40,lognormal,FALSE,FALSE
+Zebrasoma velifer,rls,Acanthuridae,Actinopterygii,tropical,Browsing herbivore,40,normal,FALSE,FALSE
+Abudefduf saxatilis,cbf,Pomacentridae,Actinopterygii,tropical,Planktivore,22.9,normal,FALSE,FALSE
+Acanthemblemaria aspera,cbf,Chaenopsidae,Actinopterygii,tropical,Benthic invertivore,4,normal,FALSE,FALSE
+Acanthemblemaria spinosa,cbf,Chaenopsidae,Actinopterygii,tropical,Benthic invertivore,2.8,normal,FALSE,FALSE
+Apogon binotatus,cbf,Apogonidae,Actinopterygii,tropical,Benthic invertivore,13,normal,FALSE,FALSE
+Canthigaster rostrata,cbf,Tetraodontidae,Actinopterygii,tropical,Omnivore,12,normal,FALSE,FALSE
+Caracanthus maculatus,cbf,Caracanthidae,Actinopterygii,tropical,Benthic invertivore,5,normal,FALSE,FALSE
+Centropyge bispinosa,cbf,Pomacanthidae,Actinopterygii,tropical,Omnivore,10,normal,FALSE,FALSE
+Cephalopholis cruentata,cbf,Serranidae,Actinopterygii,tropical,Higher carnivore,42.6,normal,FALSE,FALSE
+Chromis atripectoralis,cbf,Pomacentridae,Actinopterygii,tropical,Planktivore,12,normal,FALSE,FALSE
+Chromis flavaxilla,cbf,Pomacentridae,Actinopterygii,tropical,Planktivore,7.2,normal,FALSE,FALSE
+Cirripectes variolosus,cbf,Blenniidae,Actinopterygii,tropical,Browsing herbivore,10,normal,FALSE,FALSE
+Coryphopterus eidolon,cbf,Gobiidae,Actinopterygii,tropical,Omnivore,6,normal,FALSE,FALSE
+Coryphopterus glaucofraenum,cbf,Gobiidae,Actinopterygii,tropical,Omnivore,8,normal,FALSE,FALSE
+Coryphopterus personatus,cbf,Gobiidae,Actinopterygii,tropical,Omnivore,4,normal,FALSE,FALSE
+Cypho purpurascens,cbf,Pseudochromidae,Actinopterygii,tropical,Benthic invertivore,7.5,normal,FALSE,FALSE
+Dascyllus flavicaudus,cbf,Pomacentridae,Actinopterygii,tropical,Planktivore,12,normal,FALSE,FALSE
+Doryrhamphus excisus,cbf,Syngnathidae,Actinopterygii,tropical,Planktivore,11,normal,FALSE,FALSE
+Ecsenius stictus,cbf,Blenniidae,Actinopterygii,tropical,Browsing herbivore,5.8,normal,FALSE,FALSE
+Elacatinus evelynae,cbf,Gobiidae,Actinopterygii,tropical,Cleaner,4,lognormal,FALSE,FALSE
+Enneapterygius flavoccipitis,cbf,Tripterygiidae,Actinopterygii,tropical,Benthic invertivore,3.2,normal,FALSE,FALSE
+Enneapterygius tutuilae,cbf,Tripterygiidae,Actinopterygii,tropical,Benthic invertivore,4,normal,FALSE,FALSE
+Eviota afelei,cbf,Gobiidae,Actinopterygii,tropical,Browsing herbivore,2.5,normal,TRUE,FALSE
+Eviota albolineata,cbf,Gobiidae,Actinopterygii,tropical,Benthic invertivore,3,normal,TRUE,FALSE
+Eviota atriventris,cbf,Gobiidae,Actinopterygii,tropical,Benthic invertivore,1.7,normal,FALSE,FALSE
+Eviota guttata,cbf,Gobiidae,Actinopterygii,tropical,Benthic invertivore,2.5,normal,FALSE,FALSE
+Eviota melasma,cbf,Gobiidae,Actinopterygii,tropical,Benthic invertivore,3,normal,FALSE,FALSE
+Eviota prasites,cbf,Gobiidae,Actinopterygii,tropical,Benthic invertivore,3,normal,FALSE,FALSE
+Eviota punctulata,cbf,Gobiidae,Actinopterygii,tropical,Browsing herbivore,2.5,normal,FALSE,FALSE
+Eviota queenslandica,cbf,Gobiidae,Actinopterygii,tropical,Benthic invertivore,2.4,normal,FALSE,FALSE
+Fusigobius neophytus,cbf,Gobiidae,Actinopterygii,tropical,Omnivore,7.5,normal,FALSE,FALSE
+Glyptoparus delicatulus,cbf,Blenniidae,Actinopterygii,tropical,Browsing herbivore,5,normal,FALSE,FALSE
+Gnatholepis cauerensis,cbf,Gobiidae,Actinopterygii,tropical,Omnivore,9,normal,FALSE,FALSE
+Gnatholepis thompsoni,cbf,Gobiidae,Actinopterygii,tropical,Omnivore,8.2,lognormal,FALSE,FALSE
+Halichoeres melanurus,cbf,Labridae,Actinopterygii,tropical,Benthic invertivore,12,normal,FALSE,FALSE
+Halichoeres trimaculatus,cbf,Labridae,Actinopterygii,tropical,Benthic invertivore,27,normal,FALSE,FALSE
+Istigobius decoratus,cbf,Gobiidae,Actinopterygii,tropical,Omnivore,13,normal,FALSE,FALSE
+Koumansetta rainfordi,cbf,Gobiidae,Actinopterygii,tropical,Omnivore,9,normal,FALSE,FALSE
+Neocirrhites armatus,cbf,Cirrhitidae,Actinopterygii,tropical,Benthic invertivore,9,normal,FALSE,FALSE
+Neopomacentrus azysron,cbf,Pomacentridae,Actinopterygii,tropical,Planktivore,7.5,normal,FALSE,FALSE
+Neopomacentrus cyanomos,cbf,Pomacentridae,Actinopterygii,tropical,Planktivore,10,normal,FALSE,FALSE
+Neopomacentrus miryae,cbf,Pomacentridae,Actinopterygii,tropical,Planktivore,11,normal,FALSE,FALSE
+Ostorhinchus angustatus,cbf,Apogonidae,Actinopterygii,tropical,Benthic invertivore,11,normal,FALSE,FALSE
+Ostorhinchus cyanosoma,cbf,Apogonidae,Actinopterygii,tropical,Benthic invertivore,8,normal,FALSE,FALSE
+Ostorhinchus fleurieu,cbf,Apogonidae,Actinopterygii,tropical,Planktivore,14,normal,FALSE,FALSE
+Ostorhinchus nigrofasciatus,cbf,Apogonidae,Actinopterygii,tropical,Benthic invertivore,11,normal,FALSE,FALSE
+Parablennius marmoreus,cbf,Blenniidae,Actinopterygii,tropical,Browsing herbivore,8.5,normal,FALSE,FALSE
+Paracirrhites arcatus,cbf,Cirrhitidae,Actinopterygii,tropical,Benthic invertivore,20,normal,FALSE,FALSE
+Plectranthias nanus,cbf,Serranidae,Actinopterygii,tropical,Higher carnivore,5,normal,FALSE,FALSE
+Pleurosicya labiata,cbf,Gobiidae,Actinopterygii,tropical,Browsing herbivore,3.5,lognormal,FALSE,FALSE
+Pomacentrus adelus,cbf,Pomacentridae,Actinopterygii,tropical,Omnivore,8.5,normal,FALSE,FALSE
+Pomacentrus brachialis,cbf,Pomacentridae,Actinopterygii,tropical,Omnivore,8,normal,FALSE,FALSE
+Pomacentrus lepidogenys,cbf,Pomacentridae,Actinopterygii,tropical,Omnivore,9,normal,FALSE,FALSE
+Pomacentrus wardi,cbf,Pomacentridae,Actinopterygii,tropical,Algal farmer,8,normal,FALSE,FALSE
+Pristiapogon exostigma,cbf,Apogonidae,Actinopterygii,tropical,Benthic invertivore,12,normal,FALSE,FALSE
+Pristiapogon kallopterus,cbf,Apogonidae,Actinopterygii,tropical,Benthic invertivore,15,normal,FALSE,FALSE
+Pseudocheilinus hexataenia,cbf,Labridae,Actinopterygii,tropical,Benthic invertivore,10,normal,FALSE,FALSE
+Pseudochromis flammicauda,cbf,Pseudochromidae,Actinopterygii,tropical,Benthic invertivore,5.5,normal,FALSE,FALSE
+Pseudochromis wilsoni,cbf,Pseudochromidae,Actinopterygii,tropical,Benthic invertivore,8,normal,FALSE,FALSE
+Scorpaenodes scaber,cbf,Scorpaenidae,Actinopterygii,temperate,Benthic invertivore,12,normal,FALSE,FALSE
+Sparisoma viride,cbf,Scaridae,Actinopterygii,tropical,Scraping herbivore,64,normal,FALSE,FALSE
+Stegastes adustus,cbf,Pomacentridae,Actinopterygii,tropical,Algal farmer,15,normal,FALSE,FALSE
+Stegastes nigricans,cbf,Pomacentridae,Actinopterygii,tropical,Algal farmer,14,normal,FALSE,FALSE
+Stegastes partitus,cbf,Pomacentridae,Actinopterygii,tropical,Algal farmer,10,normal,FALSE,FALSE
+Stegastes planifrons,cbf,Pomacentridae,Actinopterygii,tropical,Algal farmer,13,normal,FALSE,FALSE
+Thalassoma bifasciatum,cbf,Labridae,Actinopterygii,tropical,Benthic invertivore,25,lognormal,FALSE,FALSE
+Trimma lantana,cbf,Gobiidae,Actinopterygii,tropical,Benthic invertivore,2.9,lognormal,FALSE,FALSE
+Ucla xenogrammus,cbf,Tripterygiidae,Actinopterygii,tropical,Benthic invertivore,4.71999979,normal,FALSE,FALSE
+Apogon flavus,rls,Apogonidae,Actinopterygii,tropical,Benthic invertivore,10,normal,FALSE,FALSE
+Apogon limenus,rls,Apogonidae,Actinopterygii,temperate,Benthic invertivore,14,normal,FALSE,FALSE
+Cheilodactylus ephippium,rls,Cheilodactylidae,Actinopterygii,temperate,benthic invertivore,35,normal,FALSE,FALSE
+Cheilodactylus fuscus,rls,Cheilodactylidae,Actinopterygii,temperate,benthic invertivore,65,normal,FALSE,TRUE
+Cheilodactylus gibbosus,rls,Cheilodactylidae,Actinopterygii,temperate,benthic invertivore,30,normal,FALSE,FALSE
+Cheilodactylus rubrolabiatus,rls,Cheilodactylidae,Actinopterygii,temperate,benthic invertivore,40,normal,FALSE,FALSE
+Cheilodactylus spectabilis,rls,Cheilodactylidae,Actinopterygii,temperate,benthic invertivore,100,normal,FALSE,TRUE
+Cheilodactylus vestitus,rls,Cheilodactylidae,Actinopterygii,temperate,benthic invertivore,35,normal,FALSE,TRUE
+Chromis agilis,rls,Pomacentridae,Actinopterygii,tropical,planktivore,8,normal,FALSE,FALSE
+Chromis amboinensis,rls,Pomacentridae,Actinopterygii,tropical,planktivore,10,normal,FALSE,FALSE
+Chromis iomelas,rls,Pomacentridae,Actinopterygii,tropical,planktivore,8.5,normal,FALSE,FALSE
+Chromis lepidolepis,rls,Pomacentridae,Actinopterygii,tropical,planktivore,8,normal,FALSE,FALSE
+Chrysophrys auratus,rls,Sparidae,Actinopterygii,temperate,higher carnivore,130,lognormal,FALSE,TRUE
+Kyphosus gladius,rls,Kyphosidae,Actinopterygii,temperate,Browsing herbivore,52,normal,FALSE,FALSE
+Plectroglyphidodon lacrymatus,rls,Pomacentridae,Actinopterygii,tropical,algal farmer,10,normal,FALSE,FALSE
+Pomacentrus magniseptus,rls,Pomacentridae,Actinopterygii,tropical,Omnivore,8,normal,FALSE,FALSE
+Acyrtus lanthanum,cbf,Gobiesocidae,Actinopterygii,tropical,NA,2.4,normal,FALSE,FALSE
+Antennablennius adenensis,cbf,Blenniidae,Actinopterygii,tropical,NA,5,normal,FALSE,FALSE
+Apogon coccineus,cbf,Apogonidae,Actinopterygii,tropical,NA,6,normal,FALSE,FALSE
+Apogon phenax,cbf,Apogonidae,Actinopterygii,tropical,NA,7.5,normal,FALSE,FALSE
+Apogon susanae,cbf,Apogonidae,Actinopterygii,tropical,NA,4,normal,FALSE,FALSE
+Cabillus tongarevae,cbf,Gobiidae,Actinopterygii,tropical,NA,3,normal,FALSE,FALSE
+Cheilodipterus novemstriatus,cbf,Apogonidae,Actinopterygii,tropical,NA,8,normal,FALSE,FALSE
+Chromis acares,cbf,Pomacentridae,Actinopterygii,tropical,NA,4,normal,FALSE,FALSE
+Chromis iomelas,cbf,Pomacentridae,Actinopterygii,tropical,NA,8,normal,FALSE,FALSE
+Chromis vanderbilti,cbf,Pomacentridae,Actinopterygii,tropical,NA,6,normal,FALSE,FALSE
+Coryogalops anomalus,cbf,Gobiidae,Actinopterygii,tropical,NA,5.8,normal,FALSE,FALSE
+Ecsenius pulcher,cbf,Blenniidae,Actinopterygii,tropical,NA,11,lognormal,FALSE,FALSE
+Enchelyurus ater,cbf,Blenniidae,Actinopterygii,tropical,NA,5.5,normal,FALSE,FALSE
+Enneanectes altivelis,cbf,Tripterygiidae,Actinopterygii,tropical,NA,4,normal,FALSE,FALSE
+Enneanectes atrorus,cbf,Tripterygiidae,Actinopterygii,tropical,NA,3.3,normal,FALSE,FALSE
+Enneanectes matador,cbf,Tripterygiidae,Actinopterygii,tropical,NA,2.1,normal,FALSE,FALSE
+Enneapterygius pyramis,cbf,Tripterygiidae,Actinopterygii,tropical,NA,3.3,normal,FALSE,FALSE
+Enneapterygius ventermaculus,cbf,Tripterygiidae,Actinopterygii,tropical,NA,4,normal,FALSE,FALSE
+Eviota flatifasciata,cbf,"	Gobiidae",Actinopterygii,tropical,NA,2,normal,FALSE,FALSE
+Eviota disrupta,cbf,"	Gobiidae",Actinopterygii,tropical,NA,1.6,normal,FALSE,FALSE
+Eviota distigma,cbf,"	Gobiidae",Actinopterygii,tropical,NA,2,normal,FALSE,FALSE
+Eviota infulata,cbf,"	Gobiidae",Actinopterygii,tropical,NA,2.5,normal,FALSE,FALSE
+Eviota monostigma,cbf,"	Gobiidae",Actinopterygii,tropical,NA,2.7,normal,FALSE,FALSE
+Eviota nebulosa,cbf,"	Gobiidae",Actinopterygii,tropical,NA,1.9,normal,FALSE,FALSE
+Eviota occasa,cbf,"	Gobiidae",Actinopterygii,tropical,NA,1,normal,FALSE,FALSE
+Eviota punyit,cbf,"	Gobiidae",Actinopterygii,tropical,NA,1.8,normal,FALSE,FALSE
+Eviota sparsa,cbf,"	Gobiidae",Actinopterygii,tropical,NA,2.1,lognormal,FALSE,FALSE
+Eviota teresae,cbf,"	Gobiidae",Actinopterygii,tropical,NA,2.1,normal,FALSE,FALSE
+Eviota variola,cbf,"	Gobiidae",Actinopterygii,tropical,NA,2.2,normal,FALSE,FALSE
+Fusigobius humeralis,cbf,Gobiidae,Actinopterygii,tropical,NA,4.4,normal,FALSE,FALSE
+Gnatholepis caudimaculata,cbf,Oxudercidae,Actinopterygii,tropical,NA,4.3,normal,FALSE,FALSE
+Helcogramma fuscopinna,cbf,Tripterygiidae,Actinopterygii,tropical,NA,3.8,lognormal,FALSE,FALSE
+Helcogramma vulcanum,cbf,Tripterygiidae,Actinopterygii,tropical,NA,3.8,normal,FALSE,FALSE
+Hetereleotris vulgaris,cbf,Gobiidae,Actinopterygii,tropical,NA,4,normal,FALSE,FALSE
+Hypleurochilus pseudoaequipinnis,cbf,Blenniidae,Actinopterygii,tropical,NA,6.8,normal,FALSE,FALSE
+Limnichthys nitidus,cbf,Creediidae,Actinopterygii,tropical,NA,3.5,normal,FALSE,FALSE
+Lythrypnus crocodilus,cbf,Gobiidae,Actinopterygii,tropical,NA,1.5,normal,FALSE,FALSE
+Lythrypnus elasson,cbf,Gobiidae,Actinopterygii,tropical,NA,1.6,normal,FALSE,FALSE
+Lythrypnus minimus,cbf,Gobiidae,Actinopterygii,tropical,NA,1.5,normal,FALSE,FALSE
+Lythrypnus nesiotes,cbf,Gobiidae,Actinopterygii,tropical,NA,2,normal,FALSE,FALSE
+Lythrypnus spilus,cbf,Gobiidae,Actinopterygii,tropical,NA,2.5,normal,FALSE,FALSE
+Nectamia savayensis,cbf,Apogonidae,Actinopterygii,tropical,NA,10,normal,FALSE,FALSE
+Paragobiodon modestus,cbf,Gobiidae,Actinopterygii,tropical,NA,3.5,normal,FALSE,FALSE
+Phaeoptyx conklini,cbf,Apogonidae,Actinopterygii,tropical,NA,9,normal,FALSE,FALSE
+Phaeoptyx pigmentaria,cbf,Apogonidae,Actinopterygii,tropical,NA,8,normal,FALSE,FALSE
+Phaeoptyx xenus,cbf,Apogonidae,Actinopterygii,tropical,NA,7.5,normal,FALSE,FALSE
+Plesiops coeruleolineatus,cbf,"	Plesiopidae",Actinopterygii,tropical,NA,10,normal,FALSE,FALSE
+Priolepis compita,cbf,Blenniidae,Actinopterygii,tropical,NA,2.5,normal,FALSE,FALSE
+Priolepis hipoliti,cbf,Blenniidae,Actinopterygii,tropical,NA,4.6,lognormal,FALSE,FALSE
+Priolepis semidoliata,cbf,Blenniidae,Actinopterygii,tropical,NA,2.4,normal,FALSE,FALSE
+Priolepis squamogena,cbf,Blenniidae,Actinopterygii,tropical,NA,5.4,normal,FALSE,FALSE
+Pseudogramma polyacanthum,cbf,Serranidae,Actinopterygii,tropical,NA,8.6,normal,FALSE,FALSE
+Risor ruber,cbf,Gobiidae,Actinopterygii,tropical,NA,2.5,normal,FALSE,FALSE
+Scarus iserti,cbf,Scaridae,Actinopterygii,tropical,NA,35,normal,FALSE,FALSE
+Sebastapistes fowleri,cbf,Scorpaenidae,Actinopterygii,tropical,NA,4.7,normal,FALSE,FALSE
+Starksia nanodes,cbf,Labrisomidae,Actinopterygii,tropical,NA,2.2,normal,FALSE,FALSE
+Starksia occidentalis,cbf,Labrisomidae,Actinopterygii,tropical,NA,2.4,normal,FALSE,FALSE
+Starksia sangreyae,cbf,Labrisomidae,Actinopterygii,tropical,NA,1.6,normal,FALSE,FALSE
+Tigrigobius saucrus,cbf,Gobiidae,Actinopterygii,tropical,NA,1.6,normal,FALSE,FALSE
+Trimma capostriatum,cbf,Gobiidae,Actinopterygii,tropical,NA,2.9,normal,FALSE,FALSE
+Trimma corallinum,cbf,Gobiidae,Actinopterygii,tropical,NA,2.5,normal,FALSE,FALSE
+Trimma macrophthalmum,cbf,Gobiidae,Actinopterygii,tropical,NA,2.5,normal,FALSE,FALSE
+Trimma necopinum,cbf,Gobiidae,Actinopterygii,tropical,NA,4,normal,FALSE,FALSE
+Trimmatom eviotops,cbf,Gobiidae,Actinopterygii,tropical,NA,2.1,normal,FALSE,FALSE
+Uropterygius fuscoguttatus,cbf,Muraenidae,Actinopterygii,tropical,NA,30,normal,FALSE,FALSE

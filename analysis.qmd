@@ -1,5 +1,5 @@
 ---
-title: "Consistency in species body size distributions across marine fishes"
+title: "Reef fishes show consistent hump-shaped size frequency distributions"
 subtitle: "R script to reconstruct figures"
 author: Freddie Heather
 date: "2024-05-14"
@@ -15,7 +15,7 @@ execute:
 
 ## About
 
-The following code will reconstruct the figures from the manuscript: Heather *et al.* (Submitted) "Consistency in species body size distributions across marine fishes".
+The following code will reconstruct the figures from the manuscript: Heather et al. (Submitted) "Consistency in species body size distributions across marine fishes".
 
 ## Setup
 
@@ -34,28 +34,326 @@ Loading the required data.
 
 ```{r data}
 
-
 norm_colour <- rgb(181, 144, 19, maxColorValue=255)
 lnorm_colour <- rgb(29, 84, 128, maxColorValue=255)
 
+# repair species name typo
+typo <- function(x) { 
+  mutate(x, 
+         species = str_replace_all(species, "Eviota cflat", "Eviota flat"), 
+         population = str_replace_all(population, "Eviota cflat", "Eviota flat"))
+}
 # Data for main figures
-fig1_data   <- read_csv("fig_data/obsdata_population_scaled.csv")
-fig1b_data   <- read_parquet("fig_data/fig1b_data.parquet")
-fig2_data_pop    <- read_csv("fig_data/fig2_data_pop.csv")
-fig2_data_spp    <- read_csv("fig_data/fig2_data_spp.csv")
-fig3_data        <- read_csv("fig_data/fig3_data.csv")
-fig3_data_ks     <- read_csv("fig_data/fig3_data_ks.csv")
+fig1_data <- 
+  read_csv("fig_data/obsdata_population_scaled.csv") |> typo()
+
+pop_keep <- 
+  fig1_data |> 
+  filter(population_n >= 50) |> 
+  pull(population) |> 
+  unique()
+
+#fig1b_data   <- read_parquet("fig_data/fig1b_data.parquet")
+fig2_data_pop    <- read_csv("fig_data/fig2_data_pop.csv") |> typo()
+fig2_data_spp    <- read_csv("fig_data/fig2_data_spp.csv") |> typo()
+fig3_data        <- read_csv("fig_data/fig3_data.csv") |> 
+  select(-alp, -lty) |> 
+  pivot_wider(names_from = name, values_from = value) 
+# fig3_data_ks     <- read_csv("fig_data/fig3_data_ks.csv")
 fig4_data        <- read_csv("fig_data/fig4_data.csv")
 fig4_data_sample <- read_csv("fig_data/fig4_data_sample.csv")
 
 # Data for supplementary figures
-SI_fig1_data <- read_csv("fig_data/figS1_data.csv")
-SI_fig3_data <- read_csv("fig_data/figS3_data.csv")
-SI_fig4_data <- read_csv("fig_data/figS4_data.csv")
-SI_fig5_data <- read_csv("fig_data/figS5_data.csv")
-SI_fig7_data <- read_csv("fig_data/figS7_data.csv")
-SI_fig9_data <- read_csv("fig_data/figS9_data.csv")
-SI_fig10_data <- read_csv("fig_data/figS10_data.csv")
+SI_fig1_data <- read_csv("fig_data/figS1_data.csv") |> typo()
+SI_fig3_data <- read_csv("fig_data/figS3_data.csv") |> typo()
+SI_fig4_data <- read_csv("fig_data/figS4_data.csv") |> typo()
+SI_fig5_data <- read_csv("fig_data/figS5_data.csv") |> typo()
+SI_fig7_data <- read_csv("fig_data/figS7_data.csv") |> typo()
+SI_fig9_data <- read_csv("fig_data/figS9_data.csv") |> select(population:data)
+SI_fig10_data <- read_csv("fig_data/figS10_data.csv") 
+
+
+
+
+```
+
+# Useful statistics
+
+```{r}
+
+# 2591 RLS sites
+# 6 CRF sites
+# 2597 total sites
+
+
+# Total number of species: 797
+fig2_data_spp |> pull(species) |> unique() |> length()
+
+# Total number of species by dataset (RLS: 682, CRF: 132)
+fig2_data_spp |> select(species, dat) |> 
+  count(dat)
+
+
+obsdata_rls_gridcell |> 
+  select(population, size_class, p_obs) |> 
+  mutate(min_size = min(size_class), .by = population) |> 
+  filter(size_class == min_size, 
+         p_obs > 0.5) |> 
+  pull(population)
+
+# Number of bimodal distributions by the dataset (RLS: 55, CRF: 3)
+plotdata_gridcell |> 
+  filter(bimodal) |> 
+  count(dat)
+
+
+obsdata_rls_species |> 
+  select(species, fished) |> 
+  bind_rows(obsdata_cbf_species |> 
+              select(species, fished)) |> 
+  distinct()
+
+fig2_data_pop |> 
+  filter(better_dist == "normal") |> 
+  summarise(median = median(cv_50_norm), 
+            n = n(),
+            lwr80 = quantile(cv_50_norm, 0.1),
+            upr80 = quantile(cv_50_norm, 0.9),
+            lwr95 = quantile(cv_50_norm, 0.025),
+            upr95 = quantile(cv_50_norm, 0.925),
+            .by = dat) 
+
+fig2_data_pop |> 
+  filter(better_dist == "lognormal") |> 
+  summarise(median = median(cv_50_lnorm), 
+            n= n(),
+            lwr80 = quantile(cv_50_lnorm, 0.1),
+            upr80 = quantile(cv_50_lnorm, 0.9),
+            lwr95 = quantile(cv_50_lnorm, 0.025),
+            upr95 = quantile(cv_50_lnorm, 0.925),
+            .by = dat) 
+
+fig2_data_pop |> 
+  summarise(median = median(cov_pref), 
+            n = n(), 
+            sd = sd(cov_pref),
+            upr80 = quantile(cov_pref, 0.225),
+            lwr80 = quantile(cov_pref, 0.875),
+            upr80 = quantile(cov_pref, 0.025),
+            lwr80 = quantile(cov_pref, 0.925),
+            .by = dat) 
+
+fig2_data_pop |> 
+  summarise(median = median(cov_pref), 
+            n = n(), 
+            sd = sd(cov_pref),
+            upr80 = quantile(cov_pref, 0.225),
+            lwr80 = quantile(cov_pref, 0.875),
+            upr80 = quantile(cov_pref, 0.025),
+            lwr80 = quantile(cov_pref, 0.925),
+            .by = c(better_dist, dat)) 
+
+fig2_data_pop |> 
+  summarise(median = median(cov_pref), 
+             upr80 = quantile(cov_pref, 0.225),
+            lwr80 = quantile(cov_pref, 0.875),
+            .by = dat)
+
+fig2_data_spp |> 
+  summarise(median = median(cov_pref), 
+             upr80 = quantile(cov_pref, 0.225),
+            lwr80 = quantile(cov_pref, 0.875),
+            .by = dat)
+
+
+inc_fished <- TRUE
+inc_bimodal <- TRUE
+plotdata_ecoregion %>% 
+    left_join(meansizes_ecoregion) %>%
+    {if(inc_fished) . else filter(., !fished)} %>% 
+    {if(inc_bimodal) . else filter(., !bimodal)} %>% 
+  summarise(median = median(cov_pref), 
+             upr80 = quantile(cov_pref, 0.225),
+            lwr80 = quantile(cov_pref, 0.875),
+            .by = dat)
+  
+```
+
+# List of species
+
+```{r}
+
+source("cleaning/r_scripts/03_datavis.R")
+
+if(!file.exists("species_traits_tbl.csv")){
+  
+  traits <- read_csv("cleaning/raw_data/TRAITS MASTER (last update 10-10-2024).csv")
+
+traits_clean <- 
+  traits |> 
+  select(
+    species = `New name`,
+    # species = OLD_SPECIES_NAME,
+         family = Family,
+         class = Class, 
+         guild = `thermal guild`, 
+         trophic = `Trophic group`, 
+         lmax = MaxLength) 
+
+all_species <-
+  plotdata_species |> 
+  mutate(species = str_extract(population, ".*(?=__)")) |> 
+  select(species, source = dat) 
+
+traits_tbl <- 
+  traits_clean |> 
+  filter(species %in% all_species$species) |>
+  filter(lmax == max(lmax), .by = species) |> 
+  distinct()
+
+genus_tbl <- 
+  traits_tbl |> 
+  mutate(genus = str_extract(species, ".*(?=\\s)")) |>
+  select(genus, family, class) |> 
+  distinct() |>
+  filter(class != "Actinopteri") |> 
+   filter(!(genus == "Chlorurus" & family == "Labridae")) |> 
+  drop_na()
+
+
+missing <-
+  all_species |> 
+  left_join(traits_tbl) |> 
+  filter(is.na(family)) |>
+  mutate(genus = str_extract(species, ".*(?=\\s)")) |> 
+  left_join(genus_tbl) |> 
+  mutate(family = case_when(genus == "Cheilodactylus" ~ "Cheilodactylidae", 
+                            genus == "Chrysophrys" ~ "Sparidae",
+                            genus == "Hetereleotris" ~ "Gobiidae",
+                            genus == "Helcogramma" ~ "Tripterygiidae",
+                            genus == "Coryogalops" ~ "Gobiidae",
+                            genus == "Hypleurochilus" ~ "Blenniidae",
+                            genus == "Phaeoptyx" ~ "Apogonidae",
+                            genus == "Pseudogramma" ~ "Serranidae",
+                            genus == "Starksia" ~ "Labrisomidae",
+                            genus == "Enneanectes" ~ "Tripterygiidae",
+                            genus == "Tigrigobius" ~ "Gobiidae",
+                            genus == "Sebastapistes" ~ "Scorpaenidae",
+                            genus == "Lythrypnus" ~ "Gobiidae",
+                            genus == "Risor" ~ "Gobiidae",
+                            genus == "Antennablennius" ~ "Blenniidae",
+                            genus == "Priolepis" ~ "Blenniidae",
+                            genus == "Acyrtus" ~ "Gobiesocidae",
+                            genus == "Nectamia" ~ "Apogonidae",
+                            genus == "Paragobiodon" ~ "Gobiidae",
+                            genus == "Enchelyurus" ~ "Blenniidae",
+                            genus == "Uropterygius" ~ "Muraenidae",
+                            genus == "Limnichthys" ~ "Creediidae",
+                            genus == "Cabillus" ~ "Gobiidae",
+                            genus == "Plesiops" ~ "	Plesiopidae",     
+                            genus == "Trimmatom" ~ "Gobiidae",
+                            genus == "Chromis" ~ "Pomacentridae",
+                            genus == "Plectroglyphidodon" ~ "Pomacentridae",
+                            genus == "Pomacentrus" ~ "Pomacentridae",
+                            genus == "Apogon" ~ "Apogonidae",
+                            genus == "Kyphosus" ~ "Kyphosidae",
+                            genus == "Enneapterygius" ~ "Tripterygiidae",
+                            genus == "Eviota" ~ "	Gobiidae",
+                            genus == "Ecsenius" ~ "Blenniidae",
+                            genus == "Trimma" ~ "Gobiidae",
+                            genus == "Scarus" ~ "Scaridae",
+                            genus == "Fusigobius" ~ "Gobiidae",
+                            genus == "Gnatholepis" ~ "Oxudercidae",
+                            genus == "Cheilodipterus" ~ "Apogonidae",
+                              
+                            TRUE ~ family), 
+         class = case_when(is.na(class) ~ "Actinopterygii", 
+                           TRUE ~ class)) |>
+  select(-genus)
+
+spp_pars <- 
+  plotdata_species |> 
+  mutate(species = str_extract(population, "(?<=__).*")) |> 
+  select(species, source = dat, better_dist, bimodal, fished, population_n) |> 
+  distinct()
+  
+complete_species_tbl <- 
+  all_species |> 
+  left_join(traits_tbl) |> 
+  filter(!is.na(family)) |> 
+  bind_rows(missing) |> 
+  left_join(spp_pars) |> 
+  mutate(guild = case_when(source == "cbf" & is.na(guild) ~ "tropical", 
+                           TRUE ~ guild)) 
+
+write_csv(complete_species_tbl, "species_traits_tbl.csv")
+} else {
+  complete_species_tbl <- read_csv("species_traits_tbl.csv")
+}
+  
+  
+
+complete_species_tbl |> count(fished)
+
+complete_species_tbl |> 
+  count(better_dist, fished) %>%
+  xtabs(n ~ better_dist + fished, data = .) |> 
+  chisq.test()
+
+
+complete_species_tbl |> 
+  select(lmax, better_dist) |> 
+  drop_na() %>%
+  mutate(normal = case_when(better_dist == "normal" ~ 1, 
+                            TRUE ~ 0)) %>% 
+  glm(normal ~ lmax, data = ., family = "binomial") |> 
+  summary()
+
+rls_popn <- 
+  obsdata_rls_species |> 
+  mutate(source = "rls") |>
+  select(species, population_n, source) |> 
+  distinct()
+
+cbf_popn <- 
+  obsdata_cbf_species |> 
+  mutate(source = "cbf") |>
+  select(species, population_n, source) |> 
+  distinct()
+  
+
+
+complete_species_tbl |>
+  filter(source == "rls") |>
+  left_join(rls_popn) |> 
+  select(population_n, better_dist) |> 
+  drop_na() %>%
+  mutate(normal = case_when(better_dist == "normal" ~ 1, 
+                            TRUE ~ 0)) %>% 
+  glm(normal ~ log(population_n), data = ., family = "binomial") |> 
+  summary()
+
+complete_species_tbl |> 
+  filter(source == "rls") |>
+  left_join(rls_popn) |> 
+  select(population_n, better_dist) |> 
+  mutate(normal = case_when(better_dist == "normal" ~ 1, 
+                            TRUE ~ 0)) |> 
+  ggplot(aes(log(population_n), normal)) +
+  geom_point(alpha = 0.3) + stat_smooth(method = "lm")
+
+
+spp_traits <- 
+  fig2_data_spp |> 
+  filter(population_n >=50) |>
+  select(species) |> 
+  distinct() |> 
+  left_join(traits)
+
+spp_traits |> count(class)
+spp_traits |> count(guild)
+
+spp_traits |> filter(is.na(class))
 
 
 ```
@@ -91,25 +389,36 @@ fig1_model_fits <-
 
 fig1_data_gg <- 
   fig1_data %>%
+  filter(population_n >= 50) |> 
   mutate(col = case_when(
     normal_better ~ norm_colour,
     !normal_better ~ lnorm_colour,
     TRUE ~ "grey80"), 
     lwd = 1, 
-    alpha = 0.03, 
+    alpha = 0.05, 
     type = "obs") %>% 
-  select(scaled_n, scaled_size, col, lwd, population, alpha, type) %>% 
-  bind_rows(fig1_model_fits %>% mutate(population = dist, 
-                                       alpha = 1, 
-                                       type = "fit") %>% 
-              select(scaled_n, scaled_size, col, lwd, alpha, type)) %>% 
+  mutate(pref_dist = case_when(normal_better ~ "Normal preferred",
+                               !normal_better ~ "Lognormal preferred")) |> 
+  select(scaled_n, scaled_size, col, lwd, population, alpha, type, pref_dist) %>% 
+  bind_rows(fig1_model_fits %>% 
+              mutate(
+                population = dist, 
+                alpha = 1, 
+                type = "fit", 
+                pref_dist = case_when(
+                  dist == "normal" ~ "Normal preferred", 
+                dist == "lognormal" ~ "Lognormal preferred")
+                ) %>% 
+              select(scaled_n, scaled_size, col, lwd, alpha, type, pref_dist)) %>% 
   bind_rows(tibble(scaled_size = 0, 
                    scaled_n = 0, 
                    lwd = 1, 
                    alpha = 0,
                    type = "dummy",
-                   col = "red"))
-fig1a <-  
+                   col = "red")) |> 
+  filter(!is.na(pref_dist))
+
+fig1 <-
   ggplot(fig1_data_gg) +
   aes(x = scaled_size, 
       y = scaled_n,
@@ -127,13 +436,11 @@ fig1a <-
   scale_alpha_identity() + 
   scale_color_identity(guide = "legend", 
                        labels = c(
-                         "Observed (Normal preferred)", 
-                         "Observed (Lognormal preferred)",
-                         "Normal fit (median)",
-                         "Lognormal fit (median)")) + 
+                         "Observed distribution", 
+                         "Median distribution fit")) + 
   scale_x_continuous(label = label_number(suffix = "x"), 
                      expand = c(0.01,0),
-                     limit = c(NA, 4)) +
+                     limit = c(NA, 4)) + 
   
   labs(
     x = "Body length relative to mean length",
@@ -146,90 +453,32 @@ fig1a <-
         plot.margin = margin(10, 20, 10, 10), 
         legend.background = element_rect(fill = "transparent")) +
   guides(col = guide_legend(
-    override.aes = list(colour = c(norm_colour,
-                                   lnorm_colour,
-                                   norm_colour,
-                                   lnorm_colour),
-                        linewidth = c(1,1,3,3)), 
-    label.position = "left"))
-
-saveRDS(fig1a, "fig_data/fig1a.rds")
-
-fig1b <- 
-  fig1b_data %>% 
-  pivot_longer(
-    cols = starts_with("scaled"),
-    names_to = c(".value", "dist"),
-    names_sep = "_", 
-    names_prefix = "scaled_"
-  ) %>% 
-  mutate(dist = case_when(dist == "norm" ~ "normal", 
-                          dist == "lnorm" ~ "lognormal")) %>%
-  filter(dist == better_dist) %>% 
-  ggplot(aes(x = size, y = n, group = population, col = dist)) +
-  geom_line(alpha = 0.03) +
-    geom_line(aes(x = scaled_size, 
-      y = scaled_n, group = col), data = fig1_data_gg %>% filter(type != "obs"), inherit.aes = FALSE) +
-  scale_x_continuous(label = label_number(suffix = "x"), 
-                     expand = c(0.01,0),
-                     limit = c(NA, 4)) +
-  scale_color_manual(guide = "legend", 
-                     values = c("normal" = norm_colour, 
-                                "lognormal" = lnorm_colour),
-                     labels = c("normal" = "Normal fit (population-level)", 
-                                "lognormal" = "Lognormal fit (population-level)")) +
-   labs(
-    x = "Body length relative to mean length",
-    y = "Abundance relative to max"
-  ) +
-  theme_classic(20) +
-  theme(legend.position = c(1,1), 
-        legend.justification = c(1,1),
-        legend.title = element_blank(), 
-        plot.margin = margin(10, 20, 10, 10), 
-        legend.background = element_rect(fill = "transparent")) +
-  guides(col = guide_legend(
-    override.aes = list(linewidth = c(1,1), 
-                        alpha = c(1,1)), 
-    label.position = "left"))
+    override.aes = list(colour = c("black",
+                                   "black"),
+                        linewidth = c(1,3)), 
+    label.position = "left")) +
+  facet_wrap(~pref_dist, ncol = 1)
 
 
-
-ggsave(filename = "ms_figs/scaling_distributions.png",
-       plot = fig1a,
-       height = 25,
-       width = 30,
-       units = "cm", 
-       create.dir = TRUE)
-
-
-fig1 <- 
-  wrap_elements(
-    fig1a + theme(axis.text.x = element_blank(),
-                  axis.title = element_blank()) + 
-      fig1b + theme(axis.title.y = element_blank()) +
-      plot_layout(ncol = 1) +
-      theme(plot.margin = margin(5.5, 5.5, 5.5, 0))
-  ) +
-  labs(tag = "Abundance relative to max") +
-  theme(
-    plot.tag = element_text(size = 20, angle = 90),
-    plot.tag.position = "left"
-  ) 
-
-
-ggsave(filename = "ms_figs/scaling_distributions_v2.png",
+ggsave(filename = "ms_figs/scaled_dists_n50.png",
        plot = fig1,
-       height = 20,
-       width = 20,
+       height = 25,
+       width = 25,
        units = "cm", 
        create.dir = TRUE)
+
+fig1_data_gg$population |> unique() |> length()
+
+fig1_data_gg |> 
+  select(pref_dist, population) |> 
+  distinct() |> 
+  count(pref_dist)
 
 ```
 
-![Observed body length distributions across 3,228 fish populations show a similar unimodal shape. A) Observed individual body length distributions shown in thin solid lines with the median parameter estimates from normal-preferred and lognormal-preferred model fits shown as thick yellow and dark blue lines, respectively. Dashed lines in (A) show scaled body size (cell diameter) distributions of 13 freshwater protist species extracted from Giometto et al. (2013). B) A random selection of 12 populations for visualisation purposes; three species have been highlighted (thicker lines) to indicate that each line represents a population-level body length distribution. Binned body length data were normalized to the bin width to allow comparison with continuous body length data. Abundance density (y-axis) is scaled to the maximum abundance density of the population, and body size (x-axis) is scaled to the mean body size of the population. The estimated CV values for fish length were consistent across three different spatial scales: population-level (Fig. 2), metapopulation or ecoregion-level20 (Extended Data Fig. 3), and the entire species-level (Fig. 2). The results were also similar when species that may be targeted by recreational or commercial fisheries (12% of total, n = 97 species) were removed from the analysis (Extended Data Fig. 4). Naturally, over short temporal and fine spatial scales, local recruitment and mortality events might increase the variability of size distributions and produce multimodal size frequencies, such as sometimes seen in fisheries samples, especially from highly seasonal species21,22. Multi-modality is likely to be rarer when body size data encompasses multiple sampling events and when seasonality is weaker, as is the case for our data. Only about 2% of coral reef and temperate rocky reef populations in our dataset revealed multiple peaks in body length frequencies (Extended Data Figs. 5).](ms_figs/scaling_distributions.png)
+![Observed body length distributions across 3,228 fish populations show a similar unimodal shape. A) Observed individual body length distributions shown in thin solid lines with the median parameter estimates from normal-preferred and lognormal-preferred model fits shown as thick yellow and dark blue lines, respectively. Dashed lines in (A) show scaled body size (cell diameter) distributions of 13 freshwater protist species extracted from Giometto et al. (2013). B) A random selection of 12 populations for visualisation purposes; three species have been highlighted (thicker lines) to indicate that each line represents a population-level body length distribution. Binned body length data were normalized to the bin width to allow comparison with continuous body length data. Abundance density (y-axis) is scaled to the maximum abundance density of the population, and body size (x-axis) is scaled to the mean body size of the population. The estimated CV values for fish length were consistent across three different spatial scales: population-level (Fig. 2), metapopulation or ecoregion-level20 (Extended Data Fig. 3), and the entire species-level (Fig. 2). The results were also similar when species that may be targeted by recreational or commercial fisheries (12% of total, n = 97 species) were removed from the analysis (Extended Data Fig. 4). Naturally, over short temporal and fine spatial scales, local recruitment and mortality events might increase the variability of size distributions and produce multimodal size frequencies, such as sometimes seen in fisheries samples, especially from highly seasonal species21,22. Multi-modality is likely to be rarer when body size data encompasses multiple sampling events and when seasonality is weaker, as is the case for our data. Only about 2% of coral reef and temperate rocky reef populations in our dataset revealed multiple peaks in body length frequencies (Extended Data Figs. 5).](ms_figs/scaled_dists_n50.png)
 
-# Figure 2
+## Figure 2
 
 ```{r fig2}
 
@@ -244,12 +493,18 @@ main_plot <- function(.data) {
       y = cov_pref, 
       pch = col
     ) +
-    geom_hline(yintercept = 0.30, lty = 2, col = "black", alpha = 0.5) +
+    # geom_hline(yintercept = 0.30, lty = 2, col = "black", alpha = 0.5) +
     geom_hline(yintercept = 0.34, lty = 1, col = "#56B4E9", alpha = 0.5) +
     geom_hline(yintercept = 0.37, lty = 1, col = "#CC79A7", alpha = 0.5) +
     geom_hline(yintercept = 0.23, lty = 1, col = "#E69F00", alpha = 0.5) +
     geom_hline(yintercept = 0.33, lty = 1, col = "#000000", alpha = 0.5) +
-    geom_point(alpha = 1, 
+    geom_point(
+      data = filter(.data, dat == "rls"), 
+      alpha = 0.7, 
+               aes(col = col, 
+                   size = (population_n %>% log10()))) +
+    geom_point(data = filter(.data, dat == "cbf"), 
+               alpha = 1, 
                aes(col = col, 
                    size = (population_n %>% log10()))) +
     geom_point(col = "red",
@@ -408,7 +663,7 @@ fig2_yaxis <-
     plot.tag.position = "left"
   )
 
-fig2 <- 
+fig2 <-
   fig2_yaxis + 
   fig2_legend +
   plot_layout(design = {"
@@ -425,32 +680,31 @@ ggsave(filename = "ms_figs/cv_meansize.png",
        width = 20*1.618,
        units = "cm", 
        create.dir = TRUE)
+
 ```
 
 ![Coefficient of variation (CV) of body length distributions of ca 3000 fish populations of larger bodied species (visual census and largest cryptobenthic fish) is approximately 0.34, regardless of the mean body length of the population and the assumed statistical distribution. Each symbol shows the CV value of a single fish population (grid cell, see Methods) or species. The color and shape of the symbol indicates the better-fitting statistical distribution and the sampling method. CV (y-axis) is calculated as the median of the posterior parameters associated with the better-fit distribution. Colored horizonal lines represent the median CV values, dashed line shows the estimated CV value of protists from Giometto et al.13. Margin density plots show the distribution of CV values across populations; for cryptobenthic lognormal preferred (black triangles), marginal plots are not shown due to small sample sizes (n = 9 populations). Symbol size is relative to the sample size (log scale).](ms_figs/cv_meansize.png)
 
-# Figure 3
+## Figure 3
 
 ```{r fig3}
 
-make_plot <- function(data, title){
+make_plot <- function(data, title, alp_norm, alp_lnorm, lty_norm, lty_lnorm){
   data %>% 
     ggplot(aes(x = size_class,
                y = p_obs, 
                width = size_max-size_min)) +
     facet_wrap(~species, ncol = 2, scales = "free") +
-    geom_vline(aes(xintercept = mean_size), lty = 2, linewidth = 1.5) +
+    geom_vline(aes(xintercept = mean_size), lty = "31", linewidth = 1.5) +
     geom_rect(aes(xmin = size_min, xmax = size_max, ymin = 0, ymax = p_obs), 
               alpha = 0.2, 
               col = "black",
               fill = "grey70") + 
-    # geom_point(aes(col = name, y = value, alpha = alp)) +
-    geom_path(aes(y = p_lnorm), linewidth = 2, 
-              col = lnorm_colour) +
-    geom_path(aes(y = p_norm), linewidth = 2, 
-              col = norm_colour) +
-    scale_alpha_identity()+
-    scale_linetype_identity() +
+    # geom_path(aes(col = name, y = value, alpha = alp)) +
+    geom_path(aes(y = p_lnorm), col = lnorm_colour, lwd = 2, alpha = alp_lnorm, lty = lty_lnorm) +
+    geom_path(aes(y = p_norm), col = norm_colour, lwd = 2, alpha = alp_norm, lty = lty_norm) +
+    # scale_alpha_identity()+
+    # scale_linetype_identity() +
     # scale_colour_manual()+
     theme_cowplot(20) +
     scale_y_continuous(label = label_percent())+
@@ -466,74 +720,60 @@ make_plot <- function(data, title){
     ggtitle(label = title)
 }
 
-Neopomacentrus azysron
-fig3_data_all %>% filter(species == "Neopomacentrus azysron") %>% view()
-fig3_data_all <- read_csv("fig_data/fig3_data_all.csv")
-for(spp in unique(fig3_data_all$species)){
-  for(dat in c("rls", "cbf")){
-    
-    spp_data <- 
-      fig3_data_all %>% 
-      filter(species == spp) %>% 
-      filter(data == dat)
-    
-    if(nrow(spp_data) == 0) next
-    
-    make_plot(data = spp_data, 
-              title = paste0(
-                "data = ", dat,
-                "mu = ", unique(spp_data$mu) %>% round(1),
-                ", sigma = ", unique(spp_data$sd)%>% round(1), 
-                ", meanlog = ", unique(spp_data$meanlog)%>% round(1), 
-                ", sdlog = ", unique(spp_data$sdlog)%>% round(1)
-              )) %>% 
-      ggsave(filename = paste0("ms_figs/spp_dists/", dat, "_", spp, ".png"),
-             height = 20,
-             width = 20*1.618,
-             units = "cm")
-  }
-}
-
-
 
 fig3a <- 
   fig3_data %>% 
   filter(pref == "lnorm_pref") %>% 
-  make_plot("Strong preference for lognormal")
+  make_plot("Strong preference for lognormal", 0.8, 1, "31", 1)
 
 fig3b <- 
   fig3_data %>% 
   filter(pref == "no_pref") %>% 
-  make_plot("No preference for normal or lognormal")
+  
+  make_plot("No preference for normal or lognormal", 0.8, 0.8, "31", "31")
 
 fig3c <- 
   fig3_data %>% 
   filter(pref == "norm_pref") %>% 
-  make_plot("Strong preference for normal")
+  make_plot("Strong preference for normal", 1, 0.8, 1, "31")
 
-ks_curve <- 
-  fig3_data_ks %>% 
-  pivot_longer(cols = contains("ks"), 
-               values_to = "ks",
+for(inc_fished in c(FALSE, TRUE)){
+  ls_curve <- 
+  paste0("cleaning/processed_data/var_explained_bycv_ks",  
+         ifelse(inc_fished, "_incfished", "_unfished"), 
+         ".csv") %>% 
+  read_csv(show_col_types = FALSE) %>% 
+  # select(!contains("_ks")) |> 
+    select(c, contains("lsN")) |> 
+  pivot_longer(cols = contains("lsN"), 
+               values_to = "ls",
                names_to = "dist") %>% 
-  summarise(mean_ks = mean(ks), 
-            median_ks = median(ks), 
-            lwr_ks = quantile(ks, 0.025), 
-            upr_ks = quantile(ks, 0.875), 
+  summarise(mean_ls = mean(ls), 
+            median_ls = median(ls), 
+            lwr_ls = quantile(ls, 0.225), 
+            upr_ls = quantile(ls, 0.875), 
             .by = c(c, dist)) %>% 
   ggplot(aes(x = c, 
-             y = mean_ks, 
-             color = dist)) +
-  geom_line(linewidth = 2, alpha = 0.8) +
-  scale_color_manual(values = c("norm_ks" = norm_colour,
-                                "lnorm_ks" = lnorm_colour, 
-                                "pref_ks" = "pink"),
-                     labels = c("norm_ks" = "Normal",
-                                "lnorm_ks" = "Lognormal",                                 "pref_ks" = "Preferred")) +
+             y = mean_ls)) +
+  geom_ribbon(aes(ymin = lwr_ls, ymax = upr_ls, fill = dist), 
+              linewidth = 1.5, alpha = 0.2) +
+  geom_line(aes(col = dist), linewidth = 1.5, alpha = 1) +
+  scale_color_manual(values = c("norm_lsN" = rgb(181, 144, 19, maxColorValue=255),
+                                "lnorm_lsN" = rgb(29, 84, 128, maxColorValue=255), 
+                                "pref_lsN" = "pink"),
+                     labels = c("norm_lsN" = "Normal",
+                                "lnorm_lsN" = "Lognormal", 
+                                "pref_lsN" = "Preferred")) +
+    scale_fill_manual(values = c("norm_lsN" = rgb(181, 144, 19, maxColorValue=255),
+                                "lnorm_lsN" = rgb(29, 84, 128, maxColorValue=255), 
+                                "pref_lsN" = "pink"),
+                     labels = c("norm_lsN" = "Normal",
+                                "lnorm_lsN" = "Lognormal", 
+                                "pref_lsN" = "Preferred")) +
   guides(color = guide_legend(override.aes = list(alpha = 1) ) ) +
   scale_y_continuous() +
   labs(x = "Assumed Coefficient of Variation", 
-       y = "Dissimilarity (K-S statistic)") +
+       y = "Normalised MSE") +
   theme_cowplot(20) +
   theme(legend.position = c(0.95,0.05), 
         legend.justification = c(1,0),
@@ -544,191 +784,316 @@ fig3 <-
   fig3a + 
   fig3b + 
   fig3c + 
-  ks_curve +
+  ls_curve +
   plot_annotation(tag_levels = 'A')
 
-ggsave(filename = "ms_figs/ks_curve.png",
+
+ggsave(filename = paste0("ms_figs/var_explained_", 
+                          {if(inc_fished) "incfished" else "unfished"}, 
+                          ".png"),
        plot = fig3,
        height = 25,
        width = 25*1.618,
        units = "cm")
+}
+
+
 
 ```
 
-![Empirical body size distributions (grey bars) can be reconstructed from the mean body size of the population (vertical black dashed line) and assumed CV of 0.34. Panels A-C show randomly selected populations from one of three population groups for which body size distributions were best described by lognormal, normal or either of the two statistical distributions. Grey bars show observed data and lines show predicted distributions assuming either truncated normal or lognormal statistical distribution and CV of 0.34. Panel D shows that assuming CV of 0.34 provides the best fitting distributions with lowest median Kolmogorov-Smirnov (K-S) statistic across all populations regardless of the assumed statistical distribution (lognormal for all 3000 populations, truncated normal for all, or estimated using the best fitting distribution). Lower or higher CV values quickly reduced the predictive power, shown by higher K-S values.](ms_figs/ks_curve.png)
+![Empirical body size distributions (grey bars) can be reconstructed from the mean body size of the population (vertical black dashed line) and assumed CV of 0.34. Panels A-C show randomly selected populations from one of three population groups for which body size distributions were best described by lognormal, normal or either of the two statistical distributions. Grey bars show observed data and lines show predicted distributions assuming either truncated normal or lognormal statistical distribution and CV of 0.34. Panel D shows that assuming CV of 0.34 provides the best fitting distributions with lowest median Kolmogorov-Smirnov (K-S) statistic across all populations regardless of the assumed statistical distribution (lognormal for all 3000 populations, truncated normal for all, or estimated using the best fitting distribution). Lower or higher CV values quickly reduced the predictive power, shown by higher K-S values.](ms_figs/var_explained_incfished.png)
 
-# Figure 4
+## Figure 4
 
 ```{r fig4}
 
-make_fig4 <- function(data, spp_select){
-  dat1 <- 
-    data %>% 
-    filter(species == spp_select) 
-  
-  dat1 %>% 
-    filter(name != "p_lnorm") %>% 
-    filter(name != "rls_obs") %>% 
-    mutate(species = fct_reorder(species, std_mk)) %>% 
-    ggplot(aes(x = size_class, 
-               y = value)) +
-    geom_rect(aes(xmin = size_min, 
-                  xmax = size_max, 
-                  ymin = 0, 
-                  ymax = value, 
-                  fill = size_10), 
-              col = "black",
-              data = dat1 %>% 
-                filter(name == "rls_obs") %>% 
-                mutate(size_10 = case_when(size_class >= 10 ~ "large", 
-                                           TRUE ~ "small"))) +
-    scale_fill_manual(values = c("large" = "grey70", 
-                                 "small" = "grey90"),
-                      labels = c("large" = "Observed (Length \U2265 10cm)", 
-                                 "small" = "Observed (Length \U003C 10cm)")) +
-    scale_color_manual(values = c("p_norm" = norm_colour, 
-                                  "lbspr" = rgb(148, 31, 36, maxColorValue=255), 
-                                  "lbspr_mk15" = rgb(70, 172, 200, maxColorValue=255)),
-                       labels = c("lbspr" = "LBSPR (estimate)", 
-                                  "lbspr_mk15" = "LBSPR (M/k = 1.5, estimate)",
-                                  "p_norm" = "Normal (estimate)")) +
-    geom_vline(xintercept = 8.75, lty = 2) +
-    geom_path(aes(col = name), linewidth = 2, alpha = 0.8) +
-    geom_text(aes(x = Inf, y = Inf, label = paste("M/k =", std_mk, "\n", 
-                                                  "L\U221E =", std_linf, "cm")),
-              hjust = 1,
-              vjust = 1.2,
-              data = mk_text %>% filter(species == spp_select)) +
-    scale_x_continuous(limits = c(0, NA), label = label_number()) +
-    scale_y_continuous(label = label_percent()) +
-    facet_wrap(~fct_reorder(species, std_mk), scales = "free") +
-    labs(x = "Length class (cm)", 
-         y = "Proportion") +
-    theme_cowplot() +
-    theme(legend.position = "none", 
-          strip.background = element_rect(fill = "transparent"), 
-          strip.text = element_text(face = "italic"), 
-          axis.title.y = element_blank(), 
-          axis.title.x = element_blank())
+# L50 = midpoint
+# L95 = 95th percentile 
+logistic_selection <- function(l, l50, l95) {
+  1 / (1 + exp(-(log(19)*((l - l50)/(l95-l50)))))
 }
 
-ks_data <- 
-  fig4_data %>% 
-  pivot_wider(names_from = name, values_from = value)
-
-ks_fig_data <- 
-  ks_data %>% 
-  summarise(ks_norm = ks.test(x = rls_obs, 
-                              y = p_norm)$statistic,
-            ks_lnorm = ks.test(x = rls_obs, 
-                               y = p_lnorm)$statistic,
-            ks_lbspr = ks.test(x = rls_obs, 
-                               y = lbspr)$statistic,
-            ks_lbspr_mk15 = ks.test(x = rls_obs, 
-                                    y = lbspr_mk15)$statistic,
-            .by = species) %>% 
-  pivot_longer(cols = contains("ks_"))
-
-ks_fig_data_rmsmall <- 
-  ks_data %>% 
-  filter(size_class >= 10) %>% 
-  summarise(ks_norm = ks.test(x = p_norm, 
-                              y = rls_obs)$statistic,
-            ks_lnorm = ks.test(x = p_lnorm, 
-                               y = rls_obs)$statistic,
-            ks_lbspr = ks.test(x = lbspr, 
-                               y = rls_obs)$statistic,
-            ks_lbspr_mk15 = ks.test(x = rls_obs, 
-                                    y = lbspr_mk15)$statistic,
-            .by = species) %>% 
-  pivot_longer(cols = contains("ks_"))
-
-fig4_violins <-
-  ks_fig_data_rmsmall %>%
-  rename(rmsmall = value) %>%
-  left_join(ks_fig_data %>%
-              rename(withsmall = value)) %>%
-  pivot_longer(cols = contains("small"),
-               names_to = "inc_small") %>%
-  mutate(inc_small = case_when(inc_small == "rmsmall" ~ "Exluding sizes < 10cm",
-                               inc_small == "withsmall" ~ "All size classes")) %>%
-  filter(name != "ks_lnorm") %>%
-  ggplot(aes(y = value, x = name)) +
-  geom_violin()+
-  geom_boxplot(width = 0.1) +
-  facet_wrap(~inc_small, nrow=2) +
-  scale_x_discrete(labels = c("ks_lbspr" = "LBSPR",
-                              "ks_lbspr_mk15" = "LBSPR \n (M/k = 1.5)",
-                              "ks_norm" = "CV = 0.34")) +
-  labs(y = "Dissimilarity to observed") +
-  theme_cowplot(17) +
-  theme(legend.position = "none",
-        panel.grid.major.y = element_line(colour = "grey80"),
-        strip.background = element_rect(fill = "transparent", colour = "black"),
-        axis.title.x = element_blank())
-
-arranged_species <- fig4_data_sample %>% arrange(std_mk) %>% pull(species)  %>% unique()
-
-mk_text <- 
-  fig4_data_sample %>% 
-  filter(p_obs != 0) %>% 
-  summarise(max_x = max(size_class, na.rm = TRUE), 
-            max_y = max(c(p_obs, p_lbspr), na.rm = TRUE), 
-            std_mk = round(unique(std_mk), 2), 
-            std_linf = round(unique(std_linf),0), 
-            .by = species) 
-
-for(i in 1:length(arranged_species)){
+sizeProp.refi <- function(linf, m, k, l50, l95r, l0r = 0, sa = 0.01, cv = 0.1, X = 10000, w = 0.5, ns = 5000){
   
-  if(i==1) {
-    fig4_main <- make_fig4(fig4_data, 
-                           spp_select = arranged_species[i]) + 
-      theme(legend.position = "none")
-  } else if(i %in% c(6,7)) {
-    fig4_main <- 
-      fig4_main + 
-      make_fig4(fig4_data, 
-                spp_select = arranged_species[i]) + 
-      theme(axis.title.x = element_text())
-  } else if(i == max(length(arranged_species))) {
-    fig4_main <- 
-      fig4_main +
-      make_fig4(fig4_data, spp_select = arranged_species[i]) + 
-      theme(legend.position = "bottom")
-  } else {
-    fig4_main <- 
-      fig4_main + 
-      make_fig4(fig4_data, spp_select = arranged_species[i]) + 
-      theme(legend.position = "none")
+  ## Construct relative abundance at age (relative with respect to recruitment)
+  # m <- 0.3
+  # k <- m/mk
+  amax <- -log(sa)/m
+  md <- -log(sa)/(X-1)
+  a0 <- 1/k*log(1-l0r)
+  Ax <- (0:(X-1))/(X-1)*amax
+  Lx <- linf*(1-exp(-k*(Ax-a0)))
+  
+  ## Determine size bins
+  lmin <- 0
+  lmax0 <- round(qnorm(0.999, max(Lx), cv*max(Lx)))
+  nl <- ceiling((lmax0-lmin)/w)
+  lmax <- lmin + nl*w
+  Ll <- seq(lmin, lmax-w, by=w)
+  Lu <- seq(lmin+w, lmax, by=w)
+  L <- (Ll+Lu)/2
+  
+  R <- 1
+  Surv <- 1
+  for (x in 2:X){
+    Surv[x] <- Surv[x-1]*exp(-md)
+    #if (x==X){Surv[x] <- Surv[x]/(1-exp(-M))}
+  }
+  Nx <- R*Surv
+  
+  ## Converting relative abundance at age to proportion at size bin
+  PP <- matrix(rep(NA, nl*X), nrow=nl, ncol=X)
+  for (x in 1:X){
+    la <- Lx[x]
+    sd <- cv*la
+    if (sd==0){sd <- 0.0001}
+    lu <- lmin + w
+    PP[1,x] <- pnorm((lu-la)/sd)
+    #PP[1,x] <- pnorm(lu, mean=la, sd=sd) - pnorm(lmin, mean=la, sd=sd)
+    for (i in 2:(nl-1)){
+      ll <- lmin + (i-1)*w
+      lu <- lmin + i*w
+      PP[i,x] <- pnorm((lu-la)/sd) - pnorm((ll-la)/sd)
+    }
+    ll <- lmax - w
+    PP[nl,x] <- 1-pnorm((ll-la)/sd)
+    #PP[nl,x] <- pnorm((lmax-la)/sd) - pnorm((ll-la)/sd)
+    
+    #PP[,x] <- PP[,x]/sum(PP[,x])
   }
   
+  Nl0 <- unlist((matrix(Nx, nrow=1)%*%t(PP))[1,])
+  pl <- Nl0/sum(Nl0)
+  Nl <- pl
+  
+  ## Computing probability of observed proportion of fish at size bins
+  l95 <- l95r*l50
+  alp <- log(19)/(l95-l50)
+  Sl <- 1/(1 + exp(-alp*(L-l50))) #Observation selectivity
+  Nl.o <- Sl*Nl
+  
+  ##Scale the highest probability to 1
+  imax <- which(Nl==max(Nl))
+  scf <- 1/Nl[imax]
+  Nl <- scf*Nl; Nl.o <- scf*Nl.o
+  
+  df <- data.frame(L=L, Ll=Ll, Lu=Lu, Nl=Nl, Nl.obs=Nl.o)
+  return(df)
 }
 
-fig4_legend <- 
-  {{make_fig4(fig4_data, 
-              spp_select = arranged_species[i]) + 
-      theme(legend.position = "bottom", legend.title = element_blank(), legend.justification = 0.5) } %>% 
-      get_legend() %>% 
-      as_ggplot()}
 
-fig4 <- 
-  fig4_main + 
-  fig4_violins + 
-  fig4_legend +
-  plot_layout(design = 
-                "abc
-              deh
-              fgh
-              iii
-              ", heights = c(4,4,4,1)) +
-  plot_annotation(tag_levels = "A")
+# m_gridsize <- 0.01
+# k_gridsize <- 0.01
+# l50_gridsize <- 1
+# l95_gridsize <- 0.1
+# default_bins <- 1 
 
+for(max_length in c(20, 40, 60)){
+  
+  sim_input <- 
+  expand_grid(
+    m = c(0.2, 0.3, 0.4),
+    k = c(0.4, 0.3, 0.2), 
+    l50 = seq(1, max_length, by = 1),
+    l95_const = seq(1.05, 2, by = 0.05),
+    cv_a = 0.1
+  ) %>%  
+  mutate(l95 = l50*l95_const) %>% 
+  distinct()
+  
+  filename <- 
+    paste0("cleaning/processed_data/sim_cr_smooth_1e4_LINF",
+           max_length,
+           "cm.rds")
+  if(file.exists(filename)) {
+    sim_cr <- read_rds(filename)
+  } else {
+    
+    sim_cr <-
+      sim_input %>%
+      mutate(pred = pmap(.l = list(linf = max_length, 
+                                   m = m,
+                                   k = k,
+                                   l50 = l50,
+                                   l95r = l95_const,
+                                   cv = cv_a,
+                                   X = 1e4),
+                         .f = sizeProp.refi)) %>%
+      unnest(cols = pred)
 
-ggsave(filename = "ms_figs/lbspr_comparison.png",
-       plot = fig4,
-       height = 20,
-       width = 20*1.618,
-       units = "cm")
+    write_rds(sim_cr, filename)
+  }
+  
+  for(cv_test in c(0.22, 0.34, 0.5)) {
+    
+    sim_ests <- 
+      sim_cr %>% 
+      add_count(cv_a, m, k, l50, l95,
+                wt = Nl.obs,
+                name = "total_n_obs") %>%
+      add_count(cv_a, m, k, l50, l95,
+                wt = Nl,
+                name = "total_n_raw") %>%
+      mutate(p_est_obs = Nl.obs/total_n_obs, 
+             p_est_raw = Nl/total_n_raw) %>% 
+      mutate(
+        meansize = 3.85 + (0.56*max_length), 
+        mu = meansize,
+        sd = mu*cv_test,
+        sdlog = sqrt(log((cv_test^2)+1)),
+        meanlog = log(meansize) - ((sdlog^2)/2)) %>% 
+      mutate(p_norm =
+               pnorm(L+(default_bins/2), mean = mu, sd = sd) -
+               pnorm(L-(default_bins/2), mean = mu, sd = sd),
+             p_lnorm =
+               plnorm(L+(default_bins/2), meanlog = meanlog, sdlog = sdlog) -
+               plnorm(L-(default_bins/2), meanlog = meanlog, sdlog = sdlog)) %>% 
+      add_count(cv_a, m, k, l50, l95,
+                wt = p_norm, 
+                name = "p_norm_total") %>% 
+      add_count(cv_a, m, k, l50, l95,
+                wt = p_lnorm, 
+                name = "p_lnorm_total") %>% 
+      mutate(p_norm_normalised = p_norm/p_norm_total, 
+             p_lnorm_normalised = p_lnorm/p_lnorm_total)
+    
+    sim_ls <- 
+      sim_ests %>% 
+      mutate(diff_sq = (p_est_obs - p_norm_normalised)^2) %>%
+      summarise(ls = mean(diff_sq), 
+                .by = c(cv_a, m, k, l50, l95_const, l95))
+    
+    mk_sim_a <-
+      sim_ests %>% 
+      mutate(mk = round(m/k, 2)) %>%
+      filter(mk %in% c(0.75, 1, 1.5, 2)) %>%
+      mutate(mk_lab = paste("M/k =", mk)) %>%
+      select(mk_lab, L, p_est_raw, p_norm_normalised, p_lnorm_normalised) %>% 
+      distinct() %>% 
+      pivot_longer(cols = c(p_est_raw, p_norm_normalised, p_lnorm_normalised), 
+                   names_to = "type", 
+                   values_to = "p") %>% 
+      ggplot() +
+      aes(x = L, y = p, col = type) +
+      geom_line(lwd  = 1.5) +
+      facet_wrap(~mk_lab, ncol = 1) +
+      labs(x = "Length (cm)",
+           y = "Probability density", col = NULL) +
+      scale_x_continuous(expand = c(0, 0)) +  
+      scale_color_manual(
+        values = c(p_est_raw = "darkred", 
+                   p_norm_normalised = norm_colour, 
+                   p_lnorm_normalised = lnorm_colour), 
+        labels = c(p_est_raw = "Simulated", 
+                   p_norm_normalised = "Normal Reconstruction", 
+                   p_lnorm_normalised = "Lognormal Reconstruction")) +
+      theme_classic(15) +
+      theme(panel.border = element_rect(fill = NA, size = 2), 
+            legend.position = "bottom", 
+            panel.spacing = unit(0.1,'lines'))  
+    
+    
+    best_fit <- 
+      sim_ls %>% 
+      mutate(mk = round(m/k, 2)) %>% 
+      filter(ls == min(ls), 
+             .by = mk) %>% 
+      select(-c(m, k)) %>% 
+      distinct() %>% 
+      filter(mk %in% c(0.75, 1, 1.5, 2)) %>% 
+      mutate(mk_lab = paste("M/k =", mk))
+    
+    mk_sim_b <-
+      sim_ls %>% 
+      mutate(mk = round(m/k, 2)) %>%
+      filter(mk %in% c(0.75, 1, 1.5, 2)) %>%
+      mutate(mk_lab = paste("M/k =", mk)) %>%
+      ggplot() +
+      aes(l50, l95_const) +
+      geom_tile(aes(fill = log(ls))) +
+      geom_point(aes(l50, l95_const), data = best_fit) +
+      facet_wrap(~mk_lab, ncol = 1) +
+      scale_fill_viridis_c(direction = -1)+
+      scale_x_continuous(expand = c(0, 0)) +
+      scale_y_continuous(label = label_number(suffix = "x", accuracy = 0.1), 
+                         expand = c(0, 0)) + 
+      theme_classic(15) +
+      scale_fill_viridis_c(direction = -1) +
+      labs(x = expression("50% selectivity (L"["50"]*", cm)"),
+           y = expression("Relative 95% selectivity, (L"["95"]*")")) +
+      theme(legend.position = "bottom", 
+            panel.spacing = unit(0.1,'lines')) +
+      guides(fill=guide_colourbar(barwidth=20, 
+                                  title = "log(Mean Squared Error)"))
+    
+    logis_sel <- 
+      best_fit %>% 
+      expand_grid(L = seq(0, max_length, by = 0.1)) %>% 
+      mutate(p = logistic_selection(L, l50, l95))
+    
+    
+    mk_sim_c_data <- 
+      sim_ests %>% 
+      mutate(mk = round(m/k, 2)) %>%
+      right_join(best_fit) %>%
+      filter(mk %in% c(0.75, 1, 1.5, 2)) %>% 
+      mutate(mk_lab = paste("M/k =", mk)) %>%
+      distinct() %>% 
+      pivot_longer(cols = c(p_est_obs, p_norm_normalised, p_lnorm_normalised), 
+                   names_to = "type", 
+                   values_to = "p") 
+    
+    coef <- 1/(max(mk_sim_c_data$p))
+    
+    mk_sim_c <-
+      mk_sim_c_data %>% 
+      ggplot() +
+      geom_line(aes(x = L, y = p, col = type), lwd  = 1.5) +
+      geom_line(aes(L, p/coef), data = logis_sel, lty = "31", lwd  = 1.2) +
+      scale_y_continuous(
+        sec.axis = sec_axis(~.*coef, 
+                            name = "Logistic Selectivity (dashed line)", 
+                            label = label_percent())) +
+      facet_wrap(~mk_lab, ncol = 1) +
+      labs(x = "Length (cm)",
+           y = "Probability density", col = NULL) +
+      scale_x_continuous(expand = c(0, 0)) +
+      
+      scale_color_manual(
+        values = c(p_est_obs = "darkred", 
+                   p_norm_normalised = norm_colour, 
+                   p_lnorm_normalised = lnorm_colour), 
+        labels = c(p_est_obs = "Simulated", 
+                   p_norm_normalised = "Normal Reconstruction", 
+                   p_lnorm_normalised = "Lognormal Reconstruction")) +
+      theme_classic(15) +
+      theme(panel.border = element_rect(fill = NA, linewidth = 2), 
+            legend.position = "bottom", 
+            panel.spacing = unit(0.1,'lines'))  
+    
+    
+    mk_sim <- 
+      mk_sim_a + 
+      mk_sim_b + 
+      mk_sim_c +
+      plot_annotation(tag_levels = 'A') + 
+      plot_layout(guides = "collect") & theme(legend.position = 'bottom', 
+                                              legend.box = "vertical", 
+                                              legend.text=element_text(size=15)) 
+    
+    ggsave(filename = paste0("ms_figs/simulation_selectivity_mk_", 
+                             cv_test,
+                             "_",
+                             max_length,
+                             "cm.png"),
+           plot = mk_sim,
+           height = 25,
+           width = 30,
+           units = "cm", 
+           create.dir = TRUE) 
+    
+  }
+}
 
 ```
 
@@ -1132,15 +1497,16 @@ ggsave(filename = "ms_figs/cv_meansize_rmfished.png",
 ```{r si-fig7}
 
 
-SI_fig7_eq <- lm(log(mean_size) ~ log(std_linf), data = SI_fig7_data)
+SI_fig7_eq <- lm((mean_size) ~ (std_linf), data = SI_fig7_data)
 
+summary(SI_fig7_eq)
 SI_fig7 <-
   SI_fig7_data %>% 
   add_predictions(SI_fig7_eq) %>% 
   ggplot(aes(x = std_linf, 
              y = mean_size)) +
   geom_point() +
-  geom_line(aes(y = exp(pred)), col = "red") +
+  geom_line(aes(y = (pred)), col = "red") +
   theme_cowplot() +
   scale_x_continuous(label = label_number(suffix = "cm")) +
   scale_y_continuous(label = label_number(suffix = "cm")) +
@@ -1155,7 +1521,7 @@ ggsave(filename = "ms_figs/linf_lmu.png",
 
 ```
 
-![A fitted linear model to predict mean population body length (from empirical body length distributions) from asymptotic body length (available from Prince et al.17). This fitted model was used to reconstruct the body length distribution when only asymptotic body length is known, which is often the case for many species or populations. Fitted model (red line): log(mean_length) = 0.37 + 0.78\*log(asymptotic_length).](ms_figs/linf_lmu.png)
+![A fitted linear model to predict mean population body length (from empirical body length distributions) from asymptotic body length (available from Prince et al.17). This fitted model was used to reconstruct the body length distribution when only asymptotic body length is known, which is often the case for many species or populations. Fitted model (red line): mean_length = 3.45 + 0.56\*Linf](ms_figs/linf_lmu.png)
 
 ## SI Fig. 8
 
@@ -1206,7 +1572,7 @@ ggsave(filename = "ms_figs/cv_meansize_spphighlight.png",
 
 ```
 
-![Relationship between mean body length and coefficient of variation (CV), highlighting three species with known extreme life-histories. The two species in black text are known to be long-lived, slow growing species (*Scorpis aequipinus* and *Chirodactylus spectabilis*), yet their CV values fall in the center of the of the distribution of CV values. On the other hand, *Eviota* spp. and in particular, *E. queenslandica*, are known to be fast-growing and short-lived. *Eviota* spp. are on the lower end of the range of CV estimates.](ms_figs/cv_meansize_spphighlight.png)
+![Relationship between mean body length and coefficient of variation (CV), highlighting three species with known extreme life-histories. The two species in black text are known to be long-lived, slow growing species (Scorpis aequipinus and Chirodactylus spectabilis), yet their CV values fall in the center of the of the distribution of CV values. On the other hand, Eviota spp. and in particular, E. queenslandica, are known to be fast-growing and short-lived. Eviota spp. are on the lower end of the range of CV estimates.](ms_figs/cv_meansize_spphighlight.png)
 
 ## SI Fig. 9
 
@@ -1318,4 +1684,156 @@ ggsave(filename = "ms_figs/obs_minus_lbspr.png",
 
 ```
 
-![Observed proportion within a length bin minus expected proportion as predicted by the theoretical model LBSPR. LBSPR is parameterized by asymptotic length, mortality (M) and growth rate (k). Points below the red horizontal line indicate there is a lower observed proportion of individuals in the size bin than predicted by LBSPR. The x-axis has been truncated to 40cm to emphasize this region where observational sampling bias is most likely to occur.](ms_figs/obs_minus_lbspr.png)
+![Observed proportion within a length bin minus expected proportion as predicted by the theoretical model LBSPR. LBSPR is parameterised by asymptotic length, mortality (M) and growth rate (k). Points below the red horizontal line indicate there is a lower observed proportion of individuals in the size bin than predicted by LBSPR. The x-axis has been truncated to 40cm to emphasize this region where observational sampling bias is most likely to occur.](ms_figs/obs_minus_lbspr.png)
+
+## SI Fig. 11
+
+Figure 3 but with more plots for each preference of distribution
+
+```{r}
+inc_fished <- TRUE
+
+set.seed(1)
+random_select_species_n4 <- 
+  plotdata_species %>% 
+  filter(dat=="rls") %>% 
+  mutate(ll_ratio = logl_50_norm-logl_50_lnorm) %>% 
+  drop_na(ll_ratio) %>%
+  mutate(pref = case_when(ll_ratio < quantile(ll_ratio, 0.025) ~ "lnorm_pref",
+                          ll_ratio > quantile(ll_ratio, 0.975) ~ "norm_pref", 
+                          ll_ratio < 2 & ll_ratio > -2 ~ "no_pref")) %>% 
+  drop_na(pref) %>% 
+  select(species, pref, ll_ratio) %>% 
+  slice_sample(n=4, by = pref)
+
+random_select_species_n4_data <-
+  obsdata_rls_species %>%
+  filter(species %in% random_select_species_n4$species) %>%
+  left_join(meansizes_species) %>%
+  select(species, mean_size, size_class, size_min, size_max, p_obs)
+
+
+make_plot <- function(data, title){
+  data %>% 
+    ggplot(aes(x = size_class,
+               y = p_obs, 
+               width = size_max-size_min)) +
+    facet_wrap(~species, ncol = 2, scales = "free") +
+    geom_vline(aes(xintercept = mean_size), lty = 2, linewidth = 1.5) +
+    geom_rect(aes(xmin = size_min, xmax = size_max, ymin = 0, ymax = p_obs), 
+              alpha = 0.2, 
+              col = "black",
+              fill = "grey70") + 
+    # geom_point(aes(col = name, y = value, alpha = alp)) +
+    geom_path(aes(col = name, y = value, alpha = alp, lty=lty), linewidth = 2) +
+    scale_alpha_identity()+
+    scale_linetype_identity() +
+    scale_colour_manual(
+      values = c("p_norm" = rgb(181, 144, 19, maxColorValue=255), 
+                 "p_lnorm" = rgb(29, 84, 128, maxColorValue=255)))+
+    theme_cowplot(20) +
+    scale_y_continuous(label = label_percent())+
+    scale_x_continuous(label = label_number()) +
+    labs(x = "Length class (cm)", 
+         y = "Proportion in length class") +
+    theme(legend.position = "none",
+          strip.background = element_rect(
+            colour = "black",
+            fill = "white"), 
+          strip.text = element_text(face = "italic"), 
+          plot.title = element_text(hjust = 0.5)) +
+    ggtitle(label = title)
+}
+
+figS12_data <-
+  expand_grid(species = unique(random_select_species_n4$species), 
+  ) %>% 
+  left_join(random_select_species_n4_data %>% 
+              select(species, mean_size, size_min) %>% 
+              distinct(), 
+            by = join_by(species)) %>% 
+  left_join(rls_bin_table, 
+            by = join_by(size_min)) %>% 
+  left_join(random_select_species_n4_data %>% 
+              select(species, p_obs, size_class), 
+            by = join_by(species, size_class)) %>% 
+  left_join(random_select_species_n4, 
+            by = join_by(species)) %>% 
+  arrange(pref) %>% 
+  mutate(mu = mean_size,
+         sd = mu*0.34,
+         sdlog = sqrt(log((0.34^2)+1)),
+         meanlog = log(mean_size) - ((sdlog^2)/2)) %>% 
+  mutate(p_norm = 
+           pnorm(size_max, mean = mu, sd = sd) -  
+           pnorm(size_min, mean = mu, sd = sd),
+         p_lnorm = 
+           plnorm(size_max, meanlog = meanlog, sdlog = sdlog) -  
+           plnorm(size_min, meanlog = meanlog, sdlog = sdlog)) %>% 
+  pivot_longer(cols = c(p_norm, p_lnorm)) %>% 
+  mutate(alp = ifelse(str_remove(pref, "_pref")==str_remove(name, "p_"), 1, 0.8),
+         lty = ifelse(str_remove(pref, "_pref")==str_remove(name, "p_"), "solid", "73")) 
+
+figS12a <- 
+  figS12_data %>% 
+  filter(pref == "lnorm_pref") %>% 
+  make_plot("Strong preference for lognormal")
+
+figS12b <- 
+  figS12_data %>% 
+  filter(pref == "no_pref") %>% 
+  make_plot("No preference for normal or lognormal")
+
+figS12c <- 
+  figS12_data %>% 
+  filter(pref == "norm_pref") %>% 
+  make_plot("Strong preference for normal")
+
+ls_curve_S12 <- 
+      paste0("cleaning/processed_data/var_explained_bycv_ks",  
+             ifelse(inc_fished, "_incfished", "_unfished"), 
+             ".csv") %>% 
+      read_csv(show_col_types = FALSE) %>% 
+      pivot_longer(cols = contains("lsN"), 
+                   values_to = "ls",
+                   names_to = "dist") %>% 
+      summarise(mean_ls = mean(ls), 
+                median_ls = median(ls), 
+                lwr_ls = quantile(ls, 0.025), 
+                upr_ls = quantile(ls, 0.875), 
+                .by = c(c, dist)) %>% 
+      ggplot(aes(x = c, 
+                 y = mean_ls, 
+                 color = dist)) +
+      geom_line(linewidth = 1.5, alpha = 0.6) +
+      scale_color_manual(
+        values = c("norm_lsN" = rgb(181, 144, 19, maxColorValue=255),
+                   "lnorm_lsN" = rgb(29, 84, 128, maxColorValue=255), 
+                                    "pref_lsN" = "pink"),
+                         labels = c("norm_lsN" = "Normal",
+                                    "lnorm_lsN" = "Lognormal", 
+                                    "pref_lsN" = "Preferred")) +
+      guides(color = guide_legend(override.aes = list(alpha = 1) ) ) +
+      scale_y_continuous() +
+      labs(x = "Assumed Coefficient of Variation", 
+           y = "Mean Squared Error") +
+      theme_cowplot(20) +
+      theme(legend.position = c(0.95,0.05), 
+            legend.justification = c(1,0),
+            legend.title = element_blank(), 
+            plot.background = element_rect(color = "transparent")) 
+    
+    figS12 <-  
+      figS12a + 
+      figS12b + 
+      figS12c + 
+      ls_curve_S12 +
+      plot_annotation(tag_levels = 'A')
+    
+    ggsave(filename = "ms_figs/var_explained_incfished_n4plots.png",
+           plot = figS12,
+           height = 25,
+           width = 25*1.618,
+           units = "cm")
+
+```
